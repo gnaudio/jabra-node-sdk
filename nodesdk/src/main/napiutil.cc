@@ -95,3 +95,59 @@ namespace util {
         }
     }
 }
+
+#if defined(WIN32)
+
+#include <Windows.h>
+// These headers are here because they are only used in windows-specific
+// implementations, even though they are part of the standard library
+#include <vector>
+
+#endif
+
+namespace util {
+
+    /**
+     * Encode a std::string into utf8.
+     *
+     * @param[in]   str     The string to be encoded.
+     * @param[in]   charset The encoding of str.
+     * @return  std:string  encoded in utf8.
+     */
+    std::string toUtf8(const std::string& str, const std::string& charset) {
+        #ifndef WIN32
+
+        return str;
+
+        #else
+
+        int srcLength = static_cast<int>(str.length() + 1);
+        int wideLength = MultiByteToWideChar(CP_ACP, 0, str.data(), srcLength,
+            nullptr, 0);
+        if (wideLength <= 0) {
+            return std::string();
+        }
+        std::vector<WCHAR> widestr(wideLength);
+        bool error = 0 == MultiByteToWideChar(CP_ACP, 0, str.data(), srcLength,
+            (LPWSTR) widestr.data(), wideLength);
+        if (error) {
+            return std::string();
+        }
+
+        int dstLength = WideCharToMultiByte(CP_UTF8, 0x0,
+            (LPWSTR) widestr.data(), wideLength, nullptr, 0, NULL, NULL);
+        if (dstLength <= 0) {
+            return std::string();
+        }
+        std::vector<char> dst(srcLength);
+        error = 0 == WideCharToMultiByte(CP_UTF8, 0x0, (LPWSTR) widestr.data(),
+            wideLength, dst.data(), dstLength, NULL, NULL);
+        if (error) {
+            return std::string();
+        }
+
+        return std::string(dst.begin(), dst.end());
+
+        #endif
+    }
+}

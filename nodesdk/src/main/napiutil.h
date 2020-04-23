@@ -663,14 +663,23 @@ T JSyncWrapper(const char * const callerFunctionName, const Napi::CallbackInfo& 
 
 
 /**
- * Create a C-string suitable for storing in a settings object from a std:string 
+ * Create a C-string suitable for storing in a settings object from a std:string
  */
 char * newCString(const std::string& src);
 
 /**
-* Create a C-string suitable for storing in a settings object from a napi string/null object.
-**/
+ * Create a C-string suitable for storing in a settings object from a napi string/null object.
+ **/
 char * newCString(const Napi::Value& src);
+
+/**
+ * Encode a std::string into utf8.
+ *
+ * @param[in]   str     The string to be encoded.
+ * @param[in]   charset The encoding of str.
+ * @return  std:string  encoded in utf8.
+ */
+std::string toUtf8(const std::string& str, const std::string& charset);
 
 } // namespace util
 
