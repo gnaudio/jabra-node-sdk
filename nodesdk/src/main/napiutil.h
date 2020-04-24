@@ -3,6 +3,7 @@
 #include <iostream>
 #include <memory>
 #include <thread>
+#include <vector>
 
 // Node lib headers:
 #include <napi.h>
@@ -13,6 +14,19 @@
 
 // Own stuff:
 #include "logger.h"
+
+// OS-specific macros
+#if (defined(_WIN32) || defined(__WIN32__)) && !defined(WIN32)
+
+#define WIN32
+
+#endif
+#ifdef WIN32
+
+#define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
+
+#endif
 
 // -----------------------------------------Helper Macros ------------------------------------------------
 
@@ -28,7 +42,7 @@ namespace util {
 
 /**
  * Retrieve integer from n-api object or default value if it does not exist
- */ 
+ */
 inline int32_t getObjInt32OrDefault(Napi::Object& obj, const char * name, int32_t defaultValue) {
     if (obj.Has(name)) {
         return obj.Get(name).As<Napi::Number>().Int32Value();
@@ -39,7 +53,7 @@ inline int32_t getObjInt32OrDefault(Napi::Object& obj, const char * name, int32_
 
 /**
  * Retrieve bool value from n-api object or default value if it does not exist
- */ 
+ */
 inline bool getObjBooleanOrDefault(Napi::Object& obj, const char * name, bool defaultValue) {
     if (obj.Has(name)) {
         return obj.Get(name).As<Napi::Boolean>().ToBoolean();
@@ -73,7 +87,7 @@ const T getObjEnumValueOrDefault(Napi::Object& obj, const char * name, const T d
 
 /**
  * Should be thrown by api work functions when a jabra function fails with a specific error code.
- * 
+ *
  * Nb. the code throwing this exception should be placed in a worker or a wrapper function that
  * catches the exception and handles it.
  */
@@ -94,11 +108,11 @@ class JabraReturnCodeException : public std::runtime_error
     Jabra_ReturnCode getJabraApiReturnCode() const {
         return jabraApiReturnCode;
     }
-    
+
     const std::string& getCallerFunctionName() const {
         return callerFunctionName;
     }
-    
+
     static void LogAndThrow(const char * callerFunctionName, const Jabra_ReturnCode jabraApiReturnCode) {
         LOG_ERROR_(LOGINSTANCE) << generateString(callerFunctionName, jabraApiReturnCode);
         throw JabraReturnCodeException(callerFunctionName, jabraApiReturnCode);
@@ -107,7 +121,7 @@ class JabraReturnCodeException : public std::runtime_error
 
 /**
  * Should be thrown by api work functions when a jabra function fails without an error code.
- * 
+ *
  * Nb. the code throwing this exception should be placed in a worker or a wrapper function that
  * catches the exception and handles it.
  */
@@ -128,7 +142,7 @@ class JabraException : public std::runtime_error
     public:
     explicit JabraException(const char * callerFunctionName, const std::string& reason = "")
 		:  std::runtime_error(generateString(callerFunctionName, reason)), callerFunctionName(callerFunctionName), reason(reason) {}
-    
+
     const std::string& getCallerFunctionName() const {
         return callerFunctionName;
     }
@@ -136,7 +150,7 @@ class JabraException : public std::runtime_error
     const std::string& getReason() const {
         return reason;
     }
-    
+
     static void LogAndThrow(const char * callerFunctionName, const std::string& reason = "") {
         LOG_ERROR_(LOGINSTANCE) << generateString(callerFunctionName, reason);
         throw JabraException(callerFunctionName, reason);
@@ -166,7 +180,7 @@ enum FormalParameterType
     OBJECT_OR_STRING
 };
 
-/** 
+/**
  * Helper that checks if arguments of correct type exists - throws napi exception and returns false if not.
  **/
 bool verifyArguments(const char * const callerFunctionName, const Napi::CallbackInfo &info, std::initializer_list<FormalParameterType> expectedFormalParameterTypes);
@@ -175,15 +189,15 @@ bool verifyArguments(const char * const callerFunctionName, const Napi::Callback
 
 /**
  * Async worker utility that can run any Jabra (lambda) work function asynchronously.
- * 
- * This is the central worker that (almost all) n-api implementations of Jabra functions 
+ *
+ * This is the central worker that (almost all) n-api implementations of Jabra functions
  * should use to make sure code is non-blocking. This utility may be used directly for
- * complex cases or indirectly thorugh high-level helpers like f.x. SimpleDeviceAsyncFunction 
+ * complex cases or indirectly thorugh high-level helpers like f.x. SimpleDeviceAsyncFunction
  * for simple cases.
- * 
+ *
  * The sole exception where this worker should NOT be used, is for handling Jabra c-callbacks
  * in init and eventhandlers!
- * 
+ *
  * Nb. Based on Napi::AsyncWorker that self-destorys (no explicit delete required)
  */
 template <typename JabraWorkReturnType, typename NapiReturnType>
@@ -200,15 +214,15 @@ class JAsyncWorker : public Napi::AsyncWorker
   public:
     /**
      * Construct a new worker:
-     * 
+     *
      * @callerFunctionName Thread-invariant name of function calling this worker used for documentation (should generally be called with __func__).
      * @javascriptResultCallback The javascript function to call back with the final result.
      * @jabraWorkFunc The async code (jabra sdk call) return a C data type (must NOT use any javascript / napi code or types).
      * @jabraToNapiMapperFunc Synchronous code converting the C data type to a javascript napi type.
-     * @jabraCleanupFunc Synchronous code doing cleanup. 
+     * @jabraCleanupFunc Synchronous code doing cleanup.
      */
-    JAsyncWorker(const char * const callerFunctionName, 
-                 const Napi::Function &javascriptResultCallback, 
+    JAsyncWorker(const char * const callerFunctionName,
+                 const Napi::Function &javascriptResultCallback,
                  const std::function<JabraWorkReturnType()>& jabraWorkFunc,
                  const std::function<NapiReturnType(const Napi::Env& env, const JabraWorkReturnType& jabraData)>& jabraToNapiMapperFunc,
                  const std::function<void(JabraWorkReturnType& jabraData)>& jabraCleanupFunc = [](JabraWorkReturnType& jabraData) {}
@@ -245,7 +259,7 @@ class JAsyncWorker : public Napi::AsyncWorker
         {
             LOG_DEBUG_(LOGINSTANCE) << "JAsyncWorker: " << callerFunctionName << " started async function call";
             jabraResult = jabraWorkFunc();
-            LOG_VERBOSE_(LOGINSTANCE) << "JAsyncWorker: " << callerFunctionName << " finished async function call";      
+            LOG_VERBOSE_(LOGINSTANCE) << "JAsyncWorker: " << callerFunctionName << " finished async function call";
         }
         catch (const JabraReturnCodeException &e)
         {
@@ -294,8 +308,8 @@ class JAsyncWorker : public Napi::AsyncWorker
         try {
             LOG_VERBOSE_(LOGINSTANCE) << "JAsyncWorker: " << callerFunctionName << " started mapping.";
             napiResult = jabraToNapiMapperFunc(env, jabraResult);
-            LOG_VERBOSE_(LOGINSTANCE) << "JAsyncWorker: " << callerFunctionName << " finished mapping.";            
-            
+            LOG_VERBOSE_(LOGINSTANCE) << "JAsyncWorker: " << callerFunctionName << " finished mapping.";
+
             callBackError = true;
             // TODO: Should Receiver().Value() be passed as first arg ?
             Callback().Call({ env.Undefined(), napiResult });
@@ -328,7 +342,7 @@ class JAsyncWorker : public Napi::AsyncWorker
     // Executed when the async work fails.
     // this function will be run inside the main event loop
     // so it is safe to use JS engine data again
-    void OnError(const Napi::Error& e) 
+    void OnError(const Napi::Error& e)
     {
         try {
             Napi::Env env = e.Env();
@@ -352,10 +366,10 @@ class JAsyncWorker : public Napi::AsyncWorker
 
 /**
  * Async worker utility specilization that can run any Jabra (lambda) work procedure asynchronously.
- * 
+ *
  * Use this version when nothing should be returned from the async work other than a notification that
  * it is completed (by calling the callback).
- * 
+ *
  * See full template of JAsyncWorker template for additional information !
  */
 template <>
@@ -377,8 +391,8 @@ class JAsyncWorker<void,void> : public Napi::AsyncWorker
      * @jabraWorkFunc The async code (jabra sdk call) return a C data type (must NOT use any javascript / napi code or types).
      * @jabraCleanupFunc Synchronous code doing cleanup.
      */
-    JAsyncWorker(const char * const callerFunctionName, 
-                 const Napi::Function &javascriptResultCallback, 
+    JAsyncWorker(const char * const callerFunctionName,
+                 const Napi::Function &javascriptResultCallback,
                  const std::function<void()>& jabraWorkFunc,
                  const std::function<void()>& jabraCleanupFunc = [](){}
                 ) : Napi::AsyncWorker(javascriptResultCallback), errorCode(Jabra_ReturnCode::Return_Ok), callerFunctionName(callerFunctionName), jabraWorkFunc(jabraWorkFunc), jabraCleanupFunc(jabraCleanupFunc) {}
@@ -459,7 +473,7 @@ class JAsyncWorker<void,void> : public Napi::AsyncWorker
     // Executed when the async work fails.
     // this function will be run inside the main event loop
     // so it is safe to use JS engine data again
-    void OnError(const Napi::Error& e) 
+    void OnError(const Napi::Error& e)
     {
         try {
             Napi::Env env = e.Env();
@@ -481,20 +495,20 @@ class JAsyncWorker<void,void> : public Napi::AsyncWorker
     }
 };
 
-/** 
+/**
 * Does all the skeleton work for a simple call to a async jabra call without arguments returning
-* a specific node type by a callback. The specific jabraWorkFunc function should do the actual async work, while jabraToNapiMapperFunc 
+* a specific node type by a callback. The specific jabraWorkFunc function should do the actual async work, while jabraToNapiMapperFunc
 * should convert the managed c++ result to a napi type that can be passed to the callback.
 *
 * @callerFunctionName Thread-invariant name of function calling this code used for documentation (should generally be called with __func__).
 * @info The javascript n-api function parameter informaton.
 * @jabraWorkFunc The async code (jabra sdk call) return a C data type (must NOT use any javascript / napi code or types).
 * @jabraToNapiMapperFunc Synchronous code converting the C data type to a javascript napi type.
-* @jabraCleanupFunc Synchronous code doing cleanup. 
+* @jabraCleanupFunc Synchronous code doing cleanup.
 **/
 template <typename NapiReturnType, typename cppReturnType>
 Napi::Value SimpleAsyncFunction(const char * const callerFunctionName,
-                                      const Napi::CallbackInfo &info, 
+                                      const Napi::CallbackInfo &info,
                                       const std::function<cppReturnType ()>& jabraWorkFunc,
                                       const std::function<NapiReturnType(const Napi::Env& env, const cppReturnType& jabraData)>& jabraToNapiMapperFunc,
                                       const std::function<void(cppReturnType& jabraData)>& jabraCleanupFunc = [](cppReturnType& jabraData) {}
@@ -507,8 +521,8 @@ Napi::Value SimpleAsyncFunction(const char * const callerFunctionName,
         Napi::Function javascriptResultCallback = info[0].As<Napi::Function>();
 
         auto *const worker = new util::JAsyncWorker<cppReturnType, NapiReturnType>
-              (callerFunctionName, 
-               javascriptResultCallback, 
+              (callerFunctionName,
+               javascriptResultCallback,
                jabraWorkFunc,
                jabraToNapiMapperFunc,
                jabraCleanupFunc
@@ -521,20 +535,20 @@ Napi::Value SimpleAsyncFunction(const char * const callerFunctionName,
 };
 
 
-/** 
+/**
 * Does all the skeleton work for a simple call to a async jabra call taking a deviceid as sole argument and returning
-* a specific node type by a callback. The specific jabraWorkFunc function should do the actual async work, while jabraToNapiMapperFunc 
+* a specific node type by a callback. The specific jabraWorkFunc function should do the actual async work, while jabraToNapiMapperFunc
 * should convert the managed c++ result to a napi type that can be passed to the callback.
 *
 * @callerFunctionName Thread-invariant name of function calling this code used for documentation (should generally be called with __func__).
 * @info The javascript n-api function parameter informaton.
 * @jabraWorkFunc The async code (jabra sdk call) return a C data type (must NOT use any javascript / napi code or types).
 * @jabraToNapiMapperFunc Synchronous code converting the C data type to a javascript napi type.
-* @jabraCleanupFunc Synchronous code doing cleanup. 
+* @jabraCleanupFunc Synchronous code doing cleanup.
 **/
 template <typename NapiReturnType, typename cppReturnType>
 Napi::Value SimpleDeviceAsyncFunction(const char * const callerFunctionName,
-                                      const Napi::CallbackInfo &info, 
+                                      const Napi::CallbackInfo &info,
                                       const std::function<cppReturnType (unsigned short)>& jabraWorkFunc,
                                       const std::function<NapiReturnType(const Napi::Env& env, const cppReturnType& jabraData)>& jabraToNapiMapperFunc,
                                       const std::function<void(cppReturnType& jabraData)>& jabraCleanupFunc = [](cppReturnType& jabraData) {}
@@ -548,8 +562,8 @@ Napi::Value SimpleDeviceAsyncFunction(const char * const callerFunctionName,
         Napi::Function javascriptResultCallback = info[1].As<Napi::Function>();
 
         auto *const worker = new util::JAsyncWorker<cppReturnType, NapiReturnType>
-              (callerFunctionName, 
-               javascriptResultCallback, 
+              (callerFunctionName,
+               javascriptResultCallback,
                std::bind(jabraWorkFunc, deviceId),
                jabraToNapiMapperFunc,
                jabraCleanupFunc
@@ -562,17 +576,17 @@ Napi::Value SimpleDeviceAsyncFunction(const char * const callerFunctionName,
 };
 
 
-/** 
+/**
 * Does all the skeleton work for a simple call to a async jabra setter taking a deviceid and a boolean as arguments with no result.
 * The specific jabraWorkFunc function should do the actual async work
 *
 * @callerFunctionName Thread-invariant name of function calling this code used for documentation (should generally be called with __func__).
 * @info The javascript n-api function parameter informaton.
 * @jabraWorkFunc The async code (jabra sdk call) return a C data type (must NOT use any javascript / napi code or types).
-* @jabraCleanupFunc Synchronous code doing cleanup. 
+* @jabraCleanupFunc Synchronous code doing cleanup.
 **/
 inline Napi::Value SimpleDeviceAsyncBoolSetter(const char * const callerFunctionName,
-                                               const Napi::CallbackInfo &info, 
+                                               const Napi::CallbackInfo &info,
                                                const std::function<void (unsigned short, bool enable)>& jabraWorkFunc,
                                                const std::function<void()>& jabraCleanupFunc = []() {}
                                               )
@@ -586,8 +600,8 @@ inline Napi::Value SimpleDeviceAsyncBoolSetter(const char * const callerFunction
         Napi::Function javascriptResultCallback = info[2].As<Napi::Function>();
 
         auto *const worker = new util::JAsyncWorker<void, void>
-              (callerFunctionName, 
-               javascriptResultCallback, 
+              (callerFunctionName,
+               javascriptResultCallback,
                std::bind(jabraWorkFunc, deviceId, enable),
                jabraCleanupFunc
               );
@@ -604,12 +618,12 @@ inline Napi::Value SimpleDeviceAsyncBoolSetter(const char * const callerFunction
 
 /**
  * Calls sync function returing values directly and throwing errors as JS exceptions (no callbacks).
- * 
+ *
  * @callerFunctionName Thread-invariant name of function calling this code used for documentation (should generally be called with __func__).
  * @info The javascript n-api function parameter informaton.
  * @func The sync code (jabra sdk call) return a n-api value of type T.
  */
-template <typename T> 
+template <typename T>
 T JSyncWrapper(const char * const callerFunctionName, const Napi::CallbackInfo& info, const std::function<T (const char * const callerFunctionName, const Napi::CallbackInfo&)> func) {
     try
     {
@@ -680,6 +694,17 @@ char * newCString(const Napi::Value& src);
  * @return  std:string  encoded in utf8.
  */
 std::string toUtf8(const std::string& str, const std::string& charset);
+
+#ifdef WIN32
+
+/**
+ * Return the error message for the latest error.
+ *
+ * @return  The Windows-formatted error message for the laters error.
+ */
+std::string getErrorMessage();
+
+#endif
 
 } // namespace util
 

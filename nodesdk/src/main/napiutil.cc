@@ -73,9 +73,9 @@ namespace util {
 
 
     /**
-     * Create a C-string from a std:string 
+     * Create a C-string from a std:string
      */
-    char * newCString(const std::string& src) {      
+    char * newCString(const std::string& src) {
         char * cpy = new char[src.length() + 1];
         strncpy(cpy, src.c_str(), src.length());
         cpy[src.length()] = 0;
@@ -88,10 +88,10 @@ namespace util {
      */
     char * newCString(const Napi::Value& src) {
         if (src.IsString()) {
-        Napi::String strSrc = src.As<Napi::String>();
-        return newCString((std::string)strSrc);
+            Napi::String strSrc = src.As<Napi::String>();
+            return newCString((std::string)strSrc);
         } else {
-        return nullptr;
+            return nullptr;
         }
     }
 }
@@ -99,13 +99,41 @@ namespace util {
 #if defined(WIN32)
 
 #include <Windows.h>
-// These headers are here because they are only used in windows-specific
-// implementations, even though they are part of the standard library
-#include <vector>
 
 #endif
 
 namespace util {
+
+    #ifdef WIN32
+
+    /**
+     * Return the error message for the latest error.
+     *
+     * @return  The Windows-formatted error message for the laters error.
+     */
+    std::string getErrorMessage() {
+        /*
+         * Shortly, this function calls FormatMessage with GetLastError() and
+         * a bunch of other parameters to get a dynamically allocated error
+         * message, which is copied into a std::string and then deallocated.
+         */
+
+        DWORD flags = FORMAT_MESSAGE_ALLOCATE_BUFFER
+            | FORMAT_MESSAGE_FROM_SYSTEM
+            | FORMAT_MESSAGE_IGNORE_INSERTS;
+        DWORD lang = MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT);
+        LPTSTR msg = nullptr;
+
+        FormatMessage(flags, NULL, GetLastError(), lang, (LPTSTR) &msg, 0,
+            nullptr);
+
+        std::string result = msg;
+        LocalFree(msg);
+
+        return result;
+    }
+
+    #endif
 
     /**
      * Encode a std::string into utf8.
@@ -125,24 +153,28 @@ namespace util {
         int wideLength = MultiByteToWideChar(CP_ACP, 0, str.data(), srcLength,
             nullptr, 0);
         if (wideLength <= 0) {
+            LOG_ERROR_(LOGINSTANCE) << getErrorMessage();
             return std::string();
         }
         std::vector<WCHAR> widestr(wideLength);
         bool error = 0 == MultiByteToWideChar(CP_ACP, 0, str.data(), srcLength,
             (LPWSTR) widestr.data(), wideLength);
         if (error) {
+            LOG_ERROR_(LOGINSTANCE) << getErrorMessage();
             return std::string();
         }
 
         int dstLength = WideCharToMultiByte(CP_UTF8, 0x0,
             (LPWSTR) widestr.data(), wideLength, nullptr, 0, NULL, NULL);
         if (dstLength <= 0) {
+            LOG_ERROR_(LOGINSTANCE) << getErrorMessage();
             return std::string();
         }
         std::vector<char> dst(srcLength);
         error = 0 == WideCharToMultiByte(CP_UTF8, 0x0, (LPWSTR) widestr.data(),
             wideLength, dst.data(), dstLength, NULL, NULL);
         if (error) {
+            LOG_ERROR_(LOGINSTANCE) << getErrorMessage();
             return std::string();
         }
 
