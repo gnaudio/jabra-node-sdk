@@ -162,7 +162,7 @@ class JabraException : public std::runtime_error
 */
 enum FormalParameterType
 {
-    VOID,
+    _VOID, // Prefixed with "_" to avoid clash with Windows.h macro.
     BOOLEAN,
     NUMBER,
     // BIGINT,

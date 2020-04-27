@@ -1,9 +1,15 @@
 #include "napiutil.h"
 
+#if defined(WIN32)
+
+#include <Windows.h>
+
+#endif
+
 namespace util {
     static inline std::string toString(FormalParameterType type) {
         switch (type) {
-            case VOID: return "void"; break;
+            case _VOID: return "void"; break;
             case BOOLEAN: return "boolean"; break;
             case NUMBER: return "number"; break;
             // BIGINT: return "bigint"; break;
@@ -26,7 +32,7 @@ namespace util {
 
     static inline bool verifyValueType(const Napi::Value& value, FormalParameterType type) {
         switch (type) {
-            case VOID: return value.IsNull() || value.IsUndefined(); break;
+            case _VOID: return value.IsNull() || value.IsUndefined(); break;
             case BOOLEAN: return value.IsBoolean(); break;
             case NUMBER: return value.IsNumber(); break;
             // BIGINT: return value.IsBigInt(); break;
@@ -95,12 +101,6 @@ namespace util {
         }
     }
 }
-
-#if defined(WIN32)
-
-#include <Windows.h>
-
-#endif
 
 namespace util {
 
