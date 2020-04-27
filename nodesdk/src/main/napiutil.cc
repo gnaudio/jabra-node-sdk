@@ -229,6 +229,9 @@ namespace util {
          * However, this has the side-effect of tuning the string to a wide
          * string. To solve this, we just call WideCharToMultiByte to turn the
          * wide string back to a multi-byte string.
+         *
+         * The second argument (charset) is not used right now, but it's kept
+         * for future extensions.
          */
 
         /*

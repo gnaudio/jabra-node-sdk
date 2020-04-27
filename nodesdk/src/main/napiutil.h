@@ -693,7 +693,7 @@ char * newCString(const Napi::Value& src);
  * @param[in]   charset The encoding of str.
  * @return  std:string  encoded in utf8.
  */
-std::string toUtf8(const std::string& str, const std::string& charset);
+std::string toUtf8(const std::string& str, const std::string& charset = "");
 
 #ifdef WIN32
 
