@@ -145,10 +145,33 @@ namespace util {
     std::string toUtf8(const std::string& str, const std::string& charset) {
         #ifndef WIN32
 
+        // There's no need to do anything on non-Windows platforms.
         return str;
 
         #else
 
+        /*
+         * This function uses Windows APIs to convert a string to UTF-8.
+         *
+         * It calls MultiByteToWideChar to actually perform the conversion.
+         * However, this has the side-effect of tuning the string to a wide
+         * string. To solve this, we just call WideCharToMultiByte to turn the
+         * wide string back to a char string, without changing the encoding.
+         */
+
+        /*
+         * This serves the double purpose of excluding some corner cases later
+         * (eg. wideLength <= 0) and avoiding many unnecessary computations.
+         */
+        if (str.length() == 0) {
+            return str;
+        }
+
+        /*
+         * First we call MultiByteToWideChar with 0 as the wide string buffer
+         * length (last parameter). This returns the length the buffer should
+         * have to contain the result of the conversion.
+         */
         int srcLength = static_cast<int>(str.length() + 1);
         int wideLength = MultiByteToWideChar(CP_ACP, 0, str.data(), srcLength,
             nullptr, 0);
@@ -156,6 +179,11 @@ namespace util {
             LOG_ERROR_(LOGINSTANCE) << getErrorMessage();
             return std::string();
         }
+
+        /*
+         * Here we actually perform the conversion, after creating a buffer of
+         * the desired length inside an std::vector.
+         */
         std::vector<WCHAR> widestr(wideLength);
         bool error = 0 == MultiByteToWideChar(CP_ACP, 0, str.data(), srcLength,
             (LPWSTR) widestr.data(), wideLength);
@@ -164,12 +192,22 @@ namespace util {
             return std::string();
         }
 
+        /*
+         * Here we call WideCharToMultiByte with 0 as the char string buffer
+         * length (sixth parameter). This returns the length the buffer should
+         * have to contain the result of the conversion.
+         */
         int dstLength = WideCharToMultiByte(CP_UTF8, 0x0,
             (LPWSTR) widestr.data(), wideLength, nullptr, 0, NULL, NULL);
         if (dstLength <= 0) {
             LOG_ERROR_(LOGINSTANCE) << getErrorMessage();
             return std::string();
         }
+
+        /*
+         * Here we actually perform the conversion, after creating a buffer of
+         * the desired length inside an std::vector.
+         */
         std::vector<char> dst(srcLength);
         error = 0 == WideCharToMultiByte(CP_UTF8, 0x0, (LPWSTR) widestr.data(),
             wideLength, dst.data(), dstLength, NULL, NULL);
