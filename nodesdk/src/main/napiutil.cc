@@ -133,14 +133,86 @@ namespace util {
         return result;
     }
 
+    /**
+     * Converts a wide string to a UTF-8 multi-byte string.
+     *
+     * @param   src     The wide string to be converted. Must not be empty.
+     * @return  `src` converted to a UTF-8 multi-byte string.
+     */
+    std::string toMultiByte(const std::vector<WCHAR>& src) {
+        /*
+         * First we call WideCharToMultiByte with 0 as the char string buffer
+         * length (sixth parameter). This returns the length the buffer should
+         * have to contain the result of the conversion.
+         */
+        int srcLength = static_cast<int>(src.size());
+        int dstLength = WideCharToMultiByte(CP_UTF8, 0x0,
+            (LPWSTR) src.data(), srcLength, nullptr, 0, NULL, NULL);
+        if (dstLength <= 0) {
+            LOG_ERROR_(LOGINSTANCE) << getErrorMessage();
+            return std::string();
+        }
+
+        /*
+         * Here we actually perform the conversion, after creating a buffer of
+         * the desired length inside an std::string. The string is filled with
+         * null terminators since the constructor needs a char.
+         */
+        std::string dst(dstLength, '\0');
+        bool error = 0 == WideCharToMultiByte(CP_UTF8, 0x0,
+            (LPWSTR) src.data(), srcLength, (LPSTR) dst.data(), dstLength,
+            NULL, NULL);
+        if (error) {
+            LOG_ERROR_(LOGINSTANCE) << getErrorMessage();
+            return std::string();
+        }
+
+        return dst;
+    }
+
+    /**
+     * Converts a string to a UTF-16 wide string.
+     *
+     * @param   src     The string to be converted. Must not be empty.
+     * @return  `src` converted to a UTF-16 wide string.
+     */
+    std::vector<WCHAR> toWideChar(const std::string& src) {
+        /*
+         * First we call MultiByteToWideChar with 0 as the wide string buffer
+         * length (last parameter). This returns the length the buffer should
+         * have to contain the result of the conversion.
+         */
+        int srcLength = static_cast<int>(src.length() + 1);
+        int dstLength = MultiByteToWideChar(CP_ACP, 0, src.data(), srcLength,
+            nullptr, 0);
+        if (dstLength <= 0) {
+            LOG_ERROR_(LOGINSTANCE) << getErrorMessage();
+            return std::vector<WCHAR>();
+        }
+
+        /*
+         * Here we actually perform the conversion, after creating a buffer of
+         * the desired length inside an std::vector.
+         */
+        std::vector<WCHAR> dst(dstLength);
+        bool error = 0 == MultiByteToWideChar(CP_ACP, 0, src.data(), srcLength,
+            (LPWSTR) dst.data(), dstLength);
+        if (error) {
+            LOG_ERROR_(LOGINSTANCE) << getErrorMessage();
+            return std::vector<WCHAR>();
+        }
+
+        return dst;
+    }
+
     #endif
 
     /**
-     * Encode a std::string into utf8.
+     * Encode a std::string to UTF-8.
      *
      * @param[in]   str     The string to be encoded.
      * @param[in]   charset The encoding of str.
-     * @return  std:string  encoded in utf8.
+     * @return  `str` encoded in UTF-8.
      */
     std::string toUtf8(const std::string& str, const std::string& charset) {
         #ifndef WIN32
@@ -156,67 +228,22 @@ namespace util {
          * It calls MultiByteToWideChar to actually perform the conversion.
          * However, this has the side-effect of tuning the string to a wide
          * string. To solve this, we just call WideCharToMultiByte to turn the
-         * wide string back to a char string, without changing the encoding.
+         * wide string back to a multi-byte string.
          */
 
         /*
          * This serves the double purpose of excluding some corner cases later
-         * (eg. wideLength <= 0) and avoiding many unnecessary computations.
+         * and avoiding many unnecessary computations.
          */
         if (str.length() == 0) {
             return str;
         }
 
-        /*
-         * First we call MultiByteToWideChar with 0 as the wide string buffer
-         * length (last parameter). This returns the length the buffer should
-         * have to contain the result of the conversion.
-         */
-        int srcLength = static_cast<int>(str.length() + 1);
-        int wideLength = MultiByteToWideChar(CP_ACP, 0, str.data(), srcLength,
-            nullptr, 0);
-        if (wideLength <= 0) {
-            LOG_ERROR_(LOGINSTANCE) << getErrorMessage();
+        std::vector<WCHAR> widestr = toWideChar(str);
+        if (widestr.size() == 0) {
             return std::string();
         }
-
-        /*
-         * Here we actually perform the conversion, after creating a buffer of
-         * the desired length inside an std::vector.
-         */
-        std::vector<WCHAR> widestr(wideLength);
-        bool error = 0 == MultiByteToWideChar(CP_ACP, 0, str.data(), srcLength,
-            (LPWSTR) widestr.data(), wideLength);
-        if (error) {
-            LOG_ERROR_(LOGINSTANCE) << getErrorMessage();
-            return std::string();
-        }
-
-        /*
-         * Here we call WideCharToMultiByte with 0 as the char string buffer
-         * length (sixth parameter). This returns the length the buffer should
-         * have to contain the result of the conversion.
-         */
-        int dstLength = WideCharToMultiByte(CP_UTF8, 0x0,
-            (LPWSTR) widestr.data(), wideLength, nullptr, 0, NULL, NULL);
-        if (dstLength <= 0) {
-            LOG_ERROR_(LOGINSTANCE) << getErrorMessage();
-            return std::string();
-        }
-
-        /*
-         * Here we actually perform the conversion, after creating a buffer of
-         * the desired length inside an std::vector.
-         */
-        std::vector<char> dst(srcLength);
-        error = 0 == WideCharToMultiByte(CP_UTF8, 0x0, (LPWSTR) widestr.data(),
-            wideLength, dst.data(), dstLength, NULL, NULL);
-        if (error) {
-            LOG_ERROR_(LOGINSTANCE) << getErrorMessage();
-            return std::string();
-        }
-
-        return std::string(dst.begin(), dst.end());
+        return toMultiByte(widestr);
 
         #endif
     }

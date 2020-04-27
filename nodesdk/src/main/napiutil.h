@@ -704,6 +704,22 @@ std::string toUtf8(const std::string& str, const std::string& charset);
  */
 std::string getErrorMessage();
 
+/**
+ * Converts a wide string to a UTF-8 multi-byte string.
+ *
+ * @param   src     The wide string to be converted. Must not be empty.
+ * @return  `src` converted to a UTF-8 multi-byte string.
+ */
+std::string toMultiByte(const std::vector<WCHAR>& src);
+
+/**
+ * Converts a string to a UTF-16 wide string.
+ *
+ * @param   src     The string to be converted. Must not be empty.
+ * @return  `src` converted to a UTF-16 wide string.
+ */
+std::vector<WCHAR> toWideChar(const std::string& src);
+
 #endif
 
 } // namespace util
