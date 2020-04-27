@@ -704,6 +704,10 @@ std::string toUtf8(const std::string& str, const std::string& charset = "");
  */
 std::string getErrorMessage();
 
+#endif
+
+#ifdef NOT_DEFINED
+
 /**
  * Converts a wide string to a UTF-8 multi-byte string.
  *
