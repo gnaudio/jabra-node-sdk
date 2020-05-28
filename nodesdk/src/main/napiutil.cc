@@ -132,7 +132,7 @@ namespace util {
          * length (last parameter). This returns the length the buffer should
          * have to contain the result of the conversion.
          */
-        int srcLength = static_cast<int>(src.length() + 1);
+        int srcLength = static_cast<int>(src.length());
         int dstLength = MultiByteToWideChar(CP_ACP, 0, src.data(), srcLength,
             nullptr, 0);
         if (dstLength <= 0) {
