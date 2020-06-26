@@ -1,0 +1,37 @@
+# Editorconfig file for consistent code style.
+# https://EditorConfig.org
+
+# You should probably install the VSCode extension for editorconfig to make
+# the best use of this file: https://marketplace.visualstudio.com/items?itemName=EditorConfig.EditorConfig
+
+# Do not traverse the filesystem any further up
+root = true
+
+# Default configuration for all file types
+[*]
+charset = utf-8
+end_of_line = unset
+indent_size = 4
+indent_style = space
+insert_final_newline = true
+trim_trailing_whitespace = false
+
+# Markdown configuration
+[*.md]
+trim_trailing_whitespace = false
+
+# JavaScript configuration
+[*.js]
+indent_size = 2
+
+# JSON configuration
+[*.json]
+indent_size = 2
+
+# Node-gyp binding configuration
+[*.gyp]
+indent_size = 2
+
+# TypeScript configuration
+[*.ts]
+indent_size = 2
