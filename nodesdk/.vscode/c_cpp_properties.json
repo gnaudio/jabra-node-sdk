@@ -1,7 +1,9 @@
 {
     "env": {
-        "winNodeGypCachePath": "${LIBJABRA_WIN_NODE_GYP_CACHE_PATH}",
-        "winCppCompilerPath" : "${LIBJABRA_WIN_CPP_COMPILER_PATH}"
+        "winNodeGypCachePath": "${env:LIBJABRA_WIN_NODE_GYP_CACHE_PATH}",
+        "winCppCompilerPath" : "${env:LIBJABRA_WIN_CPP_COMPILER_PATH}",
+        "linuxCppCompilerPath" : "${env:JABRA_NODESDK_CPP_COMPILER_PATH}",
+        "linuxNodeGypCachePath" : "${env:JABRA_NODESDK_NODE_GYP_CACHE_PATH}"
     },
     "configurations": [
         {
@@ -23,6 +25,25 @@
             "cStandard": "c11",
             "cppStandard": "c++14",
             "intelliSenseMode": "msvc-x64"
+        },
+        {
+            "name": "Linux",
+            "includePath": [
+                "${linuxNodeGypCachePath}/include/node",
+                "${workspaceFolder}/node_modules/node-addon-api",
+                "${workspaceFolder}/includes",
+                "${workspaceFolder}/libjabra/headers",
+                "${workspaceFolder}/src/main/**"
+            ],
+            "defines": [
+                "_DEBUG",
+                "UNICODE",
+                "_UNICODE"
+            ],
+            "compilerPath": "${linuxCppCompilerPath}",
+            "cStandard": "c11",
+            "cppStandard": "c++14",
+            "intelliSenseMode": "gcc-x64"
         }
     ],
     "version": 4

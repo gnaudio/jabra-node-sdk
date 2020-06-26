@@ -11,6 +11,8 @@ Jabra Node.js SDK
     - [Multiple device management](#multiple-device-management-with-typescript-and-asyncawait)
 - [Sequence Diagrams](#sequence-diagrams)
 - [Setup VSCode](#setup-vsCode)
+    - [Windows](#windows)
+    - [Linux](#linux)
 - [Bug report](https://github.com/gnaudio/jabra-node-sdk#bug-reports)
 - [Changelog](https://github.com/gnaudio/jabra-node-sdk/blob/master/CHANGELOG.md)
 - [License](https://github.com/gnaudio/jabra-node-sdk/blob/master/LICENSE.md)
@@ -201,11 +203,49 @@ These sequence diagrams shows typical use of the Node.js sdk:
 
 ## Setup VSCode
 
-The project includes config-files for debugging typescript and C++ source files in [Visual Studio Code](https://code.visualstudio.com/) for Windows. To setup, install the C++ extension and compiler toolset as described in [this guide](https://code.visualstudio.com/docs/cpp/config-msvc), make sure all project [pre-requisites](#pre-requisite) are installed correctly, and set the following environment variables. 
+The project includes config files for debugging typescript and C++ source files
+in [Visual Studio Code](https://code.visualstudio.com/) via the
+[C++ extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode.cpptools),
+for both Windows and Linux. The configuration files work without any
+modification, provided that you set up your environment first, by installing
+the necessary tools and defining some environment variable.
+
+To debug a C++ file, open a typescript file referencing the C++ file and start
+the debugger (Running the debugger on C++ files directly won't work). Make sure
+the "Run"-dropdown at the top of the debugging-sidebar is set to "Current TS
+File - native code only (&lt;your operating system&gt;)"
+
+Below, the setup steps for Windows and Linux.
+
+### Windows
+You can more or less follow the instruction in
+[the VSCode C++ extension guide](https://code.visualstudio.com/docs/cpp/config-msvc).
+Then, you need to make sure all project [pre-requisites](#pre-requisite) are
+installed correctly, and finally set the following environment variables:
 
 Environment Variable | Value | Description
 --- | --- | ---
 LIBJABRA_WIN_NODE_GYP_CACHE_PATH | eg. %appdata%\Local\node-gyp\Cache\12.16.3\include\node | Used by the C/C++ extension to resolve include paths
 LIBJABRA_WIN_CPP_COMPILER_PATH | eg. C:/Program Files (x86)/Microsoft Visual Studio/2019/Professional/VC/Tools/MSVC/14.25.28610/bin/Hostx64/x64/cl.exe | Used by the C/C++ extension to infer the path to the C++ standard library header files
 
-To debug a C++ file, open a typescript file referencing the C++ file and start the debugger (Running the debugger on C++ files directly won't work). Make sure the "Run"-dropdown at the top of the debugging-sidebar is set to "Current TS File - native code only (windows)" 
+
+### Linux
+You can read a more detailed guide on
+[the VSCode C++ extension page](https://code.visualstudio.com/docs/cpp/config-linux).
+The important part is to install a C++ compiler and debugger. The easiest way
+is to install `build-essential` and `gdb`, this way:
+
+```sh
+sudo apt-get install build-essential gdb
+```
+
+This maks your C++ compiler GCC, and you would likely use the `g++` command to
+compile.
+
+Then, you need to install the project [pre-requisites](#pre-requisite), and
+finally export the following environment variables:
+
+Environment Variable | Likely value | Description
+--- | --- | ---
+JABRA_NODESDK_CPP_COMPILER_PATH | /usr/bin/g++ | Used by the C/C++ extension to infer the path to the C++ standard library header files
+JABRA_NODESDK_NODE_GYP_CACHE_PATH | $HOME/.cache/node-gyp/14.4.0 | Used by the C/C++ extension to resolve include paths. **NOTE**: The final `include/node` is added by the configuration and it's not necessary
