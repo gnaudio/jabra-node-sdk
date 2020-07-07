@@ -2620,45 +2620,48 @@ LIBRARY_API void Jabra_RegisterDectInfoHandler(void(*DectInfoFunc)(unsigned shor
  * @param[in] dectInfo #Jabra_DectInfo structure to be freed.
  */
 LIBRARY_API void Jabra_FreeDectInfoStr(Jabra_DectInfo *dectInfo);
-
 /**
-
  * @brief Set Xpress URL using file transfer on Newport. Api is only supported on the newport platform
-
  * @param[in] deviceID ID for a specific device.
-
  *
-
  * @brief Enable or disable Newport/Python remote management
-
  * @param[in] deviceID ID for a specific device.
-
  * @return Return_Ok if success.
-
  * @return Device_Unknown if the deviceID specified is not known.
-
  * @return Not_Supported if not supported
-
   */
-
 LIBRARY_API Jabra_ReturnCode Jabra_NewportRemoteManagementEnable(unsigned short deviceID, bool enable);
 
 /**
-
  * @brief Is Newport/Python remote management enabled
-
  * @param[in] deviceID ID for a specific device.
-
  * @param[out] enable true enabled, false not enabled
-
  * @return Return_Ok if success.
-
  * @return Device_Unknown if the deviceID specified is not known.
-
  * @return Not_Supported if not supported
-
   */
-
 LIBRARY_API Jabra_ReturnCode Jabra_IsNewportRemoteManagementEnabled(unsigned short deviceID, bool* enable);
+
+/**
+ * @brief Set Xpress URL using file transfer on Newport. Api is only supported on the newport platform
+ * @param[in] deviceID ID for a specific device.
+ */
+LIBRARY_API Jabra_ReturnCode Jabra_SetXpressUrl(unsigned short deviceID, const char* url, unsigned int count);
+
+/**
+ * @brief Get Xpress URL using file transfer on Newport. Api is only supported on the newport platform
+ * @param[in] deviceID ID for a specific device.
+ * @param[in] Char Pointer to a buffer location where the Xpress URL string
+ * is written. Must be allocated by the caller.
+ * @param[in] count Maximum number of characters to copy to buffer. Max limit 2 KB.
+ * @param[out] Xpress URL read from device.
+ * @return Return_Ok if successful.
+ * @return Device_Unknown if the deviceID specified is not known.
+ * @return Not_Supported if the functionality is not supported.
+ * @return Return_Ok if success.
+ * @return Device_Unknown if the deviceID specified is not known.
+ * @return Not_Supported if not supported
+ */
+LIBRARY_API Jabra_ReturnCode Jabra_GetXpressUrl(unsigned short deviceID, char* url, unsigned int& size);
 
 #endif /* COMMON_H */
