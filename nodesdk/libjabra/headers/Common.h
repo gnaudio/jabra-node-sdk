@@ -2621,5 +2621,44 @@ LIBRARY_API void Jabra_RegisterDectInfoHandler(void(*DectInfoFunc)(unsigned shor
  */
 LIBRARY_API void Jabra_FreeDectInfoStr(Jabra_DectInfo *dectInfo);
 
+/**
+
+ * @brief Set Xpress URL using file transfer on Newport. Api is only supported on the newport platform
+
+ * @param[in] deviceID ID for a specific device.
+
+ *
+
+ * @brief Enable or disable Newport/Python remote management
+
+ * @param[in] deviceID ID for a specific device.
+
+ * @return Return_Ok if success.
+
+ * @return Device_Unknown if the deviceID specified is not known.
+
+ * @return Not_Supported if not supported
+
+  */
+
+LIBRARY_API Jabra_ReturnCode Jabra_NewportRemoteManagementEnable(unsigned short deviceID, bool enable);
+
+/**
+
+ * @brief Is Newport/Python remote management enabled
+
+ * @param[in] deviceID ID for a specific device.
+
+ * @param[out] enable true enabled, false not enabled
+
+ * @return Return_Ok if success.
+
+ * @return Device_Unknown if the deviceID specified is not known.
+
+ * @return Not_Supported if not supported
+
+  */
+
+LIBRARY_API Jabra_ReturnCode Jabra_IsNewportRemoteManagementEnabled(unsigned short deviceID, bool* enable);
 
 #endif /* COMMON_H */
