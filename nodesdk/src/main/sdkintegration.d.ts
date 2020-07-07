@@ -34,7 +34,7 @@ export declare interface SdkIntegration {
                firstScanDone: (event_time_ms: number) => void,
                attached: (deviceId: DeviceInfo, event_time_ms: number) => void,
                deAttached: (deviceId: number, event_time_ms: number) => void,
-               buttonInDataTranslated: (deviceID: number, translatedInData: enumDeviceBtnType, buttonInData: bool) => void,
+               buttonInDataTranslated: (deviceId: number, translatedInData: enumDeviceBtnType, buttonInData: bool) => void,
                devLogCallback: (deviceId: number, json: string) => void,
                batteryStatusCallback: (deviceId: number, levelInPercent: number, isCharging: boolean, isBatteryLow: boolean) => void,
                onRemoteMmiEvent: (deviceId: number, type: enumRemoteMmiType, input: enumRemoteMmiInput) => void,
@@ -42,7 +42,7 @@ export declare interface SdkIntegration {
                uploadProgressCallback: (deviceId: number, status: enumUploadEventStatus, percentage: number) => void,
                registerPairingListCallback: (deviceId: number, pairedListInfo: PairedListInfo) => void,
                onGNPBtnEventCallback: (deviceId: number, btnEvents: Array<{ buttonTypeKey: number, buttonTypeValue: string, buttonEventType: Array<{ key: number, value: string }> }>) => void,
-               dectInfoCallback: (deviceID: number, dectInfo: DectInfo) => void,
+               dectInfoCallback: (deviceId: number, dectInfo: DectInfo) => void,
                configParams: ConfigParamsCloud & GenericConfigParams) : void;
 
     /**
@@ -219,4 +219,6 @@ export declare interface SdkIntegration {
     ReleaseRemoteMmiFocus(deviceId: number, type: enumRemoteMmiType, callback: (error: JabraError, result: void) => void): void;
     IsRemoteMmiInFocus(deviceId: number, type: enumRemoteMmiType, callback: (error: JabraError, result: boolean) => void): void;
     SetRemoteMmiAction(deviceId: number, type: enumRemoteMmiType, actionOuput: RemoteMmiActionOutput, callback: (error: JabraError, result: void) => void): void;
+
+    IsNewportRemoteManagementEnabled(deviceId: number, callback: (error: JabraError, result: boolean) => void): void;
 }

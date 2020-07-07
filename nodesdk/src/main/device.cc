@@ -970,3 +970,19 @@ Napi::Value napi_SetRemoteMmiAction(const Napi::CallbackInfo& info) {
 
   return env.Undefined();
 }
+
+Napi::Value napi_IsNewportRemoteManagementEnabled(const Napi::CallbackInfo& info) {
+    const char * const functionName = __func__;
+    return util::SimpleDeviceAsyncFunction<Napi::Boolean, bool>(functionName, info,
+        [functionName](unsigned short deviceId) {
+            bool result = false;
+            Jabra_ReturnCode retCode = Jabra_IsNewportRemoteManagementEnabled(deviceId, &result);
+
+            if (retCode != Jabra_ReturnCode::Return_Ok) {
+                util::JabraReturnCodeException::LogAndThrow(functionName, retCode);
+                return false;  // Dummy return - avoid compiler warnings.
+            }
+
+            return result;
+        }, Napi::Boolean::New);
+}

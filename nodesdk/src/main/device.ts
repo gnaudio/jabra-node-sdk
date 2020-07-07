@@ -1272,8 +1272,22 @@ export class DeviceType implements DeviceInfo, DeviceTiming, MetaApi {
             _JabraNativeAddonLog(AddonLogSeverity.verbose, this.setRemoteMmiActionAsync.name, "returned");
             return result;
         });
-    }      
-        
+    }
+    
+    /**
+     * Checks whether remote management is enabled on Newport/Python
+     * @returns {Promise<boolean, JabraError>} - Resolves to true if remote
+     *   management is enabled, false if it is not. Rejects to JabraError in
+     *   case of errors.
+     */
+    isNewportRemoteManagementEnabledAsync() : Promise<boolean> {
+      _JabraNativeAddonLog(AddonLogSeverity.verbose, this.isNewportRemoteManagementEnabledAsync.name, "called with", this.deviceID);
+      return util.promisify(sdkIntegration.IsNewportRemoteManagementEnabled)(this.deviceID).then((result) => {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.isNewportRemoteManagementEnabledAsync.name, "returned");
+        return result;
+      });
+    }
+    
    /**
    * Get meta information about methods, properties etc. that can be used 
    * for reflective usage of this class.
