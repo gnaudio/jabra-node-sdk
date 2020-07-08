@@ -1020,3 +1020,29 @@ Napi::Value napi_SetXpressUrl(const Napi::CallbackInfo& info) {
 
   return env.Undefined();
 }
+
+Napi::Value napi_GetXpressUrl(const Napi::CallbackInfo& info) {
+    const char * const functionName = __func__;
+    return util::SimpleDeviceAsyncFunction<Napi::String, std::string>(functionName, info,
+        [functionName](unsigned short deviceId) {
+            // 2 * 1024 == 2 Kb is the maximum allowed by Jabra_GetXpressUrl
+            unsigned int size = 2 * 1024;
+            std::vector<char> buffer(size);
+
+            Jabra_ReturnCode retCode = Jabra_GetXpressUrl(deviceId, buffer.data(), size);
+            if (retCode != Return_Ok) {
+                util::JabraReturnCodeException::LogAndThrow(functionName, retCode);
+                return std::string(); // Dummy return - avoid compiler warnings.
+            }
+            if (buffer.data() == nullptr || size == 0) {
+                util::JabraException::LogAndThrow(functionName, "null returned");
+                return std::string(); // Dummy return - avoid compiler warnings.
+            }
+
+            buffer.resize(size);
+            std::string result(buffer.data(), size);
+            return util::toUtf8(result, functionName);
+        }, [](const Napi::Env& env, const std::string& cppResult) {
+            return Napi::String::New(env, cppResult);
+        });
+}

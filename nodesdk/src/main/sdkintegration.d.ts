@@ -223,4 +223,5 @@ export declare interface SdkIntegration {
     IsNewportRemoteManagementEnabled(deviceId: number, callback: (error: JabraError, result: boolean) => void): void;
     EnableNewportRemoteManagement(deviceId: number, enable: boolean, callback: (error: JabraError, result: void) => void): void;
     SetXpressUrl(deviceId: number, url: string, callback: (error: JabraError, result: void) => void): void;
+    GetXpressUrl(deviceId: number, callback: (error: JabraError, result: string) => void): void;
 }

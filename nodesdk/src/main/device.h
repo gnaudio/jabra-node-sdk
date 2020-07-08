@@ -60,3 +60,4 @@ Napi::Value napi_SetRemoteMmiAction(const Napi::CallbackInfo& info);
 Napi::Value napi_IsNewportRemoteManagementEnabled(const Napi::CallbackInfo& info);
 Napi::Value napi_EnableNewportRemoteManagement(const Napi::CallbackInfo& info);
 Napi::Value napi_SetXpressUrl(const Napi::CallbackInfo& info);
+Napi::Value napi_GetXpressUrl(const Napi::CallbackInfo& info);

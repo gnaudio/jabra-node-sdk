@@ -162,6 +162,7 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
   EXPORTS_SET(IsNewportRemoteManagementEnabled);
   EXPORTS_SET(EnableNewportRemoteManagement);
   EXPORTS_SET(SetXpressUrl);
+  EXPORTS_SET(GetXpressUrl);
 
   try {
     configureLogging();

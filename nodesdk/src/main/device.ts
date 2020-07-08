@@ -1315,6 +1315,19 @@ export class DeviceType implements DeviceInfo, DeviceTiming, MetaApi {
       });
     }
 
+    /**
+     * Returns the Jabra Xpress url on Newport/Python
+     * @returns {Promise<string, JabraError>} - Resolves to the Xpress url on success,
+     *   rejects with `JabraError` if an error occurs.
+     */
+    getXpressUrlAsync() : Promise<string> {
+      _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getXpressUrlAsync.name, "called with", this.deviceID);
+      return util.promisify(sdkIntegration.GetXpressUrl)(this.deviceID).then((result) => {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.setXpressUrlAsync.name, "returned");
+        return result;
+      });
+    }
+
    /**
    * Get meta information about methods, properties etc. that can be used 
    * for reflective usage of this class.
