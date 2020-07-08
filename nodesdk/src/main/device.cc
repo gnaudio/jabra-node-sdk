@@ -996,3 +996,27 @@ Napi::Value napi_EnableNewportRemoteManagement(const Napi::CallbackInfo& info) {
         }
     });
 }
+
+Napi::Value napi_SetXpressUrl(const Napi::CallbackInfo& info) {
+    const char * const functionName = __func__;
+    Napi::Env env = info.Env();
+
+    if (util::verifyArguments(functionName, info, {util::NUMBER, util::STRING, util::FUNCTION})) {
+        const unsigned short deviceId = (unsigned short)(info[0].As<Napi::Number>().Int32Value());
+        const std::string url = info[1].As<Napi::String>();
+        Napi::Function javascriptResultCallback = info[2].As<Napi::Function>();
+
+        (new util::JAsyncWorker<void, void>(
+            functionName,
+            javascriptResultCallback,
+            [functionName, deviceId, url](){
+                Jabra_ReturnCode retCode = Jabra_SetXpressUrl(deviceId, url.c_str(), url.length());
+                if (retCode != Return_Ok) {
+                    util::JabraReturnCodeException::LogAndThrow(functionName, retCode);
+                }
+            }
+        ))->Queue();
+  }
+
+  return env.Undefined();
+}
