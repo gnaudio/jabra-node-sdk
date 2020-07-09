@@ -2646,9 +2646,10 @@ LIBRARY_API Jabra_ReturnCode Jabra_IsNewportRemoteManagementEnabled(unsigned sho
  * @brief Set Xpress URL using file transfer on Newport. Api is only supported on the newport platform
  * @param[in] deviceID ID for a specific device.
  */
-LIBRARY_API Jabra_ReturnCode Jabra_SetXpressUrl(unsigned short deviceID, const char* url, unsigned int count);
+LIBRARY_API Jabra_ReturnCode Jabra_SetXpressUrl(unsigned short deviceID, const char* url);
 
-/**
+/****************************************************************************/
+/*
  * @brief Get Xpress URL using file transfer on Newport. Api is only supported on the newport platform
  * @param[in] deviceID ID for a specific device.
  * @param[in] Char Pointer to a buffer location where the Xpress URL string
@@ -2661,7 +2662,8 @@ LIBRARY_API Jabra_ReturnCode Jabra_SetXpressUrl(unsigned short deviceID, const c
  * @return Return_Ok if success.
  * @return Device_Unknown if the deviceID specified is not known.
  * @return Not_Supported if not supported
- */
-LIBRARY_API Jabra_ReturnCode Jabra_GetXpressUrl(unsigned short deviceID, char* url, unsigned int& size);
+  */
+LIBRARY_API Jabra_ReturnCode Jabra_GetXpressUrl(unsigned short deviceID, char* url, int size);
+/****************************************************************************/
 
 #endif /* COMMON_H */
