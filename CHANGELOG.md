@@ -11,6 +11,13 @@ V3.1.0 production version is code-wise identical to v3.1.0-beta4. If you already
 
 --------------------------------
 
+### Next beta
+- Adding support for Newport-based devices. This includes:
+  - Newport remote management.
+    - Configuring the setting to be on or off and getting its current value.
+  - Jabra Xpress URL.
+    - Getting and setting the URL on any single device.
+
 ### v3.2.0 (2020-07-09)
 - Added support for DectInfo events (DectDensity and DectErrorCount)
   - Updated electron-renderer-helper to support DectInfo events
