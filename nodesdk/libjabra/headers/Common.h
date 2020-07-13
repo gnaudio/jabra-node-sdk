@@ -2620,6 +2620,52 @@ LIBRARY_API void Jabra_RegisterDectInfoHandler(void(*DectInfoFunc)(unsigned shor
  * @param[in] dectInfo #Jabra_DectInfo structure to be freed.
  */
 LIBRARY_API void Jabra_FreeDectInfoStr(Jabra_DectInfo *dectInfo);
+
+/**
+ * Whiteboard position represented by the X and Y pixel coordinates of each corner.
+ */
+typedef struct _WhiteboardPosition {
+    uint16_t  lowerLeftCornerX;
+    uint16_t  lowerLeftCornerY;
+    uint16_t  lowerRightCornerX;
+    uint16_t  lowerRightCornerY;
+    uint16_t  upperRightCornerX;
+    uint16_t  upperRightCornerY;
+    uint16_t  upperLeftCornerX;
+    uint16_t  upperLeftCornerY;
+} Jabra_WhiteboardPosition;
+
+/**
+ * @brief       For a video device that supports whiteboard, sets the positions in pixels of a whiteboard's corners.
+ * @param[in]   deviceID ID for the specific device
+ * @param[in]   whiteboardNumber    The whiteboard 'index'. Currently only one whiteboard supported,
+                                    so this should be 0.
+ * @param[in]   *whiteboardPosition Pointer to a structure containing the X and Y coordinates for each corner in
+                                    pixels. Bounds are TBD and they will be different for each corner. Cannot be null.
+ * @return      Device_Unknown if the deviceID specified is not known.
+ * @return      Not_Supported if the whiteboard feature is not supported.
+ * @return      Return_ParameterFail if whiteboardPosition is a null pointer.
+ * @return      Device_WriteFail if it failed to write to the device.
+ * @return      Return_Ok if successful.
+ */
+LIBRARY_API Jabra_ReturnCode Jabra_SetWhiteboardPosition(unsigned short deviceID, uint8_t whiteboardNumber, const Jabra_WhiteboardPosition* whiteboardPosition);
+
+/**
+ * @brief       or a video device that supports whiteboard, gets the positions in pixels of a whiteboard's corners.
+ * @param[in]   deviceID ID for the specific device
+ * @param[in]   whiteboardNumber    The whiteboard 'index' for multiple whiteboards support. Currently only
+                                    one whiteboard is supported, so this should be 0.
+ * @param[out]  *whiteboardPosition Pointer to a structure that will be filled with the X and Y
+                                    coordinates for each corner in pixels. Bounds are TBD and
+                                    they will be different for each corner. Cannot be null.
+ * @return      Device_Unknown if the deviceID specified is not known.
+ * @return      Not_Supported if the whiteboard feature is not supported.
+ * @return      Return_ParameterFail if whiteboardPosition is a null pointer.
+ * @return      Device_ReadFails if it failed to read from the device.
+ * @return      Return_Ok if successful.
+ */
+LIBRARY_API Jabra_ReturnCode Jabra_GetWhiteboardPosition(unsigned short deviceID, uint8_t whiteboardNumber, Jabra_WhiteboardPosition* whiteboardPosition); // or return Jabra_ReturnCode and struct as out param
+
 /**
  * @brief Set Xpress URL using file transfer on Newport. Api is only supported on the newport platform
  * @param[in] deviceID ID for a specific device.
@@ -2648,8 +2694,7 @@ LIBRARY_API Jabra_ReturnCode Jabra_IsNewportRemoteManagementEnabled(unsigned sho
  */
 LIBRARY_API Jabra_ReturnCode Jabra_SetXpressUrl(unsigned short deviceID, const char* url);
 
-/****************************************************************************/
-/*
+/**
  * @brief Get Xpress URL using file transfer on Newport. Api is only supported on the newport platform
  * @param[in] deviceID ID for a specific device.
  * @param[in] Char Pointer to a buffer location where the Xpress URL string
@@ -2664,6 +2709,5 @@ LIBRARY_API Jabra_ReturnCode Jabra_SetXpressUrl(unsigned short deviceID, const c
  * @return Not_Supported if not supported
   */
 LIBRARY_API Jabra_ReturnCode Jabra_GetXpressUrl(unsigned short deviceID, char* url, int size);
-/****************************************************************************/
 
 #endif /* COMMON_H */
