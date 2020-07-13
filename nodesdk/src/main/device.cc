@@ -2,7 +2,16 @@
 #include "napiutil.h"
 #include <string.h>
 
+// ----------------------------------------- Helper functions ------------------------------------------------
 
+static Napi::Object makePoint2D(const Napi::Env& env, const uint16_t x, const uint16_t y) {
+    Napi::Object point2D = Napi::Object::New(env);
+    point2D.Set("x", x);
+    point2D.Set("y", y);
+    return point2D;
+};
+
+// ----------------------------------------- Napi functions  ------------------------------------------------
 
 Napi::Value napi_GetDeviceImagePath(const Napi::CallbackInfo& info) {
   const char * const functionName = __func__;
@@ -1040,4 +1049,54 @@ Napi::Value napi_GetXpressUrl(const Napi::CallbackInfo& info) {
         }, [](const Napi::Env& env, const std::string& cppResult) {
             return Napi::String::New(env, cppResult);
         });
+}
+
+Napi::Value napi_GetWhiteboardPosition(const Napi::CallbackInfo& info) {
+    const char * const functionName = __func__;
+    Napi::Env env = info.Env();
+
+    if (!util::verifyArguments(functionName, info, {util::NUMBER, util::NUMBER, util::FUNCTION})) {
+        return env.Undefined();
+    }
+
+    /*
+     * If you wonder why we don't use SimpleDeviceAsyncFunction it's because
+     * there's an extra parameter (the whiteboard id)
+     */
+    const unsigned short deviceId = (unsigned short)(info[0].As<Napi::Number>().Int32Value());
+    const uint8_t whiteboardId = (uint8_t)(info[1].As<Napi::Number>().Int32Value());
+    Napi::Function javascriptResultCallback = info[2].As<Napi::Function>();
+
+    (new util::JAsyncWorker<Jabra_WhiteboardPosition, Napi::Object>(
+        functionName,
+        javascriptResultCallback,
+        [functionName, deviceId, whiteboardId]() {
+            Jabra_WhiteboardPosition whiteboardPosition;
+            Jabra_ReturnCode retCode = Jabra_GetWhiteboardPosition(deviceId,
+                whiteboardId, &whiteboardPosition);
+
+            if (retCode != Jabra_ReturnCode::Return_Ok) {
+                util::JabraReturnCodeException::LogAndThrow(functionName,
+                    retCode);
+            }
+
+            return whiteboardPosition;
+        },
+        [](const Napi::Env& env, const Jabra_WhiteboardPosition& whiteboard) {
+            Napi::Object jsWhiteboard = Napi::Object::New(env);
+
+            jsWhiteboard.Set("lowerLeftCorner", makePoint2D(env,
+                whiteboard.lowerLeftCornerX, whiteboard.lowerLeftCornerY));
+            jsWhiteboard.Set("lowerRightCorner", makePoint2D(env,
+                whiteboard.lowerRightCornerX, whiteboard.lowerRightCornerY));
+            jsWhiteboard.Set("upperRightCorner", makePoint2D(env,
+                whiteboard.upperRightCornerX, whiteboard.upperRightCornerY));
+            jsWhiteboard.Set("upperLeftCorner", makePoint2D(env,
+                whiteboard.upperLeftCornerX, whiteboard.upperLeftCornerY));
+
+            return jsWhiteboard;
+        }
+    ))->Queue();
+
+    return env.Undefined();
 }

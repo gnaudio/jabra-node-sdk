@@ -5,7 +5,7 @@
  */
 
 import { ConfigParamsCloud, GenericConfigParams, enumHidState, AudioFileFormatEnum, DeviceSettings, DeviceInfo, PairedListInfo, 
-         NamedAsset, AddonLogSeverity, JabraError, RemoteMmiActionOutput, DectInfo } from './core-types';
+         NamedAsset, AddonLogSeverity, JabraError, RemoteMmiActionOutput, DectInfo, WhiteboardPosition } from './core-types';
 import { enumDeviceBtnType, enumFirmwareEventType, enumFirmwareEventStatus, 
          enumUploadEventStatus, enumBTPairedListType, enumRemoteMmiType, 
          enumRemoteMmiInput, enumRemoteMmiPriority, enumRemoteMmiSequence } from './jabra-enums';
@@ -224,4 +224,6 @@ export declare interface SdkIntegration {
     EnableNewportRemoteManagement(deviceId: number, enable: boolean, callback: (error: JabraError, result: void) => void): void;
     SetXpressUrl(deviceId: number, url: string, callback: (error: JabraError, result: void) => void): void;
     GetXpressUrl(deviceId: number, callback: (error: JabraError, result: string) => void): void;
+
+    GetWhiteboardPosition(deviceId: number, whiteboardId: number, callback: (error: JabraError, result: WhiteboardPosition) => void): void;
 }

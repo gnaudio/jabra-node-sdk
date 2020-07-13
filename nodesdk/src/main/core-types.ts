@@ -273,3 +273,15 @@ export interface DectInfoErrorCount extends DectInfoCommon {
     hubAErrors :number;		/* Number of errors in HUB A field.*/
     handoversCount :number; /* Handover count.*/
 }
+
+export interface Point2D {
+    x :number;  /* X coordinate of the point */
+    y :number;  /* y coordinate of the point */
+}
+
+export interface WhiteboardPosition {
+    lowerLeftCorner :Point2D;   /* Lower-left corner of the whiteboard */
+    lowerRightCorner :Point2D;  /* Lower-right corner of the whiteboard */
+    upperRightCorner :Point2D;  /* Upper-right corner of the whiteboard */
+    upperLeftCorner :Point2D;   /* Upper-left corner of the whiteboard */
+}
