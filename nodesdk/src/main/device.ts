@@ -1344,6 +1344,20 @@ export class DeviceType implements DeviceInfo, DeviceTiming, MetaApi {
       });
     }
 
+    /**
+     * Sets the position of the provided whiteboard corners.
+     * @param {number} whiteboardId - The whiteboard id number.
+     * @param {WhiteboardPosition} whiteboardPosition - The whiteboard corners.
+     * @returns {Promise<number, JabraError>} - Resolves to `void` on success,
+     *    rejects with `JabraError` on error.
+     */
+    setWhiteboardPositionAsync(whiteboardId: number, whiteboardPosition: WhiteboardPosition) : Promise<void> {
+      _JabraNativeAddonLog(AddonLogSeverity.verbose, this.setWhiteboardPositionAsync.name, "called with", this.deviceID);
+      return util.promisify(sdkIntegration.SetWhiteboardPosition)(this.deviceID, whiteboardId, whiteboardPosition).then(() => {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.setWhiteboardPositionAsync.name, "returned");
+      });
+    }
+
    /**
    * Get meta information about methods, properties etc. that can be used 
    * for reflective usage of this class.

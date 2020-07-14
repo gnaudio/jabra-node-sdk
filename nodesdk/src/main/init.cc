@@ -164,6 +164,7 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
   EXPORTS_SET(SetXpressUrl);
   EXPORTS_SET(GetXpressUrl);
   EXPORTS_SET(GetWhiteboardPosition);
+  EXPORTS_SET(SetWhiteboardPosition);
 
   try {
     configureLogging();

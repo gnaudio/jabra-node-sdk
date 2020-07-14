@@ -226,4 +226,5 @@ export declare interface SdkIntegration {
     GetXpressUrl(deviceId: number, callback: (error: JabraError, result: string) => void): void;
 
     GetWhiteboardPosition(deviceId: number, whiteboardId: number, callback: (error: JabraError, result: WhiteboardPosition) => void): void;
+    SetWhiteboardPosition(deviceId: number, whiteboardId: number, whiteboardPosition: WhiteboardPosition, callback: (error: JabraError, result: void) => void): void;
 }

@@ -1100,3 +1100,48 @@ Napi::Value napi_GetWhiteboardPosition(const Napi::CallbackInfo& info) {
 
     return env.Undefined();
 }
+
+Napi::Value napi_SetWhiteboardPosition(const Napi::CallbackInfo& info) {
+    const char * const functionName = __func__;
+    Napi::Env env = info.Env();
+
+    if (!util::verifyArguments(functionName, info, {util::NUMBER, util::NUMBER, util::OBJECT, util::FUNCTION})) {
+        return env.Undefined();
+    }
+
+    const unsigned short deviceId = (unsigned short)(info[0].As<Napi::Number>().Int32Value());
+    const uint8_t whiteboardId = (uint8_t)(info[1].As<Napi::Number>().Int32Value());
+    Napi::Object whiteboardCorners = info[2].As<Napi::Object>();
+    Napi::Function javascriptResultCallback = info[3].As<Napi::Function>();
+
+    Napi::Object lowerLeftCorner = whiteboardCorners.Get("lowerLeftCorner").As<Napi::Object>();
+    Napi::Object lowerRightCorner = whiteboardCorners.Get("lowerRightCorner").As<Napi::Object>();
+    Napi::Object upperRightCorner = whiteboardCorners.Get("upperRightCorner").As<Napi::Object>();
+    Napi::Object upperLeftCorner = whiteboardCorners.Get("upperLeftCorner").As<Napi::Object>();
+
+    Jabra_WhiteboardPosition whiteboardPosition;
+    whiteboardPosition.lowerLeftCornerX = (uint16_t) util::getObjInt32OrDefault(lowerLeftCorner, "x", 0);
+    whiteboardPosition.lowerLeftCornerY = (uint16_t) util::getObjInt32OrDefault(lowerLeftCorner, "y", 0);
+    whiteboardPosition.lowerRightCornerX = (uint16_t) util::getObjInt32OrDefault(lowerRightCorner, "x", 0);
+    whiteboardPosition.lowerRightCornerY = (uint16_t) util::getObjInt32OrDefault(lowerRightCorner, "y", 0);
+    whiteboardPosition.upperRightCornerX = (uint16_t) util::getObjInt32OrDefault(upperRightCorner, "x", 0);
+    whiteboardPosition.upperRightCornerY = (uint16_t) util::getObjInt32OrDefault(upperRightCorner, "y", 0);
+    whiteboardPosition.upperLeftCornerX = (uint16_t) util::getObjInt32OrDefault(upperLeftCorner, "x", 0);
+    whiteboardPosition.upperLeftCornerY = (uint16_t) util::getObjInt32OrDefault(upperLeftCorner, "y", 0);
+
+    (new util::JAsyncWorker<void, void>(
+        functionName,
+        javascriptResultCallback,
+        [functionName, deviceId, whiteboardId, whiteboardPosition]() {
+            Jabra_ReturnCode retCode = Jabra_SetWhiteboardPosition(deviceId,
+                whiteboardId, &whiteboardPosition);
+
+            if (retCode != Jabra_ReturnCode::Return_Ok) {
+                util::JabraReturnCodeException::LogAndThrow(functionName,
+                    retCode);
+            }
+        }
+    ))->Queue();
+
+    return env.Undefined();
+}
