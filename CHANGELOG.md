@@ -17,6 +17,8 @@ V3.1.0 production version is code-wise identical to v3.1.0-beta4. If you already
     - Configuring the setting to be on or off and getting its current value.
   - Jabra Xpress URL.
     - Getting and setting the URL on any single device.
+  - Whiteboard selection.
+    - Getting and setting corners for whiteboard streaming
 
 ### v3.2.0 (2020-07-09)
 - Added support for DectInfo events (DectDensity and DectErrorCount)
