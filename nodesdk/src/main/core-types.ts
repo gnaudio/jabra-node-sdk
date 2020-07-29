@@ -285,3 +285,15 @@ export interface WhiteboardPosition {
     upperRightCorner: Point2D;  /* Upper-right corner of the whiteboard */
     upperLeftCorner: Point2D;   /* Upper-left corner of the whiteboard */
 }
+
+/**
+ * This structure represent a device camera's zoom limits.
+ */
+export interface ZoomLimits {
+    /* The minimum value the zoom level can be set to. */
+    min: number;
+    /* The maximum value the zoom level can be set to. */
+    max: number;
+    /* The minimum amount that the value needs to change for it to have any effect. */
+    stepSize: number;
+}

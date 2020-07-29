@@ -165,6 +165,9 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
   EXPORTS_SET(GetXpressUrl);
   EXPORTS_SET(GetWhiteboardPosition);
   EXPORTS_SET(SetWhiteboardPosition);
+  EXPORTS_SET(GetZoom);
+  EXPORTS_SET(SetZoom);
+  EXPORTS_SET(GetZoomLimits);
 
   try {
     configureLogging();

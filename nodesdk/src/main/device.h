@@ -64,3 +64,7 @@ Napi::Value napi_GetXpressUrl(const Napi::CallbackInfo& info);
 
 Napi::Value napi_GetWhiteboardPosition(const Napi::CallbackInfo& info);
 Napi::Value napi_SetWhiteboardPosition(const Napi::CallbackInfo& info);
+
+Napi::Value napi_GetZoom(const Napi::CallbackInfo& info);
+Napi::Value napi_SetZoom(const Napi::CallbackInfo& info);
+Napi::Value napi_GetZoomLimits(const Napi::CallbackInfo& info);

@@ -1,6 +1,6 @@
 import { SdkIntegration } from "./sdkintegration";
 import { AddonLogSeverity, DeviceTiming, DevLogData, AudioFileFormatEnum,
-  RemoteMmiActionOutput, WhiteboardPosition } from "./core-types";
+  RemoteMmiActionOutput, WhiteboardPosition, ZoomLimits } from "./core-types";
 import { isNodeJs } from './util';
 import { _JabraNativeAddonLog } from './logger';
 
@@ -1355,6 +1355,45 @@ export class DeviceType implements DeviceInfo, DeviceTiming, MetaApi {
       _JabraNativeAddonLog(AddonLogSeverity.verbose, this.setWhiteboardPositionAsync.name, "called with", this.deviceID);
       return util.promisify(sdkIntegration.SetWhiteboardPosition)(this.deviceID, whiteboardId, whiteboardPosition).then(() => {
         _JabraNativeAddonLog(AddonLogSeverity.verbose, this.setWhiteboardPositionAsync.name, "returned");
+      });
+    }
+
+    /**
+     * Returns the current zoom value from the device's camera.
+     * @returns {Promise<number, JabraError>} - Resolves to the current zoom
+     *    value on success, else rejects with `JabraError`
+     */
+    getZoomAsync() : Promise<number> {
+      _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getZoomAsync.name, "called with", this.deviceID);
+      return util.promisify(sdkIntegration.GetZoom)(this.deviceID).then((result) => {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getZoomAsync.name, "returned");
+        return result;
+      });
+    }
+
+    /**
+     * Controls the device's camera zoom functionality.
+     * @param {number} - The new value for the device camera's zoom.
+     * @returns {Promise<void, JabraError>} - Resolves to `void` on success,
+     *    rejects with `JabraError` on error.
+     */
+    setZoomAsync(zoom: number) : Promise<void> {
+      _JabraNativeAddonLog(AddonLogSeverity.verbose, this.setZoomAsync.name, "called with", this.deviceID);
+      return util.promisify(sdkIntegration.SetZoom)(this.deviceID, zoom).then(() => {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.setZoomAsync.name, "returned");
+      });
+    }
+
+    /**
+     * Returns the zoom limit values from the device's camera.
+     * @returns {Promise<ZoomLimits, JabraError>} - Resolves to the current
+     *    zoom limit values on success, else rejects with `JabraError`
+     */
+    getZoomLimitsAsync() : Promise<ZoomLimits> {
+      _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getZoomLimitsAsync.name, "called with", this.deviceID);
+      return util.promisify(sdkIntegration.GetZoomLimits)(this.deviceID).then((result) => {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getZoomLimitsAsync.name, "returned");
+        return result;
       });
     }
 

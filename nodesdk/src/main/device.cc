@@ -1145,3 +1145,81 @@ Napi::Value napi_SetWhiteboardPosition(const Napi::CallbackInfo& info) {
 
     return env.Undefined();
 }
+
+Napi::Value napi_GetZoom(const Napi::CallbackInfo& info) {
+    const char * const functionName = __func__;
+
+    return util::SimpleDeviceAsyncFunction<Napi::Number, uint16_t>(
+        functionName, info,
+        [functionName](unsigned short deviceId) {
+            uint16_t zoom;
+            Jabra_ReturnCode retCode = Jabra_GetZoom(deviceId, &zoom);
+
+            if (retCode != Jabra_ReturnCode::Return_Ok) {
+                util::JabraReturnCodeException::LogAndThrow(functionName,
+                    retCode);
+                return zoom; // Dummy return - avoid compiler warnings.
+            }
+
+            return zoom;
+        },
+        Napi::Number::New
+    );
+}
+
+Napi::Value napi_SetZoom(const Napi::CallbackInfo& info) {
+    const char * const functionName = __func__;
+    Napi::Env env = info.Env();
+
+    if (!util::verifyArguments(functionName, info, {util::NUMBER, util::NUMBER, util::FUNCTION})) {
+        return env.Undefined();
+    }
+
+    const unsigned short deviceId = (unsigned short)(info[0].As<Napi::Number>().Int32Value());
+    uint16_t zoom = (uint16_t) info[1].As<Napi::Number>().Int32Value();
+    Napi::Function javascriptResultCallback = info[2].As<Napi::Function>();
+
+    (new util::JAsyncWorker<void, void>(
+        functionName,
+        javascriptResultCallback,
+        [functionName, deviceId, zoom]() {
+            Jabra_ReturnCode retCode = Jabra_SetZoom(deviceId, zoom);
+
+            if (retCode != Jabra_ReturnCode::Return_Ok) {
+                util::JabraReturnCodeException::LogAndThrow(functionName,
+                    retCode);
+            }
+        }
+    ))->Queue();
+
+    return env.Undefined();
+}
+
+Napi::Value napi_GetZoomLimits(const Napi::CallbackInfo& info) {
+    const char * const functionName = __func__;
+
+    return util::SimpleDeviceAsyncFunction<Napi::Object, Jabra_ZoomLimits>(
+        functionName, info,
+        [functionName](unsigned short deviceId) {
+            Jabra_ZoomLimits limits;
+            Jabra_ReturnCode retCode = Jabra_GetZoomLimits(deviceId, &limits);
+
+            if (retCode != Jabra_ReturnCode::Return_Ok) {
+                util::JabraReturnCodeException::LogAndThrow(functionName,
+                    retCode);
+                return limits; // Dummy return - avoid compiler warnings.
+            }
+
+            return limits;
+        },
+        [](const Napi::Env& env, const Jabra_ZoomLimits& cLimits) {
+            auto jsLimits = Napi::Object::New(env);
+
+            jsLimits.Set("min", Napi::Number::New(env, cLimits.min));
+            jsLimits.Set("max", Napi::Number::New(env, cLimits.max));
+            jsLimits.Set("stepSize", Napi::Number::New(env, cLimits.stepSize));
+
+            return jsLimits;
+        }
+    );
+}

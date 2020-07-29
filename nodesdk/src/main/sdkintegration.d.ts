@@ -4,10 +4,10 @@
  * supplied for maximum type safety internally for this module.
  */
 
-import { ConfigParamsCloud, GenericConfigParams, enumHidState, AudioFileFormatEnum, DeviceSettings, DeviceInfo, PairedListInfo, 
-         NamedAsset, AddonLogSeverity, JabraError, RemoteMmiActionOutput, DectInfo, WhiteboardPosition } from './core-types';
-import { enumDeviceBtnType, enumFirmwareEventType, enumFirmwareEventStatus, 
-         enumUploadEventStatus, enumBTPairedListType, enumRemoteMmiType, 
+import { ConfigParamsCloud, GenericConfigParams, enumHidState, AudioFileFormatEnum, DeviceSettings, DeviceInfo, PairedListInfo,
+         NamedAsset, AddonLogSeverity, JabraError, RemoteMmiActionOutput, DectInfo, WhiteboardPosition, ZoomLimits } from './core-types';
+import { enumDeviceBtnType, enumFirmwareEventType, enumFirmwareEventStatus,
+         enumUploadEventStatus, enumBTPairedListType, enumRemoteMmiType,
          enumRemoteMmiInput, enumRemoteMmiPriority, enumRemoteMmiSequence } from './jabra-enums';
 
 /** 
@@ -227,4 +227,8 @@ export declare interface SdkIntegration {
 
     GetWhiteboardPosition(deviceId: number, whiteboardId: number, callback: (error: JabraError, result: WhiteboardPosition) => void): void;
     SetWhiteboardPosition(deviceId: number, whiteboardId: number, whiteboardPosition: WhiteboardPosition, callback: (error: JabraError, result: void) => void): void;
+
+    GetZoom(deviceId: number, callback: (error: JabraError, result: number) => void): void;
+    SetZoom(deviceId: number, zoom: number, callback: (error: JabraError, result: void) => void): void;
+    GetZoomLimits(deviceId: number, callback: (error: JabraError, result: ZoomLimits) => void): void;
 }

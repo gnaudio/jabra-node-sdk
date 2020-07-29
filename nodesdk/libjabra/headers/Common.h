@@ -331,7 +331,10 @@ typedef enum _DeviceFeature {
   AudioStreaming = 1023,
   CustomerSupport = 1024,
   MySound = 1025,
-  UIConfigurableButtons = 1026
+  UIConfigurableButtons = 1026,
+  ManualBusyLight = 1027,
+  Whiteboard = 1028,
+  Video = 1029
 } DeviceFeature;
 
 /** This enum represents actions/parameters required to update firmware in a given device. */
@@ -2665,6 +2668,54 @@ LIBRARY_API Jabra_ReturnCode Jabra_SetWhiteboardPosition(unsigned short deviceID
  * @return      Return_Ok if successful.
  */
 LIBRARY_API Jabra_ReturnCode Jabra_GetWhiteboardPosition(unsigned short deviceID, uint8_t whiteboardNumber, Jabra_WhiteboardPosition* whiteboardPosition); // or return Jabra_ReturnCode and struct as out param
+
+/**
+ * @brief       For a video device, sets the zoom level.
+ * @param[in]   deviceID ID for the specific device
+ * @param[out]  zoomLevel Zoom level (objective lens focal length).
+ * @return      Device_Unknown if the deviceID specified is not known.
+ * @return      Not_Supported if video is not supported.
+ * @return      Device_WriteFail if it failed to read from the device.
+ * @return      Return_Ok if successful.
+ */
+LIBRARY_API Jabra_ReturnCode Jabra_SetZoom(unsigned short deviceID, uint16_t zoomLevel);
+
+/**
+ * @brief       For a video device, gets the zoom level.
+ * @param[in]   deviceID ID for the specific device
+ * @param[out]  *zoomLevel Pointer to a uint16_t that will be filled with the zoom
+ *                         level (objective lens focal length).
+ * @return      Device_Unknown if the deviceID specified is not known.
+ * @return      Not_Supported if video is not supported.
+ * @return      Return_ParameterFail if zoomLevel is a null pointer.
+ * @return      Device_ReadFails if it failed to read from the device.
+ * @return      Return_Ok if successful.
+ */
+LIBRARY_API Jabra_ReturnCode Jabra_GetZoom(unsigned short deviceID, uint16_t* zoomLevel);
+
+/**
+ * This structure represent a device camera's zoom limits.
+ */
+typedef struct _ZoomLimits {
+    /** @brief The minimum value the zoom level can be set to. */
+    uint16_t min;
+    /** @brief The maximum value the zoom level can be set to. */
+    uint16_t max;
+    /** @brief The minimum amount that the value needs to change for it to have any effect. */
+    uint16_t stepSize;
+} Jabra_ZoomLimits;
+
+/**
+ * @brief       For a video device, gets the zoom limit values.
+ * @param[in]   deviceID    ID for the specific device
+ * @param[out]  limits      The zoom limits for the device.
+ * @return      Device_Unknown  if the deviceID specified is not known.
+ * @return      Not_Supported if video is not supported.
+ * @return      Return_ParameterFail if limits is a null pointer.
+ * @return      Device_ReadFails if it failed to read from the device.
+ * @return      Return_Ok if successful.
+ */
+LIBRARY_API Jabra_ReturnCode Jabra_GetZoomLimits(unsigned short deviceID, Jabra_ZoomLimits* limits);
 
 /**
  * @brief Set Xpress URL using file transfer on Newport. Api is only supported on the newport platform
