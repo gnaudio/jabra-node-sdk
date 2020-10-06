@@ -37,7 +37,7 @@
     "@types/notyf": "3.0.0",
     "browserify": "16.5.1",
     "copyfiles": "^2.3.0",
-    "electron": "8.2.4",
+    "electron": "8.5.1",
     "electron-packager": "15.0.0",
     "rimraf": "3.0.2",
     "tsify": "4.0.1",
