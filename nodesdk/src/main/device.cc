@@ -1033,8 +1033,7 @@ Napi::Value napi_GetXpressUrl(const Napi::CallbackInfo& info) {
     const char * const functionName = __func__;
     return util::SimpleDeviceAsyncFunction<Napi::String, std::string>(functionName, info,
         [functionName](unsigned short deviceId) {
-            // 2 * 1024 == 2 Kb is the maximum allowed by Jabra_GetXpressUrl
-            int size = 2 * 1024;
+            int size = 2000;
             std::vector<char> buffer(size);
 
             Jabra_ReturnCode retCode = Jabra_GetXpressUrl(deviceId, buffer.data(), size);
