@@ -40,13 +40,15 @@
   "bugs": {
     "url": "https://developer.jabra.com"
   },
-  "dependencies": {},
+  "dependencies": {
+    "yauzl": "^2.10.0"
+  },
   "peerDependencies": {
-    "@gnaudio/jabra-node-sdk": ">=3.3.0-beta.2",
+    "@gnaudio/jabra-node-sdk": "file:../nodesdk",
     "electron": ">=2.0.0"
   },
   "devDependencies": {
-    "@gnaudio/jabra-node-sdk": ">=3.3.0-beta.2",
+    "@gnaudio/jabra-node-sdk": "file:../nodesdk",
     "@types/jest": "25.2.1",
     "browserify": "16.5.1",
     "copyfiles": "2.2.0",

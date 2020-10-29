@@ -651,6 +651,10 @@ function createRemoteDeviceType(deviceInfo: DeviceInfo & DeviceTiming, deviceTyp
         emitEvent('onDectInfoEvent', dectInfo);
     });
   
+    ipcRenderer.on(getDeviceTypeApiCallabackEventName('onDiagLogEvent', deviceInfo.deviceID), (event) => {
+        emitEvent('onDiagLogEvent');
+    });
+
     /*  
     The above can most likely be replaced by looping over the DeviceEventsList like below. 
     Would require testing all event types to make sure no edgecases are overlooked. 
