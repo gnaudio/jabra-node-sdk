@@ -35,7 +35,7 @@
     "@gnaudio/jabra-electron-renderer-helper": "2.0.0-beta.3",
     "jquery": "3.5.0",
     "notyf": "3.6.0",
-    "electron": "8.2.4"
+    "electron": "8.5.2"
   },
   "devDependencies": {
     "@types/notyf": "3.0.0",
