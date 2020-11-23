@@ -11,7 +11,7 @@ V3.1.0 production version is code-wise identical to v3.1.0-beta4. If you already
 
 --------------------------------
 
-### v3.2.1-beta.1 (2020-07-09)
+### v3.2.1-beta.2 (2020-07-09)
 - Upgraded embedded native "C" sdk for Mac to v1.8.7.13 to support macOS 11.
 
 ### v3.2.0 (2020-07-09)
