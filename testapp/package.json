@@ -31,7 +31,7 @@
     "url": "https://developer.jabra.com/site/global/support/index.gsp"
   },
   "dependencies": {
-    "@gnaudio/jabra-node-sdk": "3.2.1-beta.1",
+    "@gnaudio/jabra-node-sdk": "3.2.1-beta.2",
     "@gnaudio/jabra-electron-renderer-helper": "2.0.0-beta.3",
     "jquery": "3.5.0",
     "notyf": "3.6.0",
