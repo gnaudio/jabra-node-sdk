@@ -1,6 +1,6 @@
 {
   "name": "@gnaudio/jabra-node-sdk",
-  "version": "3.2.1-beta.2",
+  "version": "3.2.1-beta.3",
   "description": "NodeJS SDK for Jabra Devices",
   "main": "dist/main/index.js",
   "types": "dist/main/index.d.ts",
