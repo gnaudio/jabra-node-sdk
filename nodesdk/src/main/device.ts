@@ -1274,34 +1274,6 @@ export class DeviceType implements DeviceInfo, DeviceTiming, MetaApi {
         });
     }
     
-    /**
-     * Checks whether remote management is enabled on Newport/Python
-     * @returns {Promise<boolean, JabraError>} - Resolves to true if remote
-     *   management is enabled, false if it is not. Rejects to JabraError in
-     *   case of errors.
-     */
-    isNewportRemoteManagementEnabledAsync() : Promise<boolean> {
-      _JabraNativeAddonLog(AddonLogSeverity.verbose, this.isNewportRemoteManagementEnabledAsync.name, "called with", this.deviceID);
-      return util.promisify(sdkIntegration.IsNewportRemoteManagementEnabled)(this.deviceID).then((result) => {
-        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.isNewportRemoteManagementEnabledAsync.name, "returned");
-        return result;
-      });
-    }
-
-    /**
-     * Enables/disables remote management on Newport/Python
-     * @param {boolean} enable - True to enable remote management, false to
-     *   disable it
-     * @returns {Promise<void, JabraError>} - Resolves to `void` on success,
-     *   rejects with `JabraError` if an error occurs.
-     */
-    enableNewportRemoteManagementAsync(enable: boolean) : Promise<void> {
-      _JabraNativeAddonLog(AddonLogSeverity.verbose, this.enableNewportRemoteManagementAsync.name, "called with", this.deviceID);
-      return util.promisify(sdkIntegration.EnableNewportRemoteManagement)(this.deviceID, enable).then(() => {
-        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.enableNewportRemoteManagementAsync.name, "returned");
-      });
-    }
-    
    /**
    * Get meta information about methods, properties etc. that can be used 
    * for reflective usage of this class.

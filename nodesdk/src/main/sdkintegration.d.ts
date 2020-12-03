@@ -219,7 +219,4 @@ export declare interface SdkIntegration {
     ReleaseRemoteMmiFocus(deviceId: number, type: enumRemoteMmiType, callback: (error: JabraError, result: void) => void): void;
     IsRemoteMmiInFocus(deviceId: number, type: enumRemoteMmiType, callback: (error: JabraError, result: boolean) => void): void;
     SetRemoteMmiAction(deviceId: number, type: enumRemoteMmiType, actionOuput: RemoteMmiActionOutput, callback: (error: JabraError, result: void) => void): void;
-
-    IsNewportRemoteManagementEnabled(deviceId: number, callback: (error: JabraError, result: boolean) => void): void;
-    EnableNewportRemoteManagement(deviceId: number, enable: boolean, callback: (error: JabraError, result: void) => void): void;
 }
