@@ -158,10 +158,6 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
   EXPORTS_SET(SetBusyLightStatus);
   EXPORTS_SET(SetOnline);
 
-  // Python
-  EXPORTS_SET(IsNewportRemoteManagementEnabled);
-  EXPORTS_SET(EnableNewportRemoteManagement);
-
   try {
     configureLogging();
   } catch (const std::exception &e) {

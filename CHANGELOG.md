@@ -12,7 +12,7 @@ V3.1.0 production version is code-wise identical to v3.1.0-beta4. If you already
 --------------------------------
 
 ### v3.2.1 (2020-12-02)
-- Upgraded embedded native "C" sdk for Mac to v1.8.7.13 to support macOS 11.
+- Upgraded embedded native "C" sdk for Mac to v1.8.7.15 to support macOS 11.
 
 ### v3.2.0 (2020-07-09)
 - Added support for DectInfo events (DectDensity and DectErrorCount)
