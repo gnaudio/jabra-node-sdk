@@ -13,7 +13,7 @@ This is an internal to-do list with the necessary steps for creating new release
 ## Beta release
 
 1) Update version number in `package.json`. Postfix with dash beta, eg. `3.1.0-beta.3`   
-2) Update [Changelog](CHANGELOG.md) with beta changes
+2) Update Changelog with beta changes
 3) Run `npm audit` to check for vulnerabilities, and fix if any
 4) Publish to npm with beta tag: `npm publish --tag beta` 
 5) Update apps depended on the nodesdk with the new release 

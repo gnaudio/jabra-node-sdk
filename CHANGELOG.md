@@ -3,11 +3,7 @@ All notable changes to this project will be documented in this file
 
 ### General
 
-Latest version 3.1.0 is a production release for all supported platforms: Windows, Mac and Linux.
-
-This release includes miscellaneous bugfixes, feature wrappers, update to the underlying C-library and general improvements that results in faster operation and much improved stability.
-
-V3.1.0 production version is code-wise identical to v3.1.0-beta4. If you already have integrated the v3.1.0-beta4, you should not experience any need for changes.
+Latest version is a production release for all supported platforms: Windows, Mac and Linux. 
 
 --------------------------------
 
