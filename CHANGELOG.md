@@ -3,13 +3,12 @@ All notable changes to this project will be documented in this file
 
 ### General
 
-Latest version 3.1.0 is a production release for all supported platforms: Windows, Mac and Linux.
-
-This release includes miscellaneous bugfixes, feature wrappers, update to the underlying C-library and general improvements that results in faster operation and much improved stability.
-
-V3.1.0 production version is code-wise identical to v3.1.0-beta4. If you already have integrated the v3.1.0-beta4, you should not experience any need for changes.
+Latest version is a production release for all supported platforms: Windows, Mac and Linux. 
 
 --------------------------------
+
+### v3.2.1 (2020-12-02)
+- Upgraded embedded native "C" sdk for Mac to v1.8.7.15 to support macOS 11.
 
 ### v3.2.0 (2020-07-09)
 - Added support for DectInfo events (DectDensity and DectErrorCount)
