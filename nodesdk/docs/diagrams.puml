@@ -1,0 +1,134 @@
+# Can be rendered using PlantUML extension in VS Code
+
+@startuml
+    title outgoing-call-then-end-call
+    "App"->"Jabra Node.js SDK": device.getLockAsync()
+    "Jabra Node.js SDK"->"App": Return_Ok
+    Activate "App"
+    note left of "App": App has\ncall lock
+    "App"->"Jabra Node.js SDK": device.offhookAsync()
+    "Jabra Node.js SDK"->"Jabra USB device": ""
+    "Jabra USB device"->"Jabra Node.js SDK": "btnPress event (OffHook true)"
+    "Jabra Node.js SDK"->"App": "btnPress event (OffHook true)"
+    note right of "Jabra USB device": Device goes into call state
+    "App"->"Jabra Node.js SDK": device.onhookAsync()
+    "Jabra Node.js SDK"->"Jabra USB device": ""
+    "Jabra USB device"->"Jabra Node.js SDK": "btnPress event (OffHook false)"
+    "Jabra Node.js SDK"->"App": "btnPress event (OffHook false)"
+    "App"->"Jabra Node.js SDK": device.releaseLockAsync()
+    Deactivate "App"
+    "Jabra Node.js SDK"->"App": Return_Ok
+    note right of "Jabra USB device": Device goes out of call state
+@enduml
+
+@startuml
+    title incoming-call-then-accept-on-device-then-end-call
+    "App"->"Jabra Node.js SDK": device.getLockAsync()
+    "Jabra Node.js SDK"->"App": Return_Ok
+    Activate "App"
+    note left of "App": App has\ncall lock
+    "App"->"Jabra Node.js SDK": device.ringAsync()
+    "Jabra Node.js SDK"->"Jabra USB device":
+    note right of "Jabra USB device": Start device ringer
+    note right of "Jabra USB device": User accepts call
+    "Jabra USB device"->"Jabra Node.js SDK": "btnPress event (OffHook true)"
+    "Jabra Node.js SDK"->"App": "btnPress event (OffHook true)"
+    "App"->"Jabra Node.js SDK": device.offhookAsync()
+    "Jabra Node.js SDK"->"Jabra USB device":
+    "App"->"Jabra Node.js SDK": device.unringAsync()
+    "Jabra Node.js SDK"->"Jabra USB device":
+    note right of "Jabra USB device": Device stops ringing and goes into call state
+    note right of "Jabra USB device": The user presses end call button
+    "Jabra USB device"->"Jabra Node.js SDK": "btnPress event (OffHook false)"
+    "Jabra Node.js SDK"->"App": "btnPress event (OffHook false)"
+    "App"->"Jabra Node.js SDK": device.onhookAsync()
+    "Jabra Node.js SDK"->"Jabra USB device":
+    note right of "Jabra USB device": The device goes out of call state
+    "App"->"Jabra Node.js SDK": device.releaseLockAsync()
+    Deactivate "App"
+    "Jabra Node.js SDK"->"App": Return_Ok
+@enduml
+
+@startuml
+    title incoming-call-then-user-rejects
+    "App"->"Jabra Node.js SDK": device.getLockAsync()
+    "Jabra Node.js SDK"->"App": Return_Ok
+    Activate "App"
+    note left of "App": App has\ncall lock
+    "App"->"Jabra Node.js SDK": device.ringAsync()
+    "Jabra Node.js SDK"->"Jabra USB device":
+    note right of "Jabra USB device": Start device ringer
+    note right of "Jabra USB device": User rejects call
+    "Jabra USB device"->"Jabra Node.js SDK": "btnPress event (OffHook false)"
+    "Jabra Node.js SDK"->"App": "btnPress event (OffHook false)"
+    "App"->"Jabra Node.js SDK": device.onhookAsync()
+    "Jabra Node.js SDK"->"Jabra USB device":
+    "App"->"Jabra Node.js SDK": device.unringAsync()
+    "Jabra Node.js SDK"->"Jabra USB device":
+    note right of "Jabra USB device": The device stops ringing
+    "App"->"Jabra Node.js SDK": device.releaseLockAsync()
+    Deactivate "App"
+    "Jabra Node.js SDK"->"App": Return_Ok
+@enduml
+
+@startuml
+    title mute-unmute-from-device
+    "App"->"Jabra Node.js SDK": device.getLockAsync()
+    "Jabra Node.js SDK"->"App": Return_Ok
+    Activate "App"
+    note left of "App": App has\ncall lock
+    "App"->"Jabra Node.js SDK": device.offhookAsync()
+    "Jabra Node.js SDK"->"Jabra USB device":
+    note right of "Jabra USB device": Device is in call state
+    note right of "Jabra USB device": User presses mute
+    "Jabra USB device"->"Jabra Node.js SDK": "btnPress event (Mute)"
+    "Jabra Node.js SDK"->"App": "btnPress event (Mute)"
+    "App"->"Jabra Node.js SDK": device.muteAsync()
+    "Jabra Node.js SDK"->"Jabra USB device":
+    note right of "Jabra USB device": The device mutes
+    note right of "Jabra USB device": User presses unmute
+    "Jabra USB device"->"Jabra Node.js SDK": "btnPress event (Mute)"
+    "Jabra Node.js SDK"->"App": "btnPress event (Mute)"
+    "App"->"Jabra Node.js SDK": device.unmuteAsync()
+    "Jabra Node.js SDK"->"Jabra USB device":
+    note right of "Jabra USB device": The device unmutes
+    "App"->"Jabra Node.js SDK": device.onhookAsync()
+    "Jabra Node.js SDK"->"Jabra USB device":
+    note right of "Jabra USB device": End call
+    "App"->"Jabra Node.js SDK": device.releaseLockAsync()
+    Deactivate "App"
+    "Jabra Node.js SDK"->"App": Return_Ok
+@enduml
+
+@startuml
+    title hold-resume-from-device
+    "App"->"Jabra Node.js SDK": device.getLockAsync()
+    "Jabra Node.js SDK"->"App": Return_Ok
+    Activate "App"
+    note left of "App": App has\ncall lock
+    "App"->"Jabra Node.js SDK": device.offhookAsync()
+    "Jabra Node.js SDK"->"Jabra USB device":
+    note right of "Jabra USB device": Device is in call state
+    note right of "Jabra USB device": User presses flash
+    "Jabra USB device"->"Jabra Node.js SDK": "btnPress event (Flash)"
+    "Jabra Node.js SDK"->"App": "btnPress event (Flash)"
+    "App"->"Jabra Node.js SDK": device.holdAsync()
+    "Jabra Node.js SDK"->"Jabra USB device":
+    "App"->"Jabra Node.js SDK": device.onhookAsync()
+    "Jabra Node.js SDK"->"Jabra USB device":
+    note right of "Jabra USB device": The device goes into held state
+    note right of "Jabra USB device": User presses flash
+    "Jabra USB device"->"Jabra Node.js SDK": "btnPress event (Flash)"
+    "Jabra Node.js SDK"->"App": "btnPress event (Flash)"
+    "App"->"Jabra Node.js SDK": device.offhookAsync()
+    "Jabra Node.js SDK"->"Jabra USB device":
+    "App"->"Jabra Node.js SDK": device.resumeAsync()
+    "Jabra Node.js SDK"->"Jabra USB device":
+    note right of "Jabra USB device": The device goes out of held state
+    "App"->"Jabra Node.js SDK": device.onhookAsync()
+    "Jabra Node.js SDK"->"Jabra USB device":
+    note right of "Jabra USB device": End call
+    "App"->"Jabra Node.js SDK": device.releaseLockAsync()
+    Deactivate "App"
+    "Jabra Node.js SDK"->"App": Return_Ok
+@enduml

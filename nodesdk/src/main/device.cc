@@ -1,8 +1,9 @@
 #include "device.h"
 #include "napiutil.h"
 #include <string.h>
+#include <ctime>
 
-
+// ----------------------------------------- Napi functions  ------------------------------------------------
 
 Napi::Value napi_GetDeviceImagePath(const Napi::CallbackInfo& info) {
   const char * const functionName = __func__;
@@ -76,6 +77,79 @@ Napi::Value napi_SetHidWorkingState(const Napi::CallbackInfo& info) {
       }
     ))->Queue();
   }
+
+  return env.Undefined();
+}
+
+Napi::Value napi_GetLock(const Napi::CallbackInfo& info) {
+    const char * const functionName = __func__;
+
+    Napi::Env env = info.Env();
+
+    if (util::verifyArguments(functionName, info, {util::NUMBER, util::FUNCTION})) {
+        const unsigned short deviceId = (unsigned short)(info[0].As<Napi::Number>().Int32Value());
+        Napi::Function javascriptResultCallback = info[1].As<Napi::Function>();
+
+        (new util::JAsyncWorker<void, void>(
+            functionName,
+            javascriptResultCallback,
+            [functionName, deviceId](){
+                Jabra_ReturnCode retCode = Jabra_GetLock(deviceId);
+                if (retCode != Return_Ok) {
+                    util::JabraReturnCodeException::LogAndThrow(functionName, retCode);
+                }
+            }
+        ))->Queue();
+    }
+
+  return env.Undefined();
+}
+
+Napi::Value napi_ReleaseLock(const Napi::CallbackInfo& info) {
+    const char * const functionName = __func__;
+
+    Napi::Env env = info.Env();
+
+    if (util::verifyArguments(functionName, info, {util::NUMBER, util::FUNCTION})) {
+        const unsigned short deviceId = (unsigned short)(info[0].As<Napi::Number>().Int32Value());
+        Napi::Function javascriptResultCallback = info[1].As<Napi::Function>();
+
+        (new util::JAsyncWorker<void, void>(
+            functionName,
+            javascriptResultCallback,
+            [functionName, deviceId](){
+                Jabra_ReturnCode retCode = Jabra_ReleaseLock(deviceId);
+                if (retCode != Return_Ok) {
+                    util::JabraReturnCodeException::LogAndThrow(functionName, retCode);
+                }
+            }
+        ))->Queue();
+    }
+
+  return env.Undefined();
+}
+
+Napi::Value napi_IsLocked(const Napi::CallbackInfo& info) {
+    const char * const functionName = __func__;
+
+    Napi::Env env = info.Env();
+
+    if (util::verifyArguments(functionName, info, {util::NUMBER, util::FUNCTION})) {
+        const unsigned short deviceId = (unsigned short)(info[0].As<Napi::Number>().Int32Value());
+        Napi::Function javascriptResultCallback = info[1].As<Napi::Function>();
+
+        (new util::JAsyncWorker<bool, Napi::Boolean>(
+            functionName,
+            javascriptResultCallback,
+            [functionName, deviceId](){
+                bool retCode = Jabra_IsLocked(deviceId);
+                return retCode;
+            }, 
+            [](const Napi::Env& env, bool isLocked){
+              return Napi::Boolean::New(env, isLocked);
+            }
+        ))->Queue();
+    }
 
   return env.Undefined();
 }
@@ -737,25 +811,37 @@ Napi::Value napi_SetDatetime(const Napi::CallbackInfo& info) {
   if (util::verifyArguments(functionName, info, {util::NUMBER, util::OBJECT, util::FUNCTION})) {
     const unsigned short deviceId = (unsigned short)(info[0].As<Napi::Number>().Int32Value());
 
-    Napi::Object dateTimeJsObj = info[1].As<Napi::Object>();
-  
-    timedate_t dateTime;
-    dateTime.sec = util::getObjInt32OrDefault(dateTimeJsObj, "sec", 0);
-    dateTime.min = util::getObjInt32OrDefault(dateTimeJsObj, "min", 0);
-    dateTime.hour = util::getObjInt32OrDefault(dateTimeJsObj, "hour", 0);
-    dateTime.mday = util::getObjInt32OrDefault(dateTimeJsObj, "mday", 0);
-    dateTime.mon = util::getObjInt32OrDefault(dateTimeJsObj, "mon", 0);
-    dateTime.year = util::getObjInt32OrDefault(dateTimeJsObj, "year", 0);
-    dateTime.wday = util::getObjInt32OrDefault(dateTimeJsObj, "wday", 0);    
-
+    Napi::Object timeInfo = info[1].As<Napi::Object>();
     Napi::Function javascriptResultCallback = info[2].As<Napi::Function>();
+
+    timedate_t dateTime;
+    dateTime.sec = util::getObjInt32OrDefault(timeInfo, "sec", 0);
+    dateTime.min = util::getObjInt32OrDefault(timeInfo, "min", 0);
+    dateTime.hour = util::getObjInt32OrDefault(timeInfo, "hour", 0);
+    dateTime.mday = util::getObjInt32OrDefault(timeInfo, "mday", 0);
+    dateTime.mon = util::getObjInt32OrDefault(timeInfo, "mon", 0);
+    dateTime.year = util::getObjInt32OrDefault(timeInfo, "year", 0);
+    dateTime.wday = util::getObjInt32OrDefault(timeInfo, "wday", 0);
+    
+    const bool setCurrentTime =
+      dateTime.sec==0 &&
+      dateTime.min==0 &&
+      dateTime.hour==0 &&
+      dateTime.mday==0 &&
+      dateTime.mon==0 &&
+      dateTime.year==0 &&
+      dateTime.wday==0;
+    
+    // If input is all zeros, set current time
+    const timedate_t* ptrDateTime = (setCurrentTime) ? NULL : &dateTime;
 
     (new util::JAsyncWorker<void, void>(
       functionName,
       javascriptResultCallback,
-      [functionName, deviceId, dateTime](){ 
-        Jabra_ReturnCode retv;                       
-        if ((retv = Jabra_SetDateTime(deviceId, &dateTime)) != Return_Ok) {
+      [functionName, deviceId, ptrDateTime](){ 
+        Jabra_ReturnCode retv;
+
+        if ((retv = Jabra_SetDateTime(deviceId, ptrDateTime)) != Return_Ok) {
           util::JabraReturnCodeException::LogAndThrow(functionName, retv);
         }
       }
@@ -763,6 +849,31 @@ Napi::Value napi_SetDatetime(const Napi::CallbackInfo& info) {
   }
 
   return env.Undefined();
+}
+
+Napi::Value napi_GetDatetime(const Napi::CallbackInfo& info) {
+  const char * const functionName = __func__;
+  return util::SimpleDeviceAsyncFunction<Napi::Object, timedate_t>(functionName, info, [functionName](unsigned short deviceId) {
+    Jabra_ReturnCode retv;
+    timedate_t timeDate = {};
+    if ((retv = Jabra_GetDateTime(deviceId, &timeDate)) == Return_Ok) {
+      return timeDate;
+    }
+    else {
+      util::JabraReturnCodeException::LogAndThrow(functionName, retv);
+      return timeDate;
+    }
+  }, [](const Napi::Env& env, timedate_t timeDate) {
+    Napi::Object jsDate = Napi::Object::New(env);
+    jsDate.Set(Napi::String::New(env, "sec"), Napi::Number::New(env, timeDate.sec));
+    jsDate.Set(Napi::String::New(env, "min"), Napi::Number::New(env, timeDate.min));
+    jsDate.Set(Napi::String::New(env, "hour"), Napi::Number::New(env, timeDate.hour));
+    jsDate.Set(Napi::String::New(env, "mday"), Napi::Number::New(env, timeDate.mday));
+    jsDate.Set(Napi::String::New(env, "mon"), Napi::Number::New(env, timeDate.mon));
+    jsDate.Set(Napi::String::New(env, "year"), Napi::Number::New(env, timeDate.year));
+    jsDate.Set(Napi::String::New(env, "wday"), Napi::Number::New(env, timeDate.wday));
+    return jsDate;
+    });
 }
 
 Napi::Value napi_GetSupportedFeatures(const Napi::CallbackInfo& info) {

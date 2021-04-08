@@ -21,7 +21,7 @@ import {
         });
 
         jabra.on('attach', async (device: DeviceType) => {
-            if (device.deviceName === "Jabra Engage 50") {
+            if (device.deviceName !== "Jabra Engage 50") {
                 device.on('onRemoteMmiEvent', async (type, input) => {
                     console.log('onRemoteMmiEvent: ', type, input);
                     await device.releaseRemoteMmiFocusAsync(enumRemoteMmiType.MMI_TYPE_DOT3).catch(err => console.log(err)); 

@@ -35,32 +35,20 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
   // Device:
   EXPORTS_SET(GetFirmwareVersion)
   EXPORTS_SET(GetLatestFirmwareInformation)
-
   EXPORTS_SET(GetDeviceImagePath)
   EXPORTS_SET(GetDeviceImageThumbnailPath)
-
   EXPORTS_SET(IsGnHidStdHidSupported)
   EXPORTS_SET(GetHidWorkingState)
   EXPORTS_SET(SetHidWorkingState)
-
-  EXPORTS_SET(SetHidWorkingState)
-
-
   EXPORTS_SET(IsOnlineSupported)
- 
   EXPORTS_SET(IsMuteSupported)
   EXPORTS_SET(SetMute)
-
   EXPORTS_SET(IsHoldSupported) 
   EXPORTS_SET(IsBusyLightSupported)  
-
-
   EXPORTS_SET(IsRingerSupported)
   EXPORTS_SET(SetRinger)
-
   EXPORTS_SET(IsOffHookSupported)
   EXPORTS_SET(SetOffHook)
-
   EXPORTS_SET(UploadWavRingtone)
   EXPORTS_SET(UploadRingtone)
   EXPORTS_SET(UploadImage)
@@ -78,6 +66,15 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
   EXPORTS_SET(IsFeatureSupported)
   EXPORTS_SET(GetSupportedFeatures)
 
+  // Call control
+  EXPORTS_SET(SetHold);
+  EXPORTS_SET(GetBusyLightStatus);
+  EXPORTS_SET(SetBusyLightStatus);
+  EXPORTS_SET(SetOnline);
+  EXPORTS_SET(GetLock);
+  EXPORTS_SET(ReleaseLock);
+  EXPORTS_SET(IsLocked);
+
   // Misc
   EXPORTS_SET(GetPanics)
 
@@ -94,6 +91,7 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
   // Device settings:
   EXPORTS_SET(SetSettings)
   EXPORTS_SET(GetSetting)
+  EXPORTS_SET(GetSettingsNoFilter)
   EXPORTS_SET(GetSettings)
   EXPORTS_SET(FactoryReset)
   EXPORTS_SET(IsFactoryResetSupported)
@@ -112,7 +110,8 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
   EXPORTS_SET(GetTimestamp)
   EXPORTS_SET(GetEqualizerParameters)
   EXPORTS_SET(SetDatetime) 
-
+  EXPORTS_SET(GetDatetime)
+  
   // Remote MMI
   EXPORTS_SET(GetRemoteMmiFocus)
   EXPORTS_SET(ReleaseRemoteMmiFocus)
@@ -126,14 +125,13 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
   // BT
   EXPORTS_SET(SearchNewDevices)
   EXPORTS_SET(ConnectBTDevice)
+  EXPORTS_SET(DisconnectBTDevice)
   EXPORTS_SET(ConnectNewDevice)
   EXPORTS_SET(ConnectPairedDevice)
-  EXPORTS_SET(GetConnectedBTDeviceName)
-  EXPORTS_SET(ClearPairedDevice)
-  EXPORTS_SET(GetSearchDeviceList)
-
-  EXPORTS_SET(DisconnectBTDevice)
   EXPORTS_SET(DisconnectPairedDevice)
+  EXPORTS_SET(ClearPairedDevice)
+  EXPORTS_SET(GetConnectedBTDeviceName)
+  EXPORTS_SET(GetSearchDeviceList)
 
   EXPORTS_SET(GetAutoPairing)
   EXPORTS_SET(SetAutoPairing)
@@ -151,12 +149,6 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
   // Setup logging.
   EXPORTS_SET(NativeAddonLog);
   EXPORTS_SET(GetNativeAddonLogConfig);
-
-  // Call control
-  EXPORTS_SET(SetHold);
-  EXPORTS_SET(GetBusyLightStatus);
-  EXPORTS_SET(SetBusyLightStatus);
-  EXPORTS_SET(SetOnline);
 
   try {
     configureLogging();

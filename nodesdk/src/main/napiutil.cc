@@ -188,7 +188,7 @@ namespace util {
         int j = 0;
         for (std::initializer_list<FormalParameterType>::iterator it=expectedArgumentTypes.begin(); it!=expectedArgumentTypes.end(); ++it) {
             if (!verifyValueType(info[j], *it)) {
-                const std::string errMsg = "Wrong type of argument to " + std::string(functionName) + " #" +  std::to_string(j) + ". Got value not of excpected " + toString(*it) + " type)";
+                const std::string errMsg = "Wrong type of argument to " + std::string(functionName) + " #" +  std::to_string(j) + ". Got value of unexpected " + toString(*it) + " type)";
                 LOG_ERROR_(LOGINSTANCE) << errMsg;
                 Napi::TypeError::New(env, errMsg).ThrowAsJavaScriptException();
                 return false;

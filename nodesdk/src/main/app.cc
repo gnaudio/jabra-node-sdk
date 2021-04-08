@@ -151,7 +151,7 @@ class StateJabraInitialize {
   ThreadSafeCallback * getRemoteMmiCallback () {
     return remoteMmiCallback;
   }
-
+  
   ThreadSafeCallback * getDownloadFirmwareProgressCallback() {
     return downloadFirmwareProgressCallback;
   }
@@ -254,8 +254,8 @@ Napi::Value napi_Initialize(const Napi::CallbackInfo& info) {
     return env.Null();
   }
 
-  if (util::verifyArguments(__func__, info, { util::STRING, 
-      util::FUNCTION, util::FUNCTION, util::FUNCTION, 
+  if (util::verifyArguments(__func__, info, { util::STRING,
+      util::FUNCTION, util::FUNCTION, util::FUNCTION,
       util::FUNCTION, util::FUNCTION, util::FUNCTION,
       util::FUNCTION, util::FUNCTION, util::FUNCTION,
       util::FUNCTION, util::FUNCTION, util::FUNCTION,
@@ -654,7 +654,7 @@ Napi::Value napi_Initialize(const Napi::CallbackInfo& info) {
                 LOG_FATAL_(LOGINSTANCE) << errorMsg;
               }             
             });
-
+            
             Jabra_RegisterUploadProgress([] (unsigned short deviceID, Jabra_UploadEventStatus status, unsigned short percentage) {
               try {
                 LOG_VERBOSE_(LOGINSTANCE) << "Jabra_RegisterUploadProgress got " << status << " " << percentage;
@@ -917,121 +917,5 @@ Napi::Value napi_GetVersion(const Napi::CallbackInfo& info) {
 Napi::Value napi_SyncExperiment(const Napi::CallbackInfo& info) {
   const char * const functionName = __func__;
   const Napi::Env env = info.Env();
-  /*
-  Jabra_PairingList lst;
-  lst.count = 2;
-  lst.listType = Jabra_DeviceListType::SearchComplete;
-  lst.pairedDevice = new Jabra_PairedDevice[2];
-  lst.pairedDevice[0].deviceName = "device 0 test";
-  lst.pairedDevice[0].isConnected = false;
-  lst.pairedDevice[0].deviceBTAddr[0] = 0;
-  lst.pairedDevice[0].deviceBTAddr[1] = 1;
-  lst.pairedDevice[0].deviceBTAddr[2] = 2;
-  lst.pairedDevice[0].deviceBTAddr[3] = 3;
-  lst.pairedDevice[0].deviceBTAddr[4] = 4;
-  lst.pairedDevice[0].deviceBTAddr[5] = 5;
-  lst.pairedDevice[1].deviceName = "device 1 test";
-  lst.pairedDevice[1].isConnected = true;
-  lst.pairedDevice[1].deviceBTAddr[0] = 10;
-  lst.pairedDevice[1].deviceBTAddr[1] = 11;
-  lst.pairedDevice[1].deviceBTAddr[2] = 12;
-  lst.pairedDevice[1].deviceBTAddr[3] = 13;
-  lst.pairedDevice[1].deviceBTAddr[4] = 14;
-  lst.pairedDevice[1].deviceBTAddr[5] = 15;
-  
-  ManagedPairingList mlst(lst);
-
-  Napi::Object jlst = Napi::Object::New(env);
-  jlst.Set(Napi::String::New(env, "listType"), Napi::Number::New(env, mlst.listType));
-
-  Napi::Array jPairedDevices = Napi::Array::New(env);
-
-  int i = 0;
-  for (auto it = mlst.pairedDevice.begin(); it != mlst.pairedDevice.end(); it++) {
-    const ManagedPairedDevice& src =  *it;
-
-    Napi::Object jDev = Napi::Object::New(env);
-
-    jDev.Set(Napi::String::New(env, "deviceName"), Napi::String::New(env, src.deviceName));
-
-    std::string btAddrStr = toBTAddrString(src.deviceBTAddr.data(), src.deviceBTAddr.size());
-
-    jDev.Set(Napi::String::New(env, "deviceBTAddr"), Napi::String::New(env, btAddrStr));
-
-    jDev.Set(Napi::String::New(env, "isConnected"), Napi::Boolean::New(env, src.isConnected));
-
-    jPairedDevices.Set(i++, jDev);
-  }                    
-
-  jlst.Set(Napi::String::New(env, "pairedDevice"), jPairedDevices);
-  return jlst;
-  */
-
-
-  /*
-
-  ButtonEvent *buttonEvent = new ButtonEvent();
-  buttonEvent->buttonEventCount = 2;
-  buttonEvent->buttonEventInfo = new ButtonEventInfo[2];
-  buttonEvent->buttonEventInfo[0].buttonEventType = new ButtonEventType[2];
-  buttonEvent->buttonEventInfo[0].buttonEventType[0].key = 100;
-  buttonEvent->buttonEventInfo[0].buttonEventType[0].value = "val1";
-  buttonEvent->buttonEventInfo[0].buttonEventType[1].key = 101;
-  buttonEvent->buttonEventInfo[0].buttonEventType[1].value = "val2";
-  buttonEvent->buttonEventInfo[0].buttonEventTypeSize = 2;
-  buttonEvent->buttonEventInfo[0].buttonTypeKey = 42;
-  buttonEvent->buttonEventInfo[0].buttonTypeValue = "42value";
-  buttonEvent->buttonEventInfo[1].buttonEventType = new ButtonEventType[1];
-  buttonEvent->buttonEventInfo[1].buttonEventType[0].key = 102;
-  buttonEvent->buttonEventInfo[1].buttonEventType[0].value = "val3";
-  buttonEvent->buttonEventInfo[1].buttonEventTypeSize = 1;
-  buttonEvent->buttonEventInfo[1].buttonTypeKey = 43;
-  buttonEvent->buttonEventInfo[1].buttonTypeValue = "43value";
-
-  std::vector<ManagedButtonEventInfo> buttonInfos;
-                      
-  for (int i=0; i<buttonEvent->buttonEventCount; ++i) {
-    const ButtonEventInfo src = buttonEvent->buttonEventInfo[i];
-
-    const unsigned short buttonTypeKey = src.buttonTypeKey;
-    const std::string buttonTypeValue = std::string(src.buttonTypeValue);
-
-    for (int j=0; j<src.buttonEventTypeSize; ++j) {
-      ManagedButtonEventInfo e = { buttonTypeKey, buttonTypeValue, src.buttonEventType[j].key, std::string(src.buttonEventType[j].value) };
-      buttonInfos.push_back(e);
-    }
-  }
-
-
-  Napi::Array buttonEvents = Napi::Array::New(env);
-
-  std::unordered_map<unsigned short, Napi::Array *> targets;
-  for (auto itr = buttonInfos.begin(); itr != buttonInfos.end(); itr++) {
-    const ManagedButtonEventInfo& src = *itr;
-
-    if (targets.find(src.buttonTypeKey) == targets.end()) {
-        Napi::Array buttonEventInfos = Napi::Array::New(env);
-        targets.insert(std::pair<unsigned short, Napi::Array *>(src.buttonTypeKey, &buttonEventInfos));
-        
-        Napi::Object o = Napi::Object::New(env);
-        o.Set(Napi::String::New(env, "buttonTypeKey"), Napi::Number::New(env, src.buttonTypeKey));
-        o.Set(Napi::String::New(env, "buttonTypeValue"), Napi::String::New(env, src.buttonTypeValue));
-        o.Set(Napi::String::New(env, "buttonEventType"), buttonEventInfos);
-
-        buttonEvents.Set(buttonEvents.Length(), o);
-    } 
-    Napi::Array * target = targets[src.buttonTypeKey];
-    assert(target != nullptr);
-
-    Napi::Object keyValue = Napi::Object::New(env);
-    keyValue.Set(Napi::String::New(env, "key"), Napi::Number::New(env, src.key));
-    keyValue.Set(Napi::String::New(env, "value"), Napi::String::New(env, src.value));
-
-    target->Set(target->Length(), keyValue);
-  }
-
-  return buttonEvents;
-  */
- 
   return env.Undefined();
 }

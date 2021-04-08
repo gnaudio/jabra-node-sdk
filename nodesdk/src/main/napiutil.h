@@ -9,8 +9,8 @@
 #include <napi.h>
 
 // Jabra lib headers:
-#include <Common.h>
-#include <JabraDeviceConfig.h>
+#include "Common.h"
+#include "JabraDeviceConfig.h"
 
 // Own stuff:
 #include "logger.h"

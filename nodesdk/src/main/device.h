@@ -7,6 +7,10 @@ Napi::Value napi_IsGnHidStdHidSupported(const Napi::CallbackInfo& info);
 Napi::Value napi_GetHidWorkingState(const Napi::CallbackInfo& info);
 Napi::Value napi_SetHidWorkingState(const Napi::CallbackInfo& info);
 
+Napi::Value napi_GetLock(const Napi::CallbackInfo& info);
+Napi::Value napi_ReleaseLock(const Napi::CallbackInfo& info);
+Napi::Value napi_IsLocked(const Napi::CallbackInfo& info);
+  
 Napi::Value napi_IsRingerSupported(const Napi::CallbackInfo& info);
 Napi::Value napi_SetRinger(const Napi::CallbackInfo& info);
 
@@ -40,6 +44,7 @@ Napi::Value napi_IsEqualizerSupported(const Napi::CallbackInfo& info);
 Napi::Value napi_IsEqualizerEnabled(const Napi::CallbackInfo& info);
 Napi::Value napi_EnableEqualizer(const Napi::CallbackInfo& info);
 Napi::Value napi_SetDatetime(const Napi::CallbackInfo& info);
+Napi::Value napi_GetDatetime(const Napi::CallbackInfo& info);
 Napi::Value napi_SetTimestamp(const Napi::CallbackInfo& info);
 Napi::Value napi_SetEqualizerParameters(const Napi::CallbackInfo& info);
 Napi::Value napi_PlayRingTone(const Napi::CallbackInfo& info);

@@ -4,11 +4,11 @@
  * supplied for maximum type safety internally for this module.
  */
 
-import { ConfigParamsCloud, GenericConfigParams, enumHidState, AudioFileFormatEnum, DeviceSettings, DeviceInfo, PairedListInfo, 
+import { ConfigParamsCloud, GenericConfigParams, enumHidState, AudioFileFormatEnum, DeviceSettings, DeviceInfo, PairedListInfo,
          NamedAsset, AddonLogSeverity, JabraError, RemoteMmiActionOutput, DectInfo } from './core-types';
-import { enumDeviceBtnType, enumFirmwareEventType, enumFirmwareEventStatus, 
-         enumUploadEventStatus, enumBTPairedListType, enumRemoteMmiType, 
-         enumRemoteMmiInput, enumRemoteMmiPriority, enumRemoteMmiSequence } from './jabra-enums';
+import { enumDeviceBtnType, enumFirmwareEventType, enumFirmwareEventStatus,
+         enumUploadEventStatus, enumBTPairedListType, enumRemoteMmiType,
+         enumRemoteMmiInput, enumRemoteMmiPriority, enumRemoteMmiSequence, enumWizardMode } from './jabra-enums';
 
 /** 
  * Declares all natively implemented n-api functions that call into the Jabra C SDK.
@@ -104,7 +104,10 @@ export declare interface SdkIntegration {
     GetFirmwareVersion(deviceId: number, callback: (error: JabraError, result: string) => void): void;
     IsFirmwareLockEnabled(deviceId: number, callback: (error: JabraError, result: boolean) => void): void;
     EnableFirmwareLock(deviceId: number, enable: boolean, callback: (error: JabraError, result: void) => void): void;
-
+    GetLock(deviceId: number, callback: (error: JabraError, result: void) => void): void;
+    ReleaseLock(deviceId: number, callback: (error: JabraError, result: void) => void): void;
+    IsLocked(deviceId: number, callback: (error: JabraError, result: boolean) => void): void;
+   
     IsDevLogEnabled(deviceId: number, callback: (error: JabraError, result: boolean) => void): void;
     EnableDevLog(deviceId: number, enabled: boolean, callback: (error: JabraError, result: void) => void): void;
 
@@ -115,10 +118,10 @@ export declare interface SdkIntegration {
     GetHidWorkingState(deviceId: number, callback: (error: JabraError, result: enumHidState) => void): void;
     SetHidWorkingState(deviceId: number, state: enumHidState, callback: (error: JabraError, result: void) => void): void;
 
+    GetSettingsNoFilter(deviceId: number, callback: (error: JabraError, result: DeviceSettings) => void): void;
     GetSettings(deviceId: number, callback: (error: JabraError, result: DeviceSettings) => void): void;
     GetSetting(deviceId: number, guid: string, callback: (error: JabraError, result: DeviceSettings) => void): void;
     SetSettings(deviceId: number, settings: DeviceSettings, callback: (error: JabraError, result: void) => void): void;
-    
     
     FactoryReset(deviceId: number, callback: (error: JabraError, result: void) => void): void;
     IsFactoryResetSupported(deviceId: number, callback: (error: JabraError, result: boolean) => void): void;
@@ -189,7 +192,7 @@ export declare interface SdkIntegration {
 
     IsSetDateTimeSupported(deviceId: number, callback: (error: JabraError, result: boolean) => void): void;
     IsFeatureSupported(deviceId: number, feature: number, callback: (error: JabraError, result: boolean) => void): void;
-    GetWizardMode(deviceId: number, callback: (error: JabraError, result: number) => void): void;   
+    GetWizardMode(deviceId: number, callback: (error: JabraError, result: enumWizardMode) => void): void;   
     GetSecureConnectionMode(deviceId: number, callback: (error: JabraError, result: number) => void): void;   
     RebootDevice(deviceId: number, callback: (error: JabraError, result: void) => void): void;   
     IsEqualizerSupported(deviceId: number, callback: (error: JabraError, result: boolean) => void): void;
@@ -206,9 +209,10 @@ export declare interface SdkIntegration {
     GetESN(deviceId: number, callback: (error: JabraError, result: string) => void): void;
     GetFailedSettingNames(deviceId: number, callback: (error: JabraError, result: Array<string>) => void): void;
     GetTimestamp(deviceId: number, callback: (error: JabraError, result: number) => void): void;
-    SetWizardMode(deviceId: number, wizardModes:number, callback: (error: JabraError, result: void) => void): void;
+    SetWizardMode(deviceId: number, wizardMode: enumWizardMode, callback: (error: JabraError, result: void) => void): void;
     GetAudioFileParametersForUpload(deviceId: number, callback: (error: JabraError, result: { audioFileType: AudioFileFormatEnum, numChannels: number, bitsPerSample: number, sampleRate: number, maxFileSize: number }) => void): void;
-    SetDatetime(deviceId: number, dateTime: { sec: number, min: number, hour: number, mday: number, mon: number, year: number, wday: number }, callback: (error: JabraError, result: void) => void): void;
+    SetDatetime(deviceId: number, dateTime: DateTime, callback: (error: JabraError, result: void) => void): void;
+    GetDatetime(deviceId: number, callback: (error: JabraError, result: DateTime) => void): void;
     GetEqualizerParameters(deviceId: number, maxNBands:number, callback: (error: JabraError, result: Array<{ max_gain: number, centerFrequency: number, currentGain: number }>) => void): void;
     GetSupportedFeatures(deviceId: number, callback: (error: JabraError, result: Array<enumDeviceFeature>) => void): void;
 
@@ -219,4 +223,4 @@ export declare interface SdkIntegration {
     ReleaseRemoteMmiFocus(deviceId: number, type: enumRemoteMmiType, callback: (error: JabraError, result: void) => void): void;
     IsRemoteMmiInFocus(deviceId: number, type: enumRemoteMmiType, callback: (error: JabraError, result: boolean) => void): void;
     SetRemoteMmiAction(deviceId: number, type: enumRemoteMmiType, actionOuput: RemoteMmiActionOutput, callback: (error: JabraError, result: void) => void): void;
-}
+  }

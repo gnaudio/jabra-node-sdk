@@ -1,6 +1,6 @@
 {
   "name": "@gnaudio/jabra-electron-renderer-helper",
-  "version": "2.0.0-beta.3",
+  "version": "2.0.1",
   "description": "Makes jabra-node-sdk available for Electron's renderer process",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -40,23 +40,25 @@
   "bugs": {
     "url": "https://developer.jabra.com"
   },
-  "dependencies": {},
+  "dependencies": {
+    "yauzl": "^2.10.0"
+  },
   "peerDependencies": {
-    "@gnaudio/jabra-node-sdk": ">=3.2.1",
+    "@gnaudio/jabra-node-sdk": "^3.2.2",
     "electron": ">=2.0.0"
   },
   "devDependencies": {
-    "@gnaudio/jabra-node-sdk": ">=3.2.1",
+    "@gnaudio/jabra-node-sdk": "^3.2.2",
     "@types/jest": "25.2.1",
-    "spectron": "10.0.1",
-    "electron": "8.2.4",
-    "typescript": "3.8.3",
-    "rimraf": "3.0.2",
-    "cross-env": "7.0.2",
-    "jest": "25.2.7",
-    "ts-jest": "25.3.1",
-    "copyfiles": "2.2.0",
     "browserify": "16.5.1",
-    "tsify": "4.0.1"
+    "copyfiles": "2.2.0",
+    "cross-env": "7.0.2",
+    "electron": "^12.0.1",
+    "jest": "25.2.7",
+    "rimraf": "3.0.2",
+    "spectron": "11.1.0",
+    "ts-jest": "25.3.1",
+    "tsify": "4.0.1",
+    "typescript": "3.8.3"
   }
 }

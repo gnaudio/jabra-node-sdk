@@ -30,9 +30,11 @@ export enum enumAPIReturnCode {
   Device_Rebooted = 24,
   Upload_AlreadyInProgress = 25,
   Download_AlreadyInProgress = 26,
-  FFI_Async_Error = 27, // ??
-  Invalid_Param = 28, // ??
-  Parse_Error = 29, // ??
+  Sdk_TooOldForFwUpdate = 27,
+  No_OtaUpdateSupport = 28,
+  Non_Jabra_Device_Detection_disabled = 29,
+  Device_Lock = 30,
+  Device_NotLock = 31,
 }
 
 
@@ -60,6 +62,7 @@ export enum enumDeviceErrorStatus {
   Device_ReadFail = 17,
   Device_NotReady = 18,
   FilePartiallyCompatible = 19,
+  SdkTooOldForFwUpdateError = 20,
 }
 
 /**
@@ -131,7 +134,10 @@ export enum enumSettingCtrlType {
   LABEL = 4,
   TEXTBOX = 5,
   BUTTON = 6,
-  UNKNOWN = 7
+  EDITBUTTON = 7,
+  HORZRULER = 8,
+  PWDTEXTBOX = 9,
+  UNKNOWN = 10
 }
 
 /**
@@ -160,6 +166,7 @@ export enum enumFirmwareEventStatus {
   Invalid_Authentication = 11,
   File_UnderDownload = 12,
   Not_Allowed = 13,
+  Sdk_TooOldForUpdate = 14
 }
 
 /**
@@ -221,6 +228,18 @@ export enum enumDeviceFeature {
   OnHeadDetection = 1021,
   SettingsChangeNotification = 1022,
   AudioStreaming = 1023,
+  CustomerSupport = 1024,
+  MySound = 1025,
+  UIConfigurableButtons = 1026,
+  ManualBusyLight = 1027,
+  Whiteboard = 1028,
+  Video = 1029,
+  AmbienceModes = 1030,
+  SealingTest = 1031,
+  AMASupport = 1032,
+  AmbienceModesLoop = 1033,
+  FFANC = 1034,
+  GoogleBisto = 1035,
 }
 
 /**

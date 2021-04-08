@@ -1,6 +1,6 @@
 {
   "name": "@gnaudio/jabra-node-sdk",
-  "version": "3.2.1",
+  "version": "3.2.2",
   "description": "NodeJS SDK for Jabra Devices",
   "main": "dist/main/index.js",
   "types": "dist/main/index.d.ts",
@@ -25,10 +25,10 @@
     "tsc": "tsc",
     "prepare": "npm run tsc && npm run doc && node dist/script/generatemeta.js",
     "generatemeta": "ts-node src/script/generatemeta.ts",
-    "manualtest": "cross-env LIBJABRA_TRACE_LEVEL=trace ts-node src/manualtest/misc.ts",
-    "example-btn-press-ts": "cross-env LIBJABRA_TRACE_LEVEL=trace ts-node src/examples/button-press.ts",
-    "example-btn-press-js": "cross-env LIBJABRA_TRACE_LEVEL=trace ts-node src/examples/button-press.js",
-    "example-ringer-sequence": "cross-env LIBJABRA_TRACE_LEVEL=trace ts-node src/examples/ringer-sequence.ts",
+    "manualtest": "cross-env LIBJABRA_TRACE_LEVEL=${LIBJABRA_TRACE_LEVEL:-trace} ts-node src/manualtest/misc.ts",
+    "example-btn-press-ts": "cross-env LIBJABRA_TRACE_LEVEL=${LIBJABRA_TRACE_LEVEL:-trace} ts-node src/examples/button-press.ts",
+    "example-btn-press-js": "cross-env LIBJABRA_TRACE_LEVEL=${LIBJABRA_TRACE_LEVEL:-trace} ts-node src/examples/button-press.js",
+    "example-ringer-sequence": "cross-env LIBJABRA_TRACE_LEVEL=${LIBJABRA_TRACE_LEVEL:-trace} ts-node src/examples/ringer-sequence.ts",
     "doc": "typedoc --mode file --excludePrivate --excludeExternals --excludeNotExported --out dist/doc src/main",
     "clean": "node-gyp clean && rimraf dist",
     "pipeline-build-setversion": "node setversion.js"
@@ -51,7 +51,7 @@
   },
   "dependencies": {
     "bindings": "1.5.0",
-    "node-addon-api": "1.7.1"
+    "node-addon-api": "^3.0.2"
   },
   "devDependencies": {
     "@types/bindings": "1.3.0",

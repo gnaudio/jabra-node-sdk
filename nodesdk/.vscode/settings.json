@@ -80,7 +80,16 @@
         "queue": "cpp",
         "array": "cpp",
         "map": "cpp",
-        "xtree": "cpp"
+        "xtree": "cpp",
+        "*.tcc": "cpp",
+        "random": "cpp",
+        "fstream": "cpp",
+        "memory_resource": "cpp",
+        "shared_mutex": "cpp",
+        "regex": "cpp",
+        "compare": "cpp",
+        "concepts": "cpp",
+        "coroutine": "cpp"
     },
     "typescript.tsdk": "node_modules\\typescript\\lib",
     "files.exclude": {
@@ -88,5 +97,8 @@
     },
     "workbench.colorCustomizations": {
         "titleBar.activeBackground": "#536382",
-    }
+    },
+    "editor.trimAutoWhitespace": false,
+    "files.trimTrailingWhitespace": false,
+    "python.pythonPath": "C:\\Program Files\\Python38\\python.exe"
 }

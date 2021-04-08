@@ -7,7 +7,7 @@ std::string ToHex(const char* buffer, size_t size){
 	str.setf(std::ios_base::uppercase);
 	str.fill('0');
 	for(size_t i=0; i<size; ++i){
-		str << std::setw(2) << (unsigned short)(char)buffer[i];
+		str << std::setw(2) << (unsigned short)(unsigned char)buffer[i];
 	}
 	return str.str();
 }

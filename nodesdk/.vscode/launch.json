@@ -4,6 +4,9 @@
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
+        ///////////////////////////////
+        // Typescript                //
+        ///////////////////////////////
         {
             "name": "Current TS File - typescript only",
             "type": "node",
@@ -15,8 +18,25 @@
             "internalConsoleOptions": "openOnSessionStart",
             "env": { 
                 "LIBJABRA_TRACE_LEVEL":"trace"
-            },
+            }
         },
+        {
+            "name": "misc.ts manual test - typescript only",
+            "type": "node",
+            "request": "launch",
+            "args": ["${workspaceRoot}/src/manualtest/misc.ts"],
+            "runtimeArgs": ["-r", "ts-node/register"],
+            "cwd": "${workspaceRoot}",
+            "protocol": "inspector",
+            "internalConsoleOptions": "openOnSessionStart",
+            "env": {
+                "LIBJABRA_TRACE_LEVEL":"trace"
+            }
+        },
+
+        ///////////////////////////////
+        // C++ Windows               //
+        ///////////////////////////////
         {
             "type": "cppvsdbg",
             "request": "launch",
@@ -36,16 +56,66 @@
             "environment": [ 
                 { "name": "LIBJABRA_TRACE_LEVEL", "value": "trace" }
              ],
-        },{
-            "type": "lldb",
+        },
+        {
+            "type": "cppvsdbg",
             "request": "launch",
-            "name": "Current TS File - native code only (mac/linux)",
-            "program": "node",
+            "name": "misc.ts manual test - native code only (windows)",
+            "program": "node.exe",
             "args": [
-                "-r", "ts-node/register", "${relativeFile}"
+                "-r", "ts-node/register", "${workspaceRoot}/src/manualtest/misc.ts"
              ],
             "cwd": "${workspaceRoot}",
-            "env": { "LIBJABRA_TRACE_LEVEL" : "trace" }
+            "stopAtEntry": false,
+            "externalConsole": false,
+            "internalConsoleOptions": "openOnSessionStart",
+            "logging": {
+                "moduleLoad": false,
+                "trace": true
+            },
+            "environment": [
+                { "name": "LIBJABRA_TRACE_LEVEL", "value": "trace" }
+             ],
         },
+
+        ///////////////////////////////
+        // C++ Linux                 //
+        ///////////////////////////////
+        {
+          "name": "Current TS File - native code only (linux)",
+          "type": "cppdbg",
+          "request": "launch",
+          "program": "node",
+          "args": [ "-r", "ts-node/register", "${relativeFile}" ],
+          "cwd": "${workspaceRoot}",
+          "environment": [
+            { "name": "LIBJABRA_TRACE_LEVEL", "value": "trace" }
+          ],
+          "setupCommands": [
+            {
+              "description": "Enable pretty-printing for gdb",
+              "text": "-enable-pretty-printing",
+              "ignoreFailures": true
+            }
+          ]
+        },
+        {
+          "name": "misc.ts manual test - native code only (linux)",
+          "type": "cppdbg",
+          "request": "launch",
+          "program": "node",
+          "args": [ "-r", "ts-node/register", "${workspaceRoot}/src/manualtest/misc.ts" ],
+          "cwd": "${workspaceRoot}",
+          "environment": [
+            { "name": "LIBJABRA_TRACE_LEVEL", "value": "trace" }
+          ],
+          "setupCommands": [
+            {
+              "description": "Enable pretty-printing for gdb",
+              "text": "-enable-pretty-printing",
+              "ignoreFailures": true
+            }
+          ]
+        }
     ]
 }

@@ -47,6 +47,9 @@ typedef enum _ControlType {
   cntrlLabel,
   cntrlTextBox,
   cntrlButton,
+  cntrlEditButton,
+  cntrlHorzRuler,
+  cntrlPwdTextBox,
   cntrlUnknown
 } ControlType;
 
@@ -272,7 +275,7 @@ typedef void (*SettingsListener)(unsigned short deviceID, DeviceSettings* settin
 LIBRARY_API DeviceSettings* Jabra_GetSetting(unsigned short deviceID, const char* guid);
 
 /**
- * @brief Gets the complete settings details (all groups and its settings) for
+ * @brief Gets all supported settings details (all groups and its settings) for
  * a device.
  * @param[in] deviceID ID for specific device.
  * @return Pointer to the structure containing all settings for the deviceID.
@@ -281,6 +284,17 @@ LIBRARY_API DeviceSettings* Jabra_GetSetting(unsigned short deviceID, const char
  * #Jabra_FreeDeviceSettings.
  */
 LIBRARY_API DeviceSettings* Jabra_GetSettings(unsigned short deviceID);
+
+/**
+ * @brief Gets the full list of settings (all groups and its settings) for
+ * a device. Also includes unsupported settings.
+ * @param[in] deviceID ID for specific device.
+ * @return Pointer to the structure containing all settings for the deviceID.
+ * In case device is not found/ could not be access, NULL pointer is returned.
+ * @note As memory is allocated through SDK, need to be freed by calling
+ * #Jabra_FreeDeviceSettings.
+ */
+LIBRARY_API DeviceSettings* Jabra_GetSettingsNoFilter(unsigned short deviceID);
 
 /**
  * @brief Sets all the settings( including all groups and its settings) for a

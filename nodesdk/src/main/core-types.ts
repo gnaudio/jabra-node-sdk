@@ -82,6 +82,19 @@ export interface DeviceCatalogueParams {
     fetchDataForUnknownDevicesInTheBackground: boolean,
 }
 
+/**
+ * Used when getting/setting date/time on device.
+ **/
+export interface DateTime {
+    sec: number;  // second      [0,59]
+    min: number;  // minute      [0,59]
+    hour: number; // hour        [0,23]
+    mday: number; // day of month[1,31]
+    mon: number;  // month       [0,11]
+    year: number; // year        >99 (offset from year 1900)
+    wday: number; // day of week [0,6] (0 equals sunday) - not settable, automatic based on DDMMYY
+}
+
 /** 
  * Device information data properties supported by DeviceType
  * and carried between js and native code. 
@@ -257,19 +270,19 @@ export namespace DectInfo {
 
 export interface DectInfoDensity extends DectInfoCommon {
     kind: 'density';
-    sumMeasuredRSSI :number;		/* This is the sum of RSSI measured for all slots. */
-    maximumReferenceRSSI :number;   /* This is the maximum RSSI expected to be measured from 1 slot. */
-    numberMeasuredSlots :number;    /* Number of slots measured in current communication mode. */
-    dataAgeSeconds :number;		    /* Time since measurement was taken. */
+    sumMeasuredRSSI: number;		/* This is the sum of RSSI measured for all slots. */
+    maximumReferenceRSSI: number;   /* This is the maximum RSSI expected to be measured from 1 slot. */
+    numberMeasuredSlots: number;    /* Number of slots measured in current communication mode. */
+    dataAgeSeconds: number;		    /* Time since measurement was taken. */
 }
 
 export interface DectInfoErrorCount extends DectInfoCommon {
     kind: 'errorCount';
-    syncErrors :number;		/* Number of errors in SYNC field.*/
-    aErrors :number;		/* Number of errors in A field.*/
-    xErrors :number;		/* Number of errors in X field.*/
-    zErrors :number;		/* Number of errors in Z field.*/
-    hubSyncErrors :number;	/* Number of errors in HUB Sync field.*/
-    hubAErrors :number;		/* Number of errors in HUB A field.*/
-    handoversCount :number; /* Handover count.*/
+    syncErrors: number;		/* Number of errors in SYNC field.*/
+    aErrors: number;		/* Number of errors in A field.*/
+    xErrors: number;		/* Number of errors in X field.*/
+    zErrors: number;		/* Number of errors in Z field.*/
+    hubSyncErrors: number;	/* Number of errors in HUB Sync field.*/
+    hubAErrors: number;		/* Number of errors in HUB A field.*/
+    handoversCount: number; /* Handover count.*/
 }

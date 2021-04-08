@@ -28,8 +28,8 @@
     "url": "https://developer.jabra.com"
   },
   "dependencies": {
-    "@gnaudio/jabra-node-sdk": "3.2.1",
-    "@gnaudio/jabra-electron-renderer-helper": "2.0.0-beta.3",
+    "@gnaudio/jabra-node-sdk": "^3.2.2",
+    "@gnaudio/jabra-electron-renderer-helper": "^2.0.1",
     "jquery": "3.5.0",
     "notyf": "3.6.0"
   },
@@ -38,7 +38,7 @@
     "browserify": "16.5.1",
     "copyfiles": "^2.3.0",
     "electron": "8.2.4",
-    "electron-packager": "14.2.1",
+    "electron-packager": "15.0.0",
     "rimraf": "3.0.2",
     "tsify": "4.0.1",
     "typescript": "3.8.3"

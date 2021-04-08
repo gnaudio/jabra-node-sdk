@@ -27,8 +27,8 @@ import { DeviceInfo, RCCStatus, ConfigInfo, ConfigParamsCloud, GenericConfigPara
 
 import { enumAPIReturnCode, enumDeviceErrorStatus, enumDeviceBtnType, enumDeviceConnectionType,
          enumSettingDataType, enumSettingCtrlType, enumSettingLoadMode, enumFirmwareEventStatus,
-         enumFirmwareEventType, enumBTPairedListType, enumUploadEventStatus, audioFileFormat,
-         enumDeviceFeature, enumHidState, enumWizardMode, enumLogging } from './jabra-enums';
+         enumFirmwareEventType, enumBTPairedListType, enumUploadEventStatus,
+         enumDeviceFeature, enumHidState, enumWizardMode } from './jabra-enums';
 
 import { MetaApi, ClassEntry, _getJabraApiMetaSync } from './meta';
 
@@ -244,7 +244,7 @@ export class JabraType implements MetaApi {
                 } catch (err) {
                     // Log but do not propagate js errors into native caller (or node process will be aborted):
                     _JabraNativeAddonLog(AddonLogSeverity.error, "JabraType::constructor::downloadFirmwareProgress callback", err)
-                }
+                }                
             }, (deviceId, status, percentage) => {
                 try {
                     _JabraNativeAddonLog(AddonLogSeverity.verbose, "JabraType::constructor::onUploadProgress", (() => `onUploadProgress event received from native sdk with status ${status}, percentage ${percentage}`));

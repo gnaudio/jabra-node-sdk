@@ -2,24 +2,23 @@
   "variables": {
     "conditions": [
       ["OS=='win' and target_arch=='ia32'", {
-        "jabralibfolder": "libjabra/windows/x86/libjabra.lib",
-        "jabralibfile": "libjabra.dll"
+        "jabralibfolder": "libjabra/windows/x86",
+        "jabralibfile": "libjabra.dll",
+        "jabraliblibrary": "libjabra.lib"
       }],
       ["OS=='win' and target_arch=='x64'", {
-        "jabralibfolder": "libjabra/windows/x64/libjabra.lib",
-        "jabralibfile": "libjabra.dll"
+        "jabralibfolder": "libjabra/windows/x64",
+        "jabralibfile": "libjabra.dll",
+        "jabraliblibrary": "libjabra.lib"
       }],
       ["OS=='mac'", {
-        "jabralibfolder": "../libjabra/mac/libjabra.dylib",
+        "jabralibfolder": "libjabra/mac",
         "jabralibfile": "libjabra.dylib"
-      }],
-      ["OS=='linux' and target_arch=='ia32'", {
-        "jabralibfolder": "libjabra/ubuntu/x32",
-        "jabralibfile": "libjabra.so.1.8.7.12"
       }],
       ["OS=='linux' and target_arch=='x64'", {
         "jabralibfolder": "libjabra/ubuntu/x64",
-        "jabralibfile": "libjabra.so.1.8.7.12"
+        "jabralibfileglob": "libjabra.so.*",
+        "jabralibfile": "<!(find '<(_jabralibfolder)' -type f -name '<(_jabralibfileglob)' -printf '%f')"
       }],
       ["OS=='linux' and target_arch=='arm'", {
         "jabralibfolder": "TODO",
@@ -53,22 +52,22 @@
         ['OS=="win"', {
           'conditions': [
             ['target_arch=="ia32"', {
-              'libraries': [ 'libjabra/windows/x86/libjabra.lib' ],
+              'libraries': [ '<(jabralibfolder)/<(jabraliblibrary)' ],
               "copies":
               [
                   {
                     'destination': '<(PRODUCT_DIR)',
-                    'files': ['<(module_root_dir)/libjabra/windows/x86/libjabra.dll']
+                    'files': ['<(module_root_dir)/<(jabralibfolder)/<(jabralibfile)']
                   }
               ]
             }],
             ['target_arch=="x64"', {
-              'libraries': [ 'libjabra/windows/x64/libjabra.lib' ],
+              'libraries': [ '<(jabralibfolder)/<(jabraliblibrary)' ],
               "copies":
               [
                   {
                     'destination': '<(PRODUCT_DIR)',
-                    'files': ['<(module_root_dir)/libjabra/windows/x64/libjabra.dll']
+                    'files': ['<(module_root_dir)/<(jabralibfolder)/<(jabralibfile)']
                   }
               ]
             }]
@@ -96,7 +95,7 @@
           ],
         }],
         ['OS=="mac"', {
-         'libraries': [ '../libjabra/mac/libjabra.dylib' ],
+         'libraries': [ '../<(jabralibfolder)/<(jabralibfile)' ],
          'xcode_settings': {
            'ld_version_details': 'true',
            'GCC_ENABLE_CPP_EXCEPTIONS': 'YES',
@@ -116,7 +115,7 @@
          [
             {
               'destination': '<(PRODUCT_DIR)',
-              'files': ['<(module_root_dir)/libjabra/mac/libjabra.dylib']
+              'files': ['<(module_root_dir)/<(jabralibfolder)/<(jabralibfile)']
             }
          ],
          'postbuilds': [

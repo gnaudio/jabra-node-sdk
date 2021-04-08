@@ -1,6 +1,7 @@
 #include "stdafx.h"
 
 Napi::Value napi_GetSetting(const Napi::CallbackInfo& info);
+Napi::Value napi_GetSettingsNoFilter(const Napi::CallbackInfo& info);
 Napi::Value napi_GetSettings(const Napi::CallbackInfo& info);
 Napi::Value napi_SetSettings(const Napi::CallbackInfo& info);
 Napi::Value napi_FactoryReset(const Napi::CallbackInfo& info);
