@@ -51,24 +51,27 @@
 
 @startuml
     title incoming-call-then-user-rejects
-    "App"->"Jabra Node.js SDK": device.getLockAsync()
-    "Jabra Node.js SDK"->"App": Return_Ok
-    Activate "App"
-    note left of "App": App has\ncall lock
-    "App"->"Jabra Node.js SDK": device.ringAsync()
-    "Jabra Node.js SDK"->"Jabra USB device":
-    note right of "Jabra USB device": Start device ringer
-    note right of "Jabra USB device": User rejects call
-    "Jabra USB device"->"Jabra Node.js SDK": "btnPress event (OffHook false)"
-    "Jabra Node.js SDK"->"App": "btnPress event (OffHook false)"
-    "App"->"Jabra Node.js SDK": device.onhookAsync()
-    "Jabra Node.js SDK"->"Jabra USB device":
-    "App"->"Jabra Node.js SDK": device.unringAsync()
-    "Jabra Node.js SDK"->"Jabra USB device":
-    note right of "Jabra USB device": The device stops ringing
-    "App"->"Jabra Node.js SDK": device.releaseLockAsync()
-    Deactivate "App"
-    "Jabra Node.js SDK"->"App": Return_Ok
+    participant "Softphone" as phone
+    participant "Jabra SDK" as sdk
+    participant "Jabra Device" as device
+    Actor User as user
+    -> phone: Incoming call
+	phone -> sdk: getLockAsync()
+	sdk -> phone:
+	Activate sdk
+    Note over sdk: Call lock acquired
+    phone -> sdk: ringAsync()
+    sdk -> device: Ring=1
+    Note over device: Ringer starts
+    user -> device: Reject call by double-pressing\nthe multi-function button
+    device -> sdk: HID: Reject Call
+    sdk -> phone: btnPress\n(RejectCall, true)
+    phone -> sdk: unringAsync()
+    sdk -> device: Ring=0
+    Note over device: Ringer stops
+	phone -> sdk: releaseLockAsync()
+	sdk -> phone:
+	Deactivate sdk
 @enduml
 
 @startuml
