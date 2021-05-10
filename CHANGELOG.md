@@ -3,11 +3,15 @@ All notable changes to this project will be documented in this file
 
 ### General
 
-Latest version 3.2.2 is a production release for all supported platforms: Windows, Mac and Linux.
+Latest version 3.2.3 is a production release for all supported platforms: Windows, Mac and Linux.
 
-This release includes miscellaneous bugfixes, feature wrappers, update to the underlying C-library and general improvements that results in faster operation and much improved stability.
+This release includes an important bugfix for the Windows platform.
 
 --------------------------------
+
+### v3.2.3 (2021-05-05)
+- Upgraded embedded native libraries for Windows to version 1.8.8.5 in order to fix
+  some communication errors.
 
 ### v3.2.2 (2021-04-06)
 - Upgraded embedded native libraries for Windows/Mac/Ubuntu to version 1.8.8.4.
