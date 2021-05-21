@@ -199,15 +199,15 @@ import { createJabraApplication } from '@gnaudio/jabra-node-sdk';
 
 These sequence diagrams shows typical uses of the Node.js sdk:
 
-![Sequence diagram](https://github.com/gnaudio/jabra-node-sdk/raw/master/nodesdk/docs/outgoing-call-then-end-call.svg)
+![Sequence diagram](https://github.com/gnaudio/jabra-node-sdk/raw/master/nodesdk/docs/start-outgoing-call-then-end-call.svg)
 
-![Sequence diagram](https://github.com/gnaudio/jabra-node-sdk/raw/master/nodesdk/docs/incoming-call-then-accept-on-device-then-end-call.svg)
+![Sequence diagram](https://github.com/gnaudio/jabra-node-sdk/raw/master/nodesdk/docs/incoming-call-accepted-on-device-then-ended-on-device.svg)
 
-![Sequence diagram](https://github.com/gnaudio/jabra-node-sdk/raw/master/nodesdk/docs/incoming-call-then-user-rejects.svg)
+![Sequence diagram](https://github.com/gnaudio/jabra-node-sdk/raw/master/nodesdk/docs/incoming-call-rejected-on-device.svg)
 
-![Sequence diagram](https://github.com/gnaudio/jabra-node-sdk/raw/master/nodesdk/docs/mute-unmute-from-device.svg)
+![Sequence diagram](https://github.com/gnaudio/jabra-node-sdk/raw/master/nodesdk/docs/mute-and-unmute-call-by-user.svg)
 
-![Sequence diagram](https://github.com/gnaudio/jabra-node-sdk/raw/master/nodesdk/docs/hold-resume-from-device.svg)
+![Sequence diagram](https://github.com/gnaudio/jabra-node-sdk/raw/master/nodesdk/docs/hold-and-resume-by-user.svg)
 
 ## Setup VSCode
 
