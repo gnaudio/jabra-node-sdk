@@ -3,11 +3,30 @@ All notable changes to this project will be documented in this file
 
 ### General
 
-Latest version 3.2.3 is a production release for all supported platforms: Windows, Mac and Linux.
+Latest version 3.4.0 is a production release for all supported platforms: Windows, Mac and Linux.
 
-This release includes an important bugfix for the Windows platform.
+This release includes miscellaneous bugfixes, feature wrappers, update to the underlying C-library and general improvements that results in faster operation and much improved stability.
 
 --------------------------------
+
+### v3.4.0 (2021-07-15)
+- Upgraded embedded native libraries to version 1.10.1.0 with these bug fixes, among other minor ones:
+  - Jabra_PreloadAttachedDeviceInfo() and Jabra_PreloadDeviceInfo() can now overwrite existing files
+  - Native SDK GetSettings() will now return an empty string instead of NULL for undefined values
+- Added API calls: configureXpressManagementAsync() and getUSBStateAsync()
+
+### v3.3.0 (2021-06-01)
+- Upgraded embedded native libraries to version 1.9.0.0 which includes these bug fixes:
+  - macOS 11.x: Firmware updater failed to download
+  - When requesting a factory reset on an actively streaming device, it should not return success
+  - Calling Jabra_SetSettings (setSettingsAsync) a 2nd time with the same payload after one failed attempt should now properly try again
+  - SDK should no longer attempt to connect to the backend for third party devices
+  - Battery status is now reported through the device log
+- Adding Video, Whiteboard and Network related APIs.
+  The first product to support these new interfaces is Panacast 50.
+- Added functions to support preloading of device manifest files.
+  These can be used in environments where the network setup prohibits the SDK from
+  reaching the backend server or if SDK network communication has been disabled.
 
 ### v3.2.3 (2021-05-05)
 - Upgraded embedded native libraries for Windows to version 1.8.8.5 in order to fix
