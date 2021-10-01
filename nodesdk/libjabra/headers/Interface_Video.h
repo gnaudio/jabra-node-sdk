@@ -885,4 +885,26 @@ typedef void(*CameraStatusEventHandler)(const unsigned short deviceID, const boo
  */
 LIBRARY_API void Jabra_RegisterCameraStatusCallback(CameraStatusEventHandler const callback);
 
+typedef enum _USB_CONNECTION_SPEED
+{
+    USB_CONNECTION_UNPLUGGED = 0,
+    USB_CONNECTION_ERROR = 1,
+    USB_HIGH_SPEED = 2,      // USB 2.0
+    USB_SUPER_SPEED = 3,     // USB 3.0
+    USB_32_GEN2 = 4          // USB 3.2 Gen2
+} USB_CONNECTION_SPEED;
+
+/**
+ * @brief Gets USB connection state for video device.
+ *
+ * @param[in]   deviceID ID for the specific device
+ * @param[out]  USBSpeed USB connection state
+ * @return Return_Ok            Call was successful
+ * @return Device_Unknown       deviceID is unknown
+ * @return Not_Supported        Functionality is not supported on this device
+ * @return Device_ReadFails     Failed while reading from device
+ * @return Return_ParameterFail A NULL pointer was passed
+*/
+LIBRARY_API Jabra_ReturnCode Jabra_GetUSBState(unsigned short deviceID, USB_CONNECTION_SPEED* USBSpeed);
+
 #endif /* INTERFACE_VIDEO_H */

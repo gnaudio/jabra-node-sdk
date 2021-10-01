@@ -2,6 +2,7 @@
 #include "napiutil.h"
 #include <string.h>
 #include <ctime>
+#include <cstring>
 
 // ----------------------------------------- Helper functions ------------------------------------------------
 
@@ -1329,6 +1330,52 @@ Napi::Value napi_SetXpressUrl(const Napi::CallbackInfo& info) {
         ))->Queue();
   }
 
+  return env.Undefined();
+}
+
+Napi::Value napi_ConfigureXpressManagement(const Napi::CallbackInfo& info) {
+    const char * const functionName = __func__;
+    Napi::Env env = info.Env();
+
+    if (util::verifyArguments(functionName, info, {util::NUMBER, util::STRING, util::OBJECT, util::NUMBER, util::FUNCTION})) {
+        const unsigned short deviceId = (unsigned short)(info[0].As<Napi::Number>().Int32Value());
+        const std::string xpressurl = info[1].As<Napi::String>();
+        Napi::Object proxy = info[2].As<Napi::Object>();
+        const unsigned int timeout = info[3].As<Napi::Number>().Int32Value();
+        Napi::Function javascriptResultCallback = info[4].As<Napi::Function>();
+
+        const std::string proxyurl = util::getObjStringOrDefault(proxy, "url", "");
+        const std::string proxyusername = util::getObjStringOrDefault(proxy, "username", "");
+        const std::string proxypassword = util::getObjStringOrDefault(proxy, "password", "");
+        const unsigned short proxyport = (unsigned short)util::getObjInt32OrDefault(proxy, "port", 0);
+        const auto proxytype = util::getObjEnumValueOrDefault<ProxySettings::_ProxyType>(proxy, "type", ProxySettings::PROXY_HTTPS);
+        
+        (new util::JAsyncWorker<void, void>(
+            functionName,
+            javascriptResultCallback,
+            [functionName, deviceId, xpressurl, timeout,
+            proxyurl, proxyusername, proxypassword, proxytype, proxyport](){
+                ProxySettings prxsettings{}, *prx = NULL;
+                if (!proxyurl.empty())
+                {
+                  char _url[1000]{}, _username[1000]{}, _password[1000]{};
+                  strncpy(_url, proxyurl.c_str(), sizeof(_url)-1);
+                  strncpy(_username, proxyusername.c_str(), sizeof(_url)-1);
+                  strncpy(_password, proxypassword.c_str(), sizeof(_url)-1);
+                  prxsettings.URL = _url;
+                  prxsettings.Username = _username;
+                  prxsettings.Password = _password;
+                  prxsettings.Type = proxytype;
+                  prxsettings.Port = proxyport;
+                  prx = &prxsettings;
+                }
+                Jabra_ReturnCode retCode = Jabra_ConfigureXpressManagement(deviceId, xpressurl.c_str(), prx, timeout);
+                if (retCode != Return_Ok) {
+                    util::JabraReturnCodeException::LogAndThrow(functionName, retCode);
+                }
+            }
+        ))->Queue();
+  }
   return env.Undefined();
 }
 
@@ -2738,5 +2785,23 @@ Napi::Value napi_GetWLANIPv4Status(const Napi::CallbackInfo& info) {
             jsStatus.Set("subnetMask", jsSubnetMask);
             return jsStatus;
         }
+    );
+}
+
+Napi::Value napi_GetUSBState(const Napi::CallbackInfo& info) {
+    const char * const functionName = __func__;
+
+    return util::SimpleDeviceAsyncFunction<Napi::Number, USB_CONNECTION_SPEED>(
+        functionName, info,
+        [functionName](unsigned short deviceId) {
+            USB_CONNECTION_SPEED speed{};
+            Jabra_ReturnCode retCode = Jabra_GetUSBState(deviceId, &speed);
+
+            if (retCode != Jabra_ReturnCode::Return_Ok) {
+                util::JabraReturnCodeException::LogAndThrow(functionName, retCode);
+            }
+            return speed;
+        },
+        Napi::Number::New
     );
 }

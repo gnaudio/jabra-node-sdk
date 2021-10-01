@@ -1,6 +1,6 @@
 import { SdkIntegration } from "./sdkintegration";
 import { AddonLogSeverity, DeviceTiming, DevLogData, AudioFileFormatEnum,
-  RemoteMmiActionOutput, WhiteboardPosition, PanTilt, PanTiltLimits, WhiteBalance, DateTime, VideoLimits, IPv4Status, ZoomRelative, PanTiltRelative, VideoDeviceStreamingStatus } from "./core-types";
+  RemoteMmiActionOutput, WhiteboardPosition, PanTilt, PanTiltLimits, WhiteBalance, DateTime, VideoLimits, IPv4Status, ZoomRelative, PanTiltRelative, VideoDeviceStreamingStatus, ProxySettings } from "./core-types";
 import { isNodeJs } from './util';
 import { _JabraNativeAddonLog } from './logger';
 
@@ -33,7 +33,7 @@ import { enumAPIReturnCode, enumDeviceErrorStatus, enumDeviceBtnType, enumDevice
     enumDeviceFeature, enumHidState, enumWizardMode, enumSecureConnectionMode,
     enumRemoteMmiType, enumRemoteMmiInput, enumRemoteMmiPriority, enumVideoMode,
     enumNotificationUsage, enumNotificationStyle, enumSecondaryStreamContent, enumPTZPreset,
-    enumColorControlPreset, enumVideoTransitionStyle, enumIntelligentZoomLatency } from './jabra-enums';
+    enumColorControlPreset, enumVideoTransitionStyle, enumIntelligentZoomLatency, enumUSBState } from './jabra-enums';
 import * as _jabraEnums from './jabra-enums';
 
 import { MetaApi, ClassEntry, _getJabraApiMetaSync } from './meta';
@@ -1545,6 +1545,24 @@ export class DeviceType implements DeviceInfo, DeviceTiming, MetaApi {
     }
     
     /**
+     * Configures networked device for stand-alone remote management
+     * @param {string} url - URL for the Xpress backend server
+     * If empty/undefined, management will be disabled
+     * @param {ProxySettings} proxySettings - Proxy configuration
+     * Leave 'url' empty/undefined to disable proxy
+     * @param {number} timeout - Time limit for entire operation in milliseconds
+     * Suggested value is 10000 ms or higher.
+     * @returns {Promise<void, JabraError>} - Resolves to `void` on success,
+     *   rejects with `JabraError` if an error occurs.
+     */
+    configureXpressManagementAsync(url: string, proxySettings: ProxySettings, timeout: number) : Promise<void> {
+      _JabraNativeAddonLog(AddonLogSeverity.verbose, this.configureXpressManagementAsync.name, "called with", this.deviceID);
+      return util.promisify(sdkIntegration.ConfigureXpressManagement)(this.deviceID, url, proxySettings, timeout).then(() => {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.configureXpressManagementAsync.name, "returned");
+      });
+    }
+
+    /**
      * Sets the password for provisioning
      * @param {string} password - The password
      * @returns {Promise<void, JabraError>} - Resolves to `void` on success,
@@ -2258,6 +2276,19 @@ export class DeviceType implements DeviceInfo, DeviceTiming, MetaApi {
         return util.promisify(sdkIntegration.GetWLANIPv4Status)(this.deviceID).then((ethernetStatus) => {
           _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getWLANIPv4StatusAsync.name, "returned");
           return ethernetStatus;
+        });
+    }
+
+    /**
+     * Returns the state and speed of the device's USB connection.
+     * @returns {Promise<enumUSBState, JabraError>} - Resolves to `enumUSBState` on success,
+     *    rejects with `JabraError` on error.
+     */
+     getUSBStateAsync() : Promise<enumUSBState> {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getUSBStateAsync.name, "called with", this.deviceID);
+        return util.promisify(sdkIntegration.GetUSBState)(this.deviceID).then((usbState) => {
+          _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getUSBStateAsync.name, "returned");
+          return usbState;
         });
     }
 

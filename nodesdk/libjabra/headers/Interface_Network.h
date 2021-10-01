@@ -58,7 +58,7 @@ typedef struct _IPv4Status
 LIBRARY_API Jabra_ReturnCode Jabra_EnableRemoteManagement(unsigned short deviceID, bool enable, unsigned int timeout);
 
 /**
- * @brief       Get whether remote management is enabled on Newport device.
+ * @brief       Get whether remote management is enabled on a networked device.
  * @param[in]   deviceID ID for a specific device
  * @param[out]  enable   Enable state: true=enabled, false=disabled
  *                       Will only be written to if return value == Return_Ok.
@@ -69,6 +69,50 @@ LIBRARY_API Jabra_ReturnCode Jabra_EnableRemoteManagement(unsigned short deviceI
  * @return Device_ReadFails     Failed while reading from device
  */
 LIBRARY_API Jabra_ReturnCode Jabra_IsRemoteManagementEnabled(unsigned short deviceID, bool* enable);
+
+typedef struct _ProxySettings
+{
+    enum _ProxyType      // See curl documentation for explanation of proxy types,
+    {                    // e.g. https://everything.curl.dev/libcurl/proxies
+        PROXY_HTTP = 0,  // Invalid - not possible to use HTTP proxy since backend is HTTPS only
+        PROXY_HTTPS,
+        PROXY_SOCKS4,
+        PROXY_SOCKS4A,
+        PROXY_SOCKS5,
+        PROXY_SOCKS5H
+    } Type;
+    char* URL;           // Pointer to NULL-terminated string containing proxy address
+    unsigned short Port; // Port number
+    char* Username;      // Pointer to NULL-terminated string containing the login username for the proxy
+    char* Password;      // Pointer to NULL-terminated string containing the login password for the proxy
+} ProxySettings;
+
+/**
+ * @brief     Configures Xpress management related settings on a network-capable device.
+ *            Will enable Ethernet interface if required.
+ * @param[in] deviceID          ID for a specific device
+ * @param[in] xpressurl         Pointer to NULL-terminated string containing the URL for the Xpress management backend.
+ *                              Protocol is always assumed to be HTTPS no matter the prefix of the URL.
+                                Setting URL pointer to NULL will disable management.
+ * @param[in] proxy             Pointer to proxy settings - set to NULL if not using proxy (default)
+ * @param[in] timeout           Maximum allowed execution time for the entire operation.
+ *                              In the worst cast the flow is:
+ *                              1. Enabling network interface
+ *                              2. Waiting for DHCP resolution
+ *                              3. Startup of management service
+ *                              4. DNS resolution of specified URL
+ *                              5. HTTPS request and parsing the response
+ *                              The recommended value is 30'000 ms.
+ *                              Setting timeout=0 will configure the device and return immediately without checking the validity of the xpressurl.
+ * @return Return_Ok            Device was successfully configured for stand-alone remote management
+ * @return Device_Unknown       deviceID is unknown
+ * @return Return_ParameterFail A parameter was missing or incorrect
+ * @return Not_Supported        Functionality is not supported on this device
+ * @return Device_WriteFail     Failed while writing to device
+ * @return NetworkRequest_Fail  URL was unreachable
+ * @return Return_Timeout       URL validation did not complete before timeout (when timeout>0)
+ */
+LIBRARY_API Jabra_ReturnCode Jabra_ConfigureXpressManagement(unsigned short deviceID, const char* xpressurl, const ProxySettings* proxy, unsigned int timeout);
 
 /**
  * @brief     Set Xpress server URL. Will block until URL has been validated or timeout reached.
@@ -173,7 +217,9 @@ LIBRARY_API Jabra_ReturnCode Jabra_GetWLANIPv4Status(const unsigned short device
 
 /**
  * @brief Gets the diagnostic log file and writes it to a file on local file system
- * Requires prior call to #Jabra_TriggerDiagnosticLogGeneration() to initiate file preparation
+ * For PanaCast 50, this requires prior call to #Jabra_TriggerDiagnosticLogGeneration()
+ * in order to prepare the file for download
+ * 
  * @param[in] deviceID          ID for a specific device
  * @param[in] FileName          Destination file name on local file system
  * @return Return_Ok            Call was successful

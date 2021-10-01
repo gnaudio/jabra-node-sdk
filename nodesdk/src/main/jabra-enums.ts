@@ -245,6 +245,7 @@ export enum enumDeviceFeature {
   PictureInPicture = 1037,
   DateTimeIsUTC = 1038,
   RemoteControl = 1039,
+  UserConfigurableHDR = 1040,
 }
 
 /**
@@ -437,4 +438,28 @@ export enum enumRemoteMmiSequence {
   MMI_LED_SEQUENCE_ON      = 0x02,
   MMI_LED_SEQUENCE_SLOW    = 0x04,
   MMI_LED_SEQUENCE_FAST    = 0x08
+};
+
+/**
+ * Proxy types
+ * See https://everything.curl.dev/libcurl/proxies for details
+ */
+export enum enumProxyType {
+  HTTP     = 0,
+  HTTPS    = 1,
+  SOCKS4   = 2,
+  SOCKS4A  = 3,
+  SOCKS5   = 4,
+  SOCKS5H  = 5,
+};
+
+/**
+ * USB Connection states
+ */
+ export enum enumUSBState {
+  Unplugged             = 0,
+  Error                 = 1,
+  USB_2_0_HighSpeed     = 2, // USB 2.0
+  USB_3_0_SuperSpeed    = 3, // USB 3.0
+  USB_3_2_Gen2          = 4  // USB 3.2 Gen2
 };

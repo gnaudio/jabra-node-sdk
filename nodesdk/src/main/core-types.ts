@@ -3,7 +3,7 @@
  * and the internal sdk integration.
  */
 
-import { enumDeviceConnectionType, enumSettingCtrlType, enumSettingDataType, enumAPIReturnCode, enumBTPairedListType, enumRemoteMmiSequence, enumAutoWhiteBalance, enumPanDirection, enumTiltDirection, enumZoomDirection } from './jabra-enums';
+import { enumDeviceConnectionType, enumSettingCtrlType, enumSettingDataType, enumAPIReturnCode, enumBTPairedListType, enumRemoteMmiSequence, enumAutoWhiteBalance, enumPanDirection, enumTiltDirection, enumZoomDirection, enumProxyType } from './jabra-enums';
 
 /**
  * The type of error returned from rejected Jabra API promises.
@@ -378,3 +378,15 @@ export interface WhiteBalance {
     value: number,
     autoWB: enumAutoWhiteBalance
   }
+
+/**
+ * Proxy settings for Xpress management configuration (for networked devices)
+ * Leaving 'url' empty will disable proxy
+ */
+export interface ProxySettings {
+    type: enumProxyType;
+    url: string;
+    port: number;
+    username: string;
+    password: string;
+}

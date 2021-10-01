@@ -168,6 +168,17 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
   EXPORTS_SET(SetBusyLightStatus);
   EXPORTS_SET(SetOnline);
 
+  // Network related controls
+  EXPORTS_SET(IsRemoteManagementEnabled);
+  EXPORTS_SET(EnableRemoteManagement);
+  EXPORTS_SET(SetXpressUrl);
+  EXPORTS_SET(GetXpressUrl);
+  EXPORTS_SET(ConfigureXpressManagement);
+  EXPORTS_SET(GetDiagnosticLogFile);
+  EXPORTS_SET(TriggerDiagnosticLogGeneration);
+  EXPORTS_SET(SetPasswordProvisioning);
+  EXPORTS_SET(GetPasswordProvisioning);
+
   // Video related controls
   EXPORTS_SET(GetIntelligentZoomLatency)
   EXPORTS_SET(SetIntelligentZoomLatency)
@@ -175,14 +186,6 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
   EXPORTS_SET(IsVideoDeviceStreaming);
   EXPORTS_SET(GetPictureInPicture);
   EXPORTS_SET(SetPictureInPicture);
-  EXPORTS_SET(IsRemoteManagementEnabled);
-  EXPORTS_SET(EnableRemoteManagement);
-  EXPORTS_SET(SetXpressUrl);
-  EXPORTS_SET(GetXpressUrl);
-  EXPORTS_SET(GetDiagnosticLogFile);
-  EXPORTS_SET(TriggerDiagnosticLogGeneration);
-  EXPORTS_SET(SetPasswordProvisioning);
-  EXPORTS_SET(GetPasswordProvisioning);
   EXPORTS_SET(GetWhiteboardPosition);
   EXPORTS_SET(SetWhiteboardPosition);
   EXPORTS_SET(GetZoom);
@@ -235,6 +238,7 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
   EXPORTS_SET(GetVideoTransitionStyle);
   EXPORTS_SET(GetWhiteboardOnMainStream);
   EXPORTS_SET(SetWhiteboardOnMainStream);
+  EXPORTS_SET(GetUSBState);
     
   try {
     configureLogging();

@@ -73,6 +73,7 @@ Napi::Value napi_SetXpressUrl(const Napi::CallbackInfo& info);
 Napi::Value napi_GetXpressUrl(const Napi::CallbackInfo& info);
 Napi::Value napi_SetPasswordProvisioning(const Napi::CallbackInfo& info);
 Napi::Value napi_GetPasswordProvisioning(const Napi::CallbackInfo& info);
+Napi::Value napi_ConfigureXpressManagement(const Napi::CallbackInfo& info);
 
 Napi::Value napi_TriggerDiagnosticLogGeneration(const Napi::CallbackInfo& info);
 Napi::Value napi_GetDiagnosticLogFile(const Napi::CallbackInfo& info);
@@ -149,3 +150,4 @@ Napi::Value napi_SetSecondVideoStream(const Napi::CallbackInfo& info);
 Napi::Value napi_GetSecondVideoStream(const Napi::CallbackInfo& info);
 Napi::Value napi_GetEthernetIPv4Status(const Napi::CallbackInfo& info);
 Napi::Value napi_GetWLANIPv4Status(const Napi::CallbackInfo& info);
+Napi::Value napi_GetUSBState(const Napi::CallbackInfo& info);

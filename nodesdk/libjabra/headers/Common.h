@@ -260,7 +260,8 @@ typedef enum _DeviceFeature
     VirtualDirector = 1036,
     PictureInPicture = 1037,
     DateTimeIsUTC = 1038,       // Time in device is UTC
-    RemoteControl = 1039        // Device has physical remote control
+    RemoteControl = 1039,       // Device has physical remote control
+    UserConfigurableHDR = 1040  // User is allowed to change brightness, contrast etc. while HDR is enabled
 } DeviceFeature;
 
 /** @brief This struct represents the product registration info. */
@@ -2151,14 +2152,15 @@ LIBRARY_API Jabra_ReturnCode Jabra_GetTimestamp(unsigned short deviceID, uint32_
 LIBRARY_API bool Jabra_PreloadDeviceInfo(const char* zipFileName);
 
 /**
- * @brief Preloads the resources with the content of the specified archive for
- * a specific Device after this being attached.
- * @param[in] deviceID           ID for specific device
- * @param[in] zipFileName        Full path name of the ZIP archive to preload from
+ * @brief Preloads the resources with the contents of the specified archive for
+ * a specific connected device. Will always overwrite existing resources.
+ * @param[in] deviceID           ID of specific device
+ * @param[in] zipFileName        Full path name of the ZIP archive which contains the resources
  * @return Return_Ok             Call was successful
  * @return Device_Unknown        deviceID is unknown
- * @return Return_ParameterFail  The zipFileName parameter are incorrect or the
- *                               resources were not loaded correctly faulty
+ * @return Return_ParameterFail  The zipFileName parameter is incorrect or the
+ *                               resources were not loaded correctly
+ * @return No_Information        The resources are empty
  */
 LIBRARY_API Jabra_ReturnCode Jabra_PreloadAttachedDeviceInfo(unsigned short deviceID, const char* zipFileName);
 

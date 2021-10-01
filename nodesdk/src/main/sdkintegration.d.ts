@@ -8,7 +8,7 @@ import { ConfigParamsCloud, GenericConfigParams, enumHidState, AudioFileFormatEn
          NamedAsset, AddonLogSeverity, JabraError, RemoteMmiActionOutput, DectInfo, WhiteboardPosition, ZoomLimits, PanTilt, DateTime, VideoLimitsStepSize, PanTiltRelative, ZoomRelative, IPv4Status } from './core-types';
 import { enumDeviceBtnType, enumFirmwareEventType, enumFirmwareEventStatus,
          enumUploadEventStatus, enumBTPairedListType, enumRemoteMmiType,
-         enumRemoteMmiInput, enumRemoteMmiPriority, enumRemoteMmiSequence, enumColorControlPreset, enumPTZPreset, enumAutoWhiteBalance, enumZoomDirection, enumSecondaryStreamContent, enumVideoTransitionStyle, enumWizardMode } from './jabra-enums';
+         enumRemoteMmiInput, enumRemoteMmiPriority, enumRemoteMmiSequence, enumColorControlPreset, enumPTZPreset, enumAutoWhiteBalance, enumZoomDirection, enumSecondaryStreamContent, enumVideoTransitionStyle, enumWizardMode, enumUSBState} from './jabra-enums';
 
 /** 
  * Declares all natively implemented n-api functions that call into the Jabra C SDK.
@@ -234,7 +234,8 @@ export declare interface SdkIntegration {
     GetXpressUrl(deviceId: number, callback: (error: JabraError, result: string) => void): void;
     SetPasswordProvisioning(deviceId: number, password: string, callback: (error: JabraError, result: void) => void): void;
     GetPasswordProvisioning(deviceId: number, callback: (error: JabraError, result: string) => void): void;
-
+    ConfigureXpressManagement(deviceId: number, url: string, proxy: ProxySettings, timeout: number, callback: (error: JabraError, result: void) => void): void;
+    
     GetDiagnosticLogFile(deviceId: number, filename: string, callback: (error: JabraError, result: void) => void): void;
     TriggerDiagnosticLogGeneration(deviceId: number, callback: (error: JabraError, result: void) => void): void;
     
@@ -309,4 +310,5 @@ export declare interface SdkIntegration {
     GetSecondVideoStream(deviceId: number, callback: (error: JabraError, result: enumSecondaryStreamContent) => void): void;
     GetEthernetIPv4Status(deviceId: number, callback: (error: JabraError, result: IPv4Status) => void): void;
     GetWLANIPv4Status(deviceId: number, callback: (error: JabraError, result: IPv4Status) => void): void;
+    GetUSBState(deviceId: number, callback: (error: JabraError, result: enumUSBState) => void): void;
   }
