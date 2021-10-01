@@ -22,13 +22,16 @@ class StateJabraInitialize {
   ThreadSafeCallback *deAttachedCallback;
   ThreadSafeCallback *buttonInDataTranslatedCallback;
   ThreadSafeCallback *devLogCallback;
+  ThreadSafeCallback *diagLogCallback;
   ThreadSafeCallback *batteryStatusCallback;
   ThreadSafeCallback *remoteMmiCallback;
+  ThreadSafeCallback *xpressConnectionStatusCallback;
   ThreadSafeCallback *downloadFirmwareProgressCallback;
   ThreadSafeCallback *uploadProgressCallback;
   ThreadSafeCallback *registerPairingListCallback;
   ThreadSafeCallback *gNPButtonEventCallBack;
   ThreadSafeCallback *dectInfoCallback;
+  ThreadSafeCallback *cameraStatusCallback;
 
   std::string proxy;
   std::string baseUrl_capabilities;
@@ -54,13 +57,16 @@ class StateJabraInitialize {
                            deAttachedCallback(nullptr),
                            buttonInDataTranslatedCallback(nullptr),
                            devLogCallback(nullptr),
+                           diagLogCallback(nullptr),
                            batteryStatusCallback(nullptr),
                            remoteMmiCallback(nullptr),
+                           xpressConnectionStatusCallback(nullptr),
                            downloadFirmwareProgressCallback(nullptr),
                            uploadProgressCallback(nullptr),
                            registerPairingListCallback(nullptr),
                            gNPButtonEventCallBack(nullptr),
                            dectInfoCallback(nullptr),
+                           cameraStatusCallback(nullptr),
                            initializationStartedState(false) {}
 
   void set(const Napi::Env& _env,
@@ -71,13 +77,16 @@ class StateJabraInitialize {
            ThreadSafeCallback* _deAttachedCallback,
            ThreadSafeCallback* _buttonInDataTranslatedCallback,
            ThreadSafeCallback* _devLogCallback,
+           ThreadSafeCallback* _diagLogCallback,
            ThreadSafeCallback* _batteryStatusCallback,
            ThreadSafeCallback* _remoteMmiCallback,
+           ThreadSafeCallback* _xpressConnectionStatusCallback,
            ThreadSafeCallback* _downloadFirmwareProgressCallback,
            ThreadSafeCallback* _uploadProgressCallback,
            ThreadSafeCallback* _registerPairingListCallback,
            ThreadSafeCallback* _gNPButtonEventCallBack,
            ThreadSafeCallback* _dectInfoCallback,
+           ThreadSafeCallback* _cameraStatusCallback,
            const std::string& _proxy,
            const std::string& _baseUrl_capabilities,
            const std::string& _baseUrl_fw,
@@ -93,13 +102,16 @@ class StateJabraInitialize {
       deAttachedCallback = _deAttachedCallback;
       buttonInDataTranslatedCallback = _buttonInDataTranslatedCallback;
       devLogCallback = _devLogCallback;
+      diagLogCallback = _diagLogCallback;
       batteryStatusCallback = _batteryStatusCallback;
       remoteMmiCallback = _remoteMmiCallback;
+      xpressConnectionStatusCallback = _xpressConnectionStatusCallback;
       downloadFirmwareProgressCallback = _downloadFirmwareProgressCallback;
       uploadProgressCallback = _uploadProgressCallback;
       registerPairingListCallback = _registerPairingListCallback;
       gNPButtonEventCallBack = _gNPButtonEventCallBack;
       dectInfoCallback = _dectInfoCallback;
+      cameraStatusCallback = _cameraStatusCallback;
 
       proxy = _proxy;
       baseUrl_capabilities = _baseUrl_capabilities;
@@ -144,6 +156,10 @@ class StateJabraInitialize {
     return devLogCallback;
   }
 
+  ThreadSafeCallback * getDiagnosticLogCallback() {
+    return diagLogCallback;
+  }
+
   ThreadSafeCallback * getBatteryStatusCallback() {
     return batteryStatusCallback;
   }
@@ -152,6 +168,10 @@ class StateJabraInitialize {
     return remoteMmiCallback;
   }
   
+  ThreadSafeCallback * getXpressConnectionStatusCallback () {
+    return xpressConnectionStatusCallback;
+  } 
+
   ThreadSafeCallback * getDownloadFirmwareProgressCallback() {
     return downloadFirmwareProgressCallback;
   }
@@ -170,6 +190,10 @@ class StateJabraInitialize {
 
   ThreadSafeCallback * getDectInfoCallBack() {
     return dectInfoCallback;
+  }
+
+  ThreadSafeCallback * getCameraStatusCallback() {
+    return cameraStatusCallback;
   }
 
   std::string& getProxy() {
@@ -202,13 +226,16 @@ class StateJabraInitialize {
     releaseCallback(deAttachedCallback);
     releaseCallback(buttonInDataTranslatedCallback);
     releaseCallback(devLogCallback);
+    releaseCallback(diagLogCallback);
     releaseCallback(batteryStatusCallback);
     releaseCallback(remoteMmiCallback);
+    releaseCallback(xpressConnectionStatusCallback);
     releaseCallback(downloadFirmwareProgressCallback);
     releaseCallback(uploadProgressCallback);
     releaseCallback(registerPairingListCallback);
     releaseCallback(gNPButtonEventCallBack);
     releaseCallback(dectInfoCallback);
+    releaseCallback(cameraStatusCallback);
  
     // Re-allow init again.
     initializationStartedState = false;
@@ -259,6 +286,7 @@ Napi::Value napi_Initialize(const Napi::CallbackInfo& info) {
       util::FUNCTION, util::FUNCTION, util::FUNCTION,
       util::FUNCTION, util::FUNCTION, util::FUNCTION,
       util::FUNCTION, util::FUNCTION, util::FUNCTION,
+      util::FUNCTION, util::FUNCTION, util::FUNCTION,
       util::FUNCTION, util::OBJECT })) {
 
     int argNr = 0;
@@ -270,13 +298,16 @@ Napi::Value napi_Initialize(const Napi::CallbackInfo& info) {
     auto deAttachedCallback = new ThreadSafeCallback(info[argNr++].As<Napi::Function>());
     auto buttonInDataTranslatedCallback = new ThreadSafeCallback(info[argNr++].As<Napi::Function>());
     auto devLogCallback = new ThreadSafeCallback(info[argNr++].As<Napi::Function>());
+    auto diagLogCallback = new ThreadSafeCallback(info[argNr++].As<Napi::Function>());
     auto batteryStatusCallback = new ThreadSafeCallback(info[argNr++].As<Napi::Function>());
     auto remoteMmiCallback = new ThreadSafeCallback(info[argNr++].As<Napi::Function>());
+    auto xpressConnectionStatusCallback = new ThreadSafeCallback(info[argNr++].As<Napi::Function>());
     auto downloadFirmwareProgressCallback = new ThreadSafeCallback(info[argNr++].As<Napi::Function>());
     auto uploadProgressCallback = new ThreadSafeCallback(info[argNr++].As<Napi::Function>());
     auto registerPairingListCallback = new ThreadSafeCallback(info[argNr++].As<Napi::Function>());
     auto gNPButtonEventCallBack = new ThreadSafeCallback(info[argNr++].As<Napi::Function>());
     auto dectInfoCallback = new ThreadSafeCallback(info[argNr++].As<Napi::Function>());
+    auto cameraStatusCallback = new ThreadSafeCallback(info[argNr++].As<Napi::Function>());
 
     Napi::Object configParams = info[argNr++].As<Napi::Object>();
     
@@ -295,13 +326,16 @@ Napi::Value napi_Initialize(const Napi::CallbackInfo& info) {
                                deAttachedCallback,
                                buttonInDataTranslatedCallback,
                                devLogCallback,
+                               diagLogCallback,
                                batteryStatusCallback,
                                remoteMmiCallback,
+                               xpressConnectionStatusCallback,
                                downloadFirmwareProgressCallback,
                                uploadProgressCallback,
                                registerPairingListCallback,
                                gNPButtonEventCallBack,
                                dectInfoCallback,
+                               cameraStatusCallback,
                                proxy,
                                baseUrl_capabilities,
                                baseUrl_fw,
@@ -464,6 +498,25 @@ Napi::Value napi_Initialize(const Napi::CallbackInfo& info) {
                 LOG_FATAL_(LOGINSTANCE) << errorMsg;
               } catch (...) {
                 const std::string errorMsg = "DevLogCallback callback failed failed with unknown exception";
+                LOG_FATAL_(LOGINSTANCE) << errorMsg;
+              }              
+            });
+
+            Jabra_RegisterDiagnosticLogCallback([](const unsigned short deviceID) {
+              try {
+                LOG_VERBOSE_(LOGINSTANCE) << "Jabra_RegisterDiagnosticLogCallback callback";
+                auto diagnosticLogCallback = state_Jabra_Initialize.getDiagnosticLogCallback();
+                if (diagnosticLogCallback) {
+                  diagnosticLogCallback->call([deviceID](Napi::Env env, std::vector<napi_value>& args) {
+                      args = { Napi::Number::New(env, deviceID) };
+                  });
+                }
+                LOG_VERBOSE_(LOGINSTANCE) << "diagLogCallback callback handling finished";
+              } catch (const std::exception &e) {
+                const std::string errorMsg = "diagLogCallback callback failed: " + std::string(e.what());
+                LOG_FATAL_(LOGINSTANCE) << errorMsg;
+              } catch (...) {
+                const std::string errorMsg = "diagLogCallback callback failed failed with unknown exception";
                 LOG_FATAL_(LOGINSTANCE) << errorMsg;
               }              
             });
@@ -655,6 +708,27 @@ Napi::Value napi_Initialize(const Napi::CallbackInfo& info) {
               }             
             });
             
+            Jabra_RegisterXpressConnectionStatusCallback([] (unsigned short deviceID, bool status) {
+              try {
+                LOG_VERBOSE_(LOGINSTANCE) << "Jabra_RegisterXpressConnectionStatusCallback callback got " << status; 
+
+                auto xpressConnectionStatusCallback = state_Jabra_Initialize.getXpressConnectionStatusCallback();
+
+                if (xpressConnectionStatusCallback) {
+                  xpressConnectionStatusCallback->call([deviceID, status](Napi::Env env, std::vector<napi_value>& args) {
+                    args = { Napi::Number::New(env, deviceID), Napi::Boolean::New(env, status)};
+                  });
+                }
+                LOG_VERBOSE_(LOGINSTANCE) << "Jabra_RegisterXpressConnectionStatusCallback callback handling finished";
+              } catch (const std::exception &e) {
+                const std::string errorMsg = "RegisterXpressConnectionStatusCallback callback failed: " + std::string(e.what());
+                LOG_FATAL_(LOGINSTANCE) << errorMsg;
+              } catch (...) {
+                const std::string errorMsg = "RegisterXpressConnectionStatusCallback callback failed failed with unknown exception";
+                LOG_FATAL_(LOGINSTANCE) << errorMsg;
+              }                 
+            });            
+
             Jabra_RegisterUploadProgress([] (unsigned short deviceID, Jabra_UploadEventStatus status, unsigned short percentage) {
               try {
                 LOG_VERBOSE_(LOGINSTANCE) << "Jabra_RegisterUploadProgress got " << status << " " << percentage;
@@ -739,6 +813,27 @@ Napi::Value napi_Initialize(const Napi::CallbackInfo& info) {
                 LOG_FATAL_(LOGINSTANCE) << errorMsg;
               }
             });
+
+            Jabra_RegisterCameraStatusCallback([] (unsigned short deviceID, bool status) {
+              try {
+                LOG_VERBOSE_(LOGINSTANCE) << "Jabra_RegisterCameraStatusCallback callback got " << status; 
+
+                auto cameraStatusCallback = state_Jabra_Initialize.getCameraStatusCallback();
+
+                if (cameraStatusCallback) {
+                  cameraStatusCallback->call([deviceID, status](Napi::Env env, std::vector<napi_value>& args) {
+                    args = { Napi::Number::New(env, deviceID), Napi::Boolean::New(env, status)};
+                  });
+                }
+                LOG_VERBOSE_(LOGINSTANCE) << "Jabra_RegisterCameraStatusCallback callback handling finished";
+              } catch (const std::exception &e) {
+                const std::string errorMsg = "cameraStatusCallback callback failed: " + std::string(e.what());
+                LOG_FATAL_(LOGINSTANCE) << errorMsg;
+              } catch (...) {
+                const std::string errorMsg = "cameraStatusCallback callback failed failed with unknown exception";
+                LOG_FATAL_(LOGINSTANCE) << errorMsg;
+              }                 
+            });            
 
             // Finally, notify caller that init succeded:
             auto initCallback = state_Jabra_Initialize.getInitializedCallback();
@@ -909,6 +1004,29 @@ Napi::Value napi_GetVersion(const Napi::CallbackInfo& info) {
   }, [](const Napi::Env& env, const std::string& cppResult) { return Napi::String::New(env, cppResult); });
 }
 
+Napi::Value napi_PreloadDeviceInfo(const Napi::CallbackInfo& info) {
+  const char * const functionName = __func__;
+  Napi::Env env = info.Env();
+
+  if (util::verifyArguments(functionName, info, {util::STRING, util::FUNCTION})) {
+    const std::string zipFilename = info[0].As<Napi::String>();  
+    Napi::Function javascriptResultCallback = info[1].As<Napi::Function>();  
+
+    (new util::JAsyncWorker<void, void>(
+      functionName, 
+      javascriptResultCallback,
+      [functionName, zipFilename](){ 
+        bool retv = Jabra_PreloadDeviceInfo(zipFilename.c_str());     
+
+        if (retv == false) {
+          util::JabraReturnCodeException::LogAndThrow(functionName, Jabra_ReturnCode::FileWrite_Fail);
+        } 
+      }
+    ))->Queue();
+  }
+  return env.Undefined();
+}
+
 /**
  * This function is for N-API experiments. Content may be deleted or replaced at will for new experiments.
  * 
@@ -917,5 +1035,121 @@ Napi::Value napi_GetVersion(const Napi::CallbackInfo& info) {
 Napi::Value napi_SyncExperiment(const Napi::CallbackInfo& info) {
   const char * const functionName = __func__;
   const Napi::Env env = info.Env();
+  /*
+  Jabra_PairingList lst;
+  lst.count = 2;
+  lst.listType = Jabra_DeviceListType::SearchComplete;
+  lst.pairedDevice = new Jabra_PairedDevice[2];
+  lst.pairedDevice[0].deviceName = "device 0 test";
+  lst.pairedDevice[0].isConnected = false;
+  lst.pairedDevice[0].deviceBTAddr[0] = 0;
+  lst.pairedDevice[0].deviceBTAddr[1] = 1;
+  lst.pairedDevice[0].deviceBTAddr[2] = 2;
+  lst.pairedDevice[0].deviceBTAddr[3] = 3;
+  lst.pairedDevice[0].deviceBTAddr[4] = 4;
+  lst.pairedDevice[0].deviceBTAddr[5] = 5;
+  lst.pairedDevice[1].deviceName = "device 1 test";
+  lst.pairedDevice[1].isConnected = true;
+  lst.pairedDevice[1].deviceBTAddr[0] = 10;
+  lst.pairedDevice[1].deviceBTAddr[1] = 11;
+  lst.pairedDevice[1].deviceBTAddr[2] = 12;
+  lst.pairedDevice[1].deviceBTAddr[3] = 13;
+  lst.pairedDevice[1].deviceBTAddr[4] = 14;
+  lst.pairedDevice[1].deviceBTAddr[5] = 15;
+  
+  ManagedPairingList mlst(lst);
+
+  Napi::Object jlst = Napi::Object::New(env);
+  jlst.Set(Napi::String::New(env, "listType"), Napi::Number::New(env, mlst.listType));
+
+  Napi::Array jPairedDevices = Napi::Array::New(env);
+
+  int i = 0;
+  for (auto it = mlst.pairedDevice.begin(); it != mlst.pairedDevice.end(); it++) {
+    const ManagedPairedDevice& src =  *it;
+
+    Napi::Object jDev = Napi::Object::New(env);
+
+    jDev.Set(Napi::String::New(env, "deviceName"), Napi::String::New(env, src.deviceName));
+
+    std::string btAddrStr = toBTAddrString(src.deviceBTAddr.data(), src.deviceBTAddr.size());
+
+    jDev.Set(Napi::String::New(env, "deviceBTAddr"), Napi::String::New(env, btAddrStr));
+
+    jDev.Set(Napi::String::New(env, "isConnected"), Napi::Boolean::New(env, src.isConnected));
+
+    jPairedDevices.Set(i++, jDev);
+  }                    
+
+  jlst.Set(Napi::String::New(env, "pairedDevice"), jPairedDevices);
+  return jlst;
+  */
+
+
+  /*
+
+  ButtonEvent *buttonEvent = new ButtonEvent();
+  buttonEvent->buttonEventCount = 2;
+  buttonEvent->buttonEventInfo = new ButtonEventInfo[2];
+  buttonEvent->buttonEventInfo[0].buttonEventType = new ButtonEventType[2];
+  buttonEvent->buttonEventInfo[0].buttonEventType[0].key = 100;
+  buttonEvent->buttonEventInfo[0].buttonEventType[0].value = "val1";
+  buttonEvent->buttonEventInfo[0].buttonEventType[1].key = 101;
+  buttonEvent->buttonEventInfo[0].buttonEventType[1].value = "val2";
+  buttonEvent->buttonEventInfo[0].buttonEventTypeSize = 2;
+  buttonEvent->buttonEventInfo[0].buttonTypeKey = 42;
+  buttonEvent->buttonEventInfo[0].buttonTypeValue = "42value";
+  buttonEvent->buttonEventInfo[1].buttonEventType = new ButtonEventType[1];
+  buttonEvent->buttonEventInfo[1].buttonEventType[0].key = 102;
+  buttonEvent->buttonEventInfo[1].buttonEventType[0].value = "val3";
+  buttonEvent->buttonEventInfo[1].buttonEventTypeSize = 1;
+  buttonEvent->buttonEventInfo[1].buttonTypeKey = 43;
+  buttonEvent->buttonEventInfo[1].buttonTypeValue = "43value";
+
+  std::vector<ManagedButtonEventInfo> buttonInfos;
+                      
+  for (int i=0; i<buttonEvent->buttonEventCount; ++i) {
+    const ButtonEventInfo src = buttonEvent->buttonEventInfo[i];
+
+    const unsigned short buttonTypeKey = src.buttonTypeKey;
+    const std::string buttonTypeValue = std::string(src.buttonTypeValue);
+
+    for (int j=0; j<src.buttonEventTypeSize; ++j) {
+      ManagedButtonEventInfo e = { buttonTypeKey, buttonTypeValue, src.buttonEventType[j].key, std::string(src.buttonEventType[j].value) };
+      buttonInfos.push_back(e);
+    }
+  }
+
+
+  Napi::Array buttonEvents = Napi::Array::New(env);
+
+  std::unordered_map<unsigned short, Napi::Array *> targets;
+  for (auto itr = buttonInfos.begin(); itr != buttonInfos.end(); itr++) {
+    const ManagedButtonEventInfo& src = *itr;
+
+    if (targets.find(src.buttonTypeKey) == targets.end()) {
+        Napi::Array buttonEventInfos = Napi::Array::New(env);
+        targets.insert(std::pair<unsigned short, Napi::Array *>(src.buttonTypeKey, &buttonEventInfos));
+        
+        Napi::Object o = Napi::Object::New(env);
+        o.Set(Napi::String::New(env, "buttonTypeKey"), Napi::Number::New(env, src.buttonTypeKey));
+        o.Set(Napi::String::New(env, "buttonTypeValue"), Napi::String::New(env, src.buttonTypeValue));
+        o.Set(Napi::String::New(env, "buttonEventType"), buttonEventInfos);
+
+        buttonEvents.Set(buttonEvents.Length(), o);
+    } 
+    Napi::Array * target = targets[src.buttonTypeKey];
+    assert(target != nullptr);
+
+    Napi::Object keyValue = Napi::Object::New(env);
+    keyValue.Set(Napi::String::New(env, "key"), Napi::Number::New(env, src.key));
+    keyValue.Set(Napi::String::New(env, "value"), Napi::String::New(env, src.value));
+
+    target->Set(target->Length(), keyValue);
+  }
+
+  return buttonEvents;
+  */
+ 
   return env.Undefined();
 }

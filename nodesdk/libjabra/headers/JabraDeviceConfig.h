@@ -69,7 +69,7 @@ typedef struct _DependencySetting {
 /** @brief This structure contains setting values in key value pair. */
 typedef struct _ListKeyValue {
   unsigned short key;
-  void* value;
+  char* value;
 
   int dependentcount;
   DependencySetting* dependents;
@@ -286,17 +286,6 @@ LIBRARY_API DeviceSettings* Jabra_GetSetting(unsigned short deviceID, const char
 LIBRARY_API DeviceSettings* Jabra_GetSettings(unsigned short deviceID);
 
 /**
- * @brief Gets the full list of settings (all groups and its settings) for
- * a device. Also includes unsupported settings.
- * @param[in] deviceID ID for specific device.
- * @return Pointer to the structure containing all settings for the deviceID.
- * In case device is not found/ could not be access, NULL pointer is returned.
- * @note As memory is allocated through SDK, need to be freed by calling
- * #Jabra_FreeDeviceSettings.
- */
-LIBRARY_API DeviceSettings* Jabra_GetSettingsNoFilter(unsigned short deviceID);
-
-/**
  * @brief Sets all the settings( including all groups and its settings) for a
  * device.
  * @param[in] deviceID ID for a specific device.
@@ -320,6 +309,7 @@ LIBRARY_API Jabra_ReturnCode Jabra_SetSettings(unsigned short deviceID, DeviceSe
  * @return No_FactorySupported if device does not support factory reset.
  * @return Device_WriteFail if it fails to write to the device.
  * @return ProtectedSetting_Write if a setting is write protected.
+ * @sa @wrap{Jabra_FactoryReset}
  */
 LIBRARY_API Jabra_ReturnCode Jabra_FactoryReset(unsigned short deviceID);
 
@@ -462,6 +452,7 @@ LIBRARY_API InvalidList* Jabra_GetInvalidSettings(unsigned short deviceID);
  * free the allocated asset by calling #Jabra_FreeAsset.
  * @return Return_Ok if a valid asset was available (is then available through
  * (*asset)->...).
+ * @sa @wrap{Jabra_GetNamedAsset}
  */
 LIBRARY_API Jabra_ReturnCode Jabra_GetNamedAsset(unsigned short deviceID, const char* name, CNamedAsset** asset);
 

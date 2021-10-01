@@ -32,3 +32,4 @@ DEFINE_CODE(No_OtaUpdateSupport, "Firmware update through OTA is not supported f
 DEFINE_CODE(Non_Jabra_Device_Detection_disabled, "Non Jabra device detection is disabled")
 DEFINE_CODE(Device_Lock, "Device is locked")
 DEFINE_CODE(Device_NotLock, "Device is not locked")
+DEFINE_CODE(Return_Timeout, "Operation timed out")

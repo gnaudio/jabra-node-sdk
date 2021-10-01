@@ -139,6 +139,7 @@ typedef struct _LanguageList
  * @return Device_Unknown       deviceID is unknown
  * @return Not_Supported        Functionality is not supported on this device
  * @return Return_ParameterFail A NULL pointer was passed
+ * @sa @wrap{Jabra_GetFirmwareVersion}
  */
 LIBRARY_API Jabra_ReturnCode Jabra_GetFirmwareVersion(unsigned short deviceID, char* const firmwareVersion, int count);
 

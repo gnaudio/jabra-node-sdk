@@ -87,7 +87,6 @@ static std::string toString(DeviceSettings * src) {
        buffer << "}, " << std::endl;
     }
 
-
     buffer << "\"isDeviceRestart\": " << (settingSrc.isDeviceRestart ? "true" : "false") << ", ";
     buffer << "\"isSettingProtected\": " << (settingSrc.isSettingProtected ? "true" : "false") << ", ";    
     buffer << "\"isSettingProtectionEnabled\": " << (settingSrc.isSettingProtectionEnabled ? "true" : "false") << ", ";
@@ -387,46 +386,6 @@ static void toNodeType(const unsigned short deviceId, DeviceSettings *src, Napi:
 
   dest.Set(Napi::String::New(env, "errStatus"), Napi::Number::New(env, src->errStatus));
   dest.Set(Napi::String::New(env, "settingInfo"), settings);
-}
-
-Napi::Value napi_GetSettingsNoFilter(const Napi::CallbackInfo& info) {
-  const char * const functionName = __func__;
-  Napi::Env env = info.Env();
-
-  if (util::verifyArguments(functionName, info, {util::NUMBER, util::FUNCTION})) {
-    const unsigned short deviceId = (unsigned short)(info[0].As<Napi::Number>().Int32Value());
-    Napi::Function javascriptResultCallback = info[1].As<Napi::Function>();
-
-    (new util::JAsyncWorker<DeviceSettings *, Napi::Object>(
-      functionName, 
-      javascriptResultCallback,
-      [functionName, deviceId]() -> DeviceSettings * { 
-        DeviceSettings * const rawSetttings = Jabra_GetSettingsNoFilter(deviceId);
-
-        if (!rawSetttings) {
-          util::JabraException::LogAndThrow(functionName, "null returned");
-        } else {
-            IF_LOG_(LOGINSTANCE, plog::verbose) {
-              LOG_VERBOSE_(LOGINSTANCE) << "napi_GetSettingsNoFilter got raw object : '" << toString(rawSetttings) << "'";
-            }
-        }
-
-        return rawSetttings;
-      }, [deviceId](const Napi::Env& env, DeviceSettings * const rawSetttings) {  
-          Napi::Object napiResult = Napi::Object::New(env);
-          if (rawSetttings) {
-            toNodeType(deviceId, rawSetttings, napiResult);
-          }
-          return napiResult;
-      }, [](DeviceSettings * rawSetttings) {
-          if (rawSetttings) {
-            Jabra_FreeDeviceSettings(rawSetttings);
-          }
-      }
-    ))->Queue();
-  }
-
-  return env.Undefined();
 }
 
 Napi::Value napi_GetSettings(const Napi::CallbackInfo& info) {

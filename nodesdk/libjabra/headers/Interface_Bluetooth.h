@@ -218,7 +218,7 @@ LIBRARY_API Jabra_ReturnCode Jabra_DisconnectBTDevice(unsigned short deviceID);
  * to get updated connection status. In order to connect to a device from the
  * list of paired devices, make sure that there is no paired device currently
  * connected. Any paired device currently connected has to be disconnected by
- * calling #Jabra_DisconnectPairedDevice before using
+ * calling #Jabra_DisConnectPairedDevice before using
  * #Jabra_ConnectPairedDevice.
  * @see Jabra_ConnectBTDevice
  * @see Jabra_ConnectNewDevice
@@ -288,6 +288,7 @@ LIBRARY_API bool Jabra_IsPairingListSupported(unsigned short deviceID);
  * @see Jabra_FreePairingList
  * @see Jabra_ClearPairedDevice
  * @see Jabra_RegisterPairingListCallback
+ * @sa @wrap{Jabra_GetSecureConnectionMode}
  */
 LIBRARY_API Jabra_ReturnCode Jabra_GetSecureConnectionMode(unsigned short deviceID, Jabra_SecureConnectionMode* scMode);
 

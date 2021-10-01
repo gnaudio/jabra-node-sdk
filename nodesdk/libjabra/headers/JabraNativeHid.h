@@ -42,6 +42,7 @@
  * @return Return_Ok if success.
  * @return Device_Unknown if the deviceID specified is not known.
  * @return Not_Supported if HID is not supported.
+ * @sa @wrap{Jabra_WriteHIDCommand}
  */
 LIBRARY_API Jabra_ReturnCode Jabra_WriteHIDCommand(unsigned short deviceID, unsigned short HID_UsagePage, unsigned short HID_Usage, bool value);
 
@@ -52,7 +53,7 @@ LIBRARY_API Jabra_ReturnCode Jabra_WriteHIDCommand(unsigned short deviceID, unsi
  * @return Return_Ok if success.
  * @return Device_Unknown if the deviceID specified is not known.
  * @return Not_Supported if HID is not supported.
- * @see Jabra_IsOffHookSupported
+ * @see Jabra_IsOffHookSupported @wrap{Jabra_SetOffHook}
  */
 LIBRARY_API Jabra_ReturnCode Jabra_SetOffHook(unsigned short deviceID, bool offHook);
 
@@ -72,7 +73,7 @@ LIBRARY_API bool Jabra_IsOffHookSupported(unsigned short deviceID);
  * @return Return_Ok if success.
  * @return Device_Unknown if the deviceID specified is not known.
  * @return Not_Supported if HID is not supported.
- * @see Jabra_IsRingerSupported
+ * @see Jabra_IsRingerSupported @wrap{Jabra_SetRinger}
  */
 LIBRARY_API Jabra_ReturnCode Jabra_SetRinger(unsigned short deviceID, bool ringer);
 
@@ -80,7 +81,7 @@ LIBRARY_API Jabra_ReturnCode Jabra_SetRinger(unsigned short deviceID, bool ringe
  * @brief Check for ringer command support by the device.
  * @param[in] deviceID Id for a specific device.
  * @return Returns True if ringer is supported for a specific Jabra device.
- * @see Jabra_SetRinger
+ * @see Jabra_SetRinger @wrap{Jabra_IsRingerSupported}
  */
 LIBRARY_API bool Jabra_IsRingerSupported(unsigned short deviceID);
 
@@ -91,7 +92,7 @@ LIBRARY_API bool Jabra_IsRingerSupported(unsigned short deviceID);
  * @return Return_Ok if success.
  * @return Device_Unknown if the deviceID specified is not known.
  * @return Not_Supported if HID is not supported.
- * @see Jabra_IsMuteSupported
+ * @see Jabra_IsMuteSupported @wrap{Jabra_SetMute}
  */
 LIBRARY_API Jabra_ReturnCode Jabra_SetMute(unsigned short deviceID, bool mute);
 
@@ -110,7 +111,7 @@ LIBRARY_API bool Jabra_IsMuteSupported(unsigned short deviceID);
  * @return Return_Ok if success.
  * @return Device_Unknown if the deviceID specified is not known.
  * @return Not_Supported if HID is not supported.
- * @see Jabra_IsHoldSupported
+ * @see Jabra_IsHoldSupported @wrap{Jabra_SetHold}
  */
 LIBRARY_API Jabra_ReturnCode Jabra_SetHold(unsigned short deviceID, bool hold);
 
@@ -129,7 +130,7 @@ LIBRARY_API bool Jabra_IsHoldSupported(unsigned short deviceID);
  * @return Return_Ok if success.
  * @return Device_Unknown if the deviceID specified is not known.
  * @return Not_Supported if HID is not supported.
- * @see Jabra_IsOnlineSupported
+ * @see Jabra_IsOnlineSupported @wrap{Jabra_SetOnline}
  */
 LIBRARY_API Jabra_ReturnCode Jabra_SetOnline(unsigned short deviceID, bool online);
 
@@ -160,6 +161,7 @@ typedef enum _Jabra_HidState {
  * @return True Supports GN HID and Std HID.
  * @see Jabra_SetHidWorkingState
  * @see Jabra_GetHidWorkingState
+ * @sa @wrap{Jabra_IsGnHidStdHidSupported}
  */
 LIBRARY_API bool Jabra_IsGnHidStdHidSupported(unsigned short deviceID);
 
@@ -174,6 +176,7 @@ LIBRARY_API bool Jabra_IsGnHidStdHidSupported(unsigned short deviceID);
  * @return Return_ParameterFail in case of an incorrect parameter.
  * @see Jabra_IsGnHidStdHidSupported
  * @see Jabra_SetHidWorkingState
+ * @sa @wrap{Jabra_GetHidWorkingState}
  */
 LIBRARY_API Jabra_ReturnCode Jabra_GetHidWorkingState(unsigned short deviceID, Jabra_HidState* state);
 
@@ -190,6 +193,7 @@ LIBRARY_API Jabra_ReturnCode Jabra_GetHidWorkingState(unsigned short deviceID, J
  * @return Return_ParameterFail in case of an incorrect parameter.
  * @see Jabra_IsGnHidStdHidSupported
  * @see Jabra_GetHidWorkingState
+ * @sa @wrap{Jabra_SetHidWorkingState}
  */
 LIBRARY_API Jabra_ReturnCode Jabra_SetHidWorkingState(unsigned short deviceID, Jabra_HidState state);
 

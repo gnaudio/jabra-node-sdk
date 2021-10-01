@@ -58,6 +58,9 @@
 #endif
 
 #define DEFINE_CODE(a,b) a,
+/**
+ * @brief This enum is used for the return values from API.
+ */
 typedef enum _ReturnCode
 {
 #include "returncodes.inc"
@@ -215,6 +218,7 @@ typedef enum _UploadEventStatus
     Upload_Error,
 } Jabra_UploadEventStatus;
 
+/** Features that may be supported by devices. @see Jabra_IsFeatureSupported */
 typedef enum _DeviceFeature
 {
     BusyLight = 1000,
@@ -252,7 +256,11 @@ typedef enum _DeviceFeature
     AMASupport = 1032,
     AmbienceModesLoop = 1033,
     FFANC = 1034,
-    GoogleBisto = 1035
+    GoogleBisto = 1035,
+    VirtualDirector = 1036,
+    PictureInPicture = 1037,
+    DateTimeIsUTC = 1038,       // Time in device is UTC
+    RemoteControl = 1039        // Device has physical remote control
 } DeviceFeature;
 
 /** @brief This struct represents the product registration info. */
@@ -653,6 +661,7 @@ typedef void (*BusylightChangeListener)(unsigned short deviceID, bool isOn);
  * @return Return_Ok            Call was successful
  * @return Return_ParameterFail version is NULL or buffer too small
  * @note This function can be called without #Jabra_Initialize being called.
+ * @ingroup g-sdk
  */
 LIBRARY_API Jabra_ReturnCode Jabra_GetVersion(char* const version, int count);
 
@@ -661,6 +670,7 @@ LIBRARY_API Jabra_ReturnCode Jabra_GetVersion(char* const version, int count);
  * #Jabra_Initialize is called. The application ID can requested via the
  * Jabra Developer Zone https://developer.jabra.com
  * @param[in] inAppID ID for the application.
+ * @ingroup g-sdk
  */
 LIBRARY_API void Jabra_SetAppID(const char* inAppID);
 
@@ -688,6 +698,8 @@ LIBRARY_API void Jabra_SetAppID(const char* inAppID);
  * been called prior to calling this function.
  * @note AppID must be set using #Jabra_SetAppID before the library
  * initialization is called. If not the initialization fails.
+ * @ingroup g-events
+ * @ingroup g-sdk
  */
 LIBRARY_API bool Jabra_InitializeV2(
     void(*FirstScanForDevicesDoneFunc)(void),
@@ -695,7 +707,7 @@ LIBRARY_API bool Jabra_InitializeV2(
     void(*DeviceRemovedFunc)(unsigned short deviceID),
     void(*ButtonInDataRawHidFunc)(unsigned short deviceID, unsigned short usagePage, unsigned short usage, bool buttonInData),
     void(*ButtonInDataTranslatedFunc)(unsigned short deviceID, Jabra_HidInput translatedInData, bool buttonInData),
-    bool nonJabraDeviceDetection,
+    bool nonJabraDeviceDectection,
     Config_params* configParams
 );
 
@@ -737,8 +749,9 @@ LIBRARY_API bool Jabra_Initialize(
 /**
  * @brief Library uninitialize
  * @return true             Library uninitialization was successful
- * @return false            Library initialization was unsuccessful
+ * @return false            Library uninitialization was unsuccessful
  * (for example if called when not initialized).
+ * @ingroup g-sdk
  */
 LIBRARY_API bool Jabra_Uninitialize(void);
 
@@ -748,6 +761,7 @@ LIBRARY_API bool Jabra_Uninitialize(void);
  * @return Return_Ok            Call was successful
  * @return Non_Jabra_Device_Detection_disabled Non-jabra device detection is disabled
  * @return System_Error         Device manager instance is not available
+ * @ingroup g-events
  */
 LIBRARY_API Jabra_ReturnCode Jabra_SetHidEventsFromNonJabraDevices(bool hidEvents);
 
@@ -755,12 +769,14 @@ LIBRARY_API Jabra_ReturnCode Jabra_SetHidEventsFromNonJabraDevices(bool hidEvent
  * @brief Are HID events from non Jabra devices enabled
  * @return true             HID events are enabled
  * @return false            HID events are not enabled
+ * @ingroup g-events
  */
 LIBRARY_API bool Jabra_IsHidEventsFromNonJabraDevicesEnabled(void);
 
 /**
  * @brief Enable HID events from Jabra devices
  * @param[in] hidEvents true = HID events are send to app, false = HID events are discarded
+ * @ingroup g-events
  */
 LIBRARY_API void Jabra_SetStdHidEventsFromJabraDevices(bool hidEvents);
 
@@ -768,6 +784,7 @@ LIBRARY_API void Jabra_SetStdHidEventsFromJabraDevices(bool hidEvents);
  * @brief Are HID events from Jabra devices enabled
  * @return true             HID events are enabled
  * @return false            HID events are not enabled
+ * @ingroup g-events
  */
 LIBRARY_API bool Jabra_IsStdHidEventsFromJabraDevicesEnabled(void);
 
@@ -776,6 +793,7 @@ LIBRARY_API bool Jabra_IsStdHidEventsFromJabraDevicesEnabled(void);
  * @return true             USB device scan is done
  * @return false            USB device scan is not done
  * @note Library initialization must be performed before calling this function.
+ * @ingroup g-dev-scan
  */
 LIBRARY_API bool Jabra_IsFirstScanForDevicesDone(void);
 
@@ -784,6 +802,7 @@ LIBRARY_API bool Jabra_IsFirstScanForDevicesDone(void);
  * @param[in] deviceID ID for specific device.
  * @return true             Device is attached
  * @return false            Device is not attached
+ * @ingroup g-dev-scan
  */
 LIBRARY_API bool Jabra_IsDeviceAttached(unsigned short deviceID);
 
@@ -797,6 +816,7 @@ LIBRARY_API bool Jabra_IsDeviceAttached(unsigned short deviceID);
  * @note call #Jabra_FreeDeviceInfo on each object in the list when done do
  * avoid a memory leak.
  * @see Jabra_FreeDeviceInfo
+ * @ingroup g-dev-scan
  */
 LIBRARY_API void Jabra_GetAttachedJabraDevices(int* count, Jabra_DeviceInfo* deviceInfoList);
 
@@ -804,6 +824,7 @@ LIBRARY_API void Jabra_GetAttachedJabraDevices(int* count, Jabra_DeviceInfo* dev
  * @brief Frees the #Jabra_DeviceInfo struct members
  * @param[in] info      #Jabra_DeviceInfo struct to be freed.
  * @see Jabra_GetAttachedJabraDevices
+ * @ingroup g-dev-scan
  */
 LIBRARY_API void Jabra_FreeDeviceInfo(Jabra_DeviceInfo info);
 
@@ -833,6 +854,8 @@ LIBRARY_API Jabra_ReturnCode Jabra_GetSerialNumber(unsigned short deviceID, char
  * @return Return_Ok            Call was successful
  * @return Device_Unknown       deviceID is unknown
  * @return Return_ParameterFail esn is NULL or buffer too small
+ * @ingroup g-dev-info
+ * @sa @wrap{Jabra_GetESN}
  */
 LIBRARY_API Jabra_ReturnCode Jabra_GetESN( unsigned short deviceID, char* const esn, int count);
 
@@ -845,6 +868,7 @@ LIBRARY_API Jabra_ReturnCode Jabra_GetESN( unsigned short deviceID, char* const 
  * @return Return_Ok            Call was successful
  * @return Device_Unknown       deviceID is unknown
  * @return Return_ParameterFail sku is NULL or buffer too small
+ * @ingroup g-dev-info
  */
 LIBRARY_API Jabra_ReturnCode Jabra_GetSku(unsigned short deviceID, char* const sku, unsigned int count);
 
@@ -856,6 +880,7 @@ LIBRARY_API Jabra_ReturnCode Jabra_GetSku(unsigned short deviceID, char* const s
  * @return Return_Ok            Call was successful
  * @return Device_Unknown       deviceID is unknown
  * @return Return_ParameterFail A NULL pointer was passed
+ * @ingroup g-dev-info
  */
 LIBRARY_API Jabra_ReturnCode Jabra_GetHwAndConfigVersion(unsigned short deviceID, unsigned short *HwVersion, unsigned short *configVersion);
 
@@ -867,6 +892,8 @@ LIBRARY_API Jabra_ReturnCode Jabra_GetHwAndConfigVersion(unsigned short deviceID
  * is responsible for calling #Jabra_FreeMap to release the allocated memory
  * after use.
  * @see Jabra_FreeMap
+ * @sa @wrap{Jabra_GetMultiESN}
+ * @ingroup g-dev-info
  */
 LIBRARY_API Map_Int_String* Jabra_GetMultiESN( unsigned short deviceID);
 
@@ -874,6 +901,7 @@ LIBRARY_API Map_Int_String* Jabra_GetMultiESN( unsigned short deviceID);
  * @brief Release memory allocated by functions returning a Map_Int_String*
  * @param[in] map map to release.
  * @see Jabra_GetMultiESN
+ * @ingroup g-dev-info
  */
 LIBRARY_API void Jabra_FreeMap(Map_Int_String* map);
 
@@ -885,6 +913,8 @@ LIBRARY_API void Jabra_FreeMap(Map_Int_String* map);
  * @return Device_Unknown       deviceID is unknown
  * @return Not_Supported        Functionality is not supported on this device
  * @return Return_ParameterFail A NULL pointer was passed
+ * @sa @wrap{Jabra_GetCurrentLanguageCode}
+ * @ingroup g-dev-info
  */
 LIBRARY_API Jabra_ReturnCode Jabra_GetCurrentLanguageCode(unsigned short deviceID, unsigned short* languageCode);
 
@@ -894,6 +924,8 @@ LIBRARY_API Jabra_ReturnCode Jabra_GetCurrentLanguageCode(unsigned short deviceI
  * @return The path of the device image.
  * @note As memory is allocated through SDK, needs to be freed by calling
  * #Jabra_FreeString.
+ * @ingroup g-dev-info
+ * @sa @wrap{Jabra_GetDeviceImagePath}
  */
 LIBRARY_API char* Jabra_GetDeviceImagePath(unsigned short deviceID);
 
@@ -903,6 +935,8 @@ LIBRARY_API char* Jabra_GetDeviceImagePath(unsigned short deviceID);
  * @return The path of the device image thumbnail.
  * @note As memory is allocated through SDK, need to be freed by calling
  * #Jabra_FreeString.
+ * @ingroup g-dev-info
+ * @sa @wrap{Jabra_GetDeviceImageThumbnailPath}
  */
 LIBRARY_API char* Jabra_GetDeviceImageThumbnailPath(unsigned short deviceID);
 
@@ -914,7 +948,8 @@ typedef enum _BatteryComponent
     COMBINED, /*!< For headsets that contains multiple batteries but is not capable of sending each individual state. */
     RIGHT, /*!< The battery in the right unit */
     LEFT, /*!< The battery in the left unit */
-    CRADLE_BATTERY /*!< The battery in the cradle */
+    CRADLE_BATTERY, /*!< The battery in the cradle */
+    REMOTE_CONTROL /*!< The battery in the remote control */
 } BatteryComponent;
 
 typedef struct _BatteryStatusUnitType
@@ -954,11 +989,12 @@ typedef struct _BatteryStatusType
  * @note As memory is allocated through SDK, need to be freed by calling
  * #Jabra_FreeBatteryStatus.
  * @see Jabra_RegisterBatteryStatusUpdateCallback
+ * @ingroup g-dev-status
  */
 LIBRARY_API Jabra_ReturnCode Jabra_GetBatteryStatusV2(unsigned short deviceID, Jabra_BatteryStatus** batteryStatus);
 
 /**
- * @brief Copy the content of a Jabra_BatteryStatus struct. See @Jabra_BatteryStatus.
+ * @brief Copy the content of a Jabra_BatteryStatus struct. See #Jabra_BatteryStatus.
  * @param[in] from          Pointer to source struct
  * @param[out] to           Pointer to destination struct. Must be preallocated by the caller.
 */
@@ -972,7 +1008,7 @@ LIBRARY_API void Jabra_FreeBatteryStatus(Jabra_BatteryStatus* batteryStatus);
 
 /**
  * @brief Type definition of function pointer to use for
- * #Jabra_RegisterBatteryStatusCallback. See @Jabra_BatteryStatus
+ * #Jabra_RegisterBatteryStatusUpdateCallbackV2.
  */
 typedef void(*BatteryStatusUpdateCallbackV2)(unsigned short deviceID, Jabra_BatteryStatus* batteryStatus);
 
@@ -990,12 +1026,26 @@ typedef void(*BatteryStatusUpdateCallbackV2)(unsigned short deviceID, Jabra_Batt
  * @note Since dongle does not have battery, SDK returns Not_Supported when
  * battery status is requested for dongle device.
  * @see Jabra_RegisterBatteryStatusUpdateCallback
+ * @sa @wrap{Jabra_GetBatteryStatus}
  */
 LIBRARY_API Jabra_ReturnCode Jabra_GetBatteryStatus(unsigned short deviceID, int *levelInPercent, bool *charging, bool *batteryLow);
 
 /**
+ * @brief Get remote control battery status, if supported by device.
+ * @param[in] deviceID          ID for a specific device
+ * @param[out] levelInPercent   Battery level in percent (0 - 100)
+ * @param[out] charging         Indicates if battery is being charged
+ * @param[out] batteryLow       Indicates if battery level is low
+ * @return Return_Ok            Call was successful
+ * @return Device_Unknown       deviceID is unknown
+ * @return Device_BadState      Failed while reading from device
+ * @return Not_Supported        Functionality is not supported on this device
+ */
+LIBRARY_API Jabra_ReturnCode Jabra_GetRemoteControlBatteryStatus(unsigned short deviceID, int* levelInPercent, bool* charging, bool* batteryLow);
+
+/**
  * @brief Type definition of function pointer to use for
- * #Jabra_RegisterBatteryStatusCallback.
+ * #Jabra_RegisterBatteryStatusUpdateCallback.
  */
 typedef void(*BatteryStatusUpdateCallback)(unsigned short deviceID, int levelInPercent, bool charging, bool batteryLow);
 
@@ -1004,6 +1054,8 @@ typedef void(*BatteryStatusUpdateCallback)(unsigned short deviceID, int levelInP
  * @param[in] callback      Callback method called when the battery status changes
  * @see Jabra_GetBatteryStatus
  * @note As memory is allocated through SDK, need to be freed by calling #Jabra_FreeBatteryStatus.
+ * @ingroup g-events
+ * @ingroup g-dev-status
  */
 LIBRARY_API void Jabra_RegisterBatteryStatusUpdateCallbackV2(BatteryStatusUpdateCallbackV2 const callback);
 
@@ -1034,12 +1086,14 @@ LIBRARY_API char* Jabra_GetWarrantyEndDate(unsigned short deviceID);
  * @return true             Softphone app was integrated to Jabra application
  * @return false            It failed to integrate or is already connected
  * @see Jabra_DisconnectFromJabraApplication
+ * @ingroup g-phone
  */
 LIBRARY_API bool Jabra_ConnectToJabraApplication(const char* guid, const char* softphoneName);
 
 /**
  * @brief Disconnects connected from Jabra applications.
  * @see Jabra_ConnectToJabraApplication
+ * @ingroup g-phone
  */
 LIBRARY_API void Jabra_DisconnectFromJabraApplication(void);
 
@@ -1049,6 +1103,7 @@ LIBRARY_API void Jabra_DisconnectFromJabraApplication(void);
  * Will be available in later versions of JMS.
  * @param[in] isReady       Sets the softphone readiness state
  * @see Jabra_IsSoftphoneInFocus
+ * @ingroup g-phone
  */
 LIBRARY_API void Jabra_SetSoftphoneReady(bool isReady);
 
@@ -1057,6 +1112,7 @@ LIBRARY_API void Jabra_SetSoftphoneReady(bool isReady);
  * @return true         Softphone is in focus
  * @return false        Softphone is not in focus
  * @see Jabra_SetSoftphoneReady
+ * @ingroup g-phone
  */
 LIBRARY_API bool Jabra_IsSoftphoneInFocus(void);
 
@@ -1064,6 +1120,8 @@ LIBRARY_API bool Jabra_IsSoftphoneInFocus(void);
  * @brief Get error string from the error status.
  * @param[in] errStatus     Status of the error from the Jabra Device
  * @return Corresponding error text.
+ * @ingroup g-sdk
+ * @sa @wrap{Jabra_GetErrorString}
  */
 LIBRARY_API const char* Jabra_GetErrorString(Jabra_ErrorStatus errStatus);
 
@@ -1071,6 +1129,7 @@ LIBRARY_API const char* Jabra_GetErrorString(Jabra_ErrorStatus errStatus);
  * @brief Get descriptive string from the return code.
  * @param[in] code      Return code to get description of
  * @return Corresponding text.
+ * @ingroup g-sdk
  */
 LIBRARY_API const char* Jabra_GetReturnCodeString(Jabra_ReturnCode code);
 
@@ -1080,6 +1139,8 @@ LIBRARY_API const char* Jabra_GetReturnCodeString(Jabra_ReturnCode code);
  * @return Return_Ok            Call was successful
  * @return Device_Unknown       deviceID is unknown
  * @return Device_Lock          Lock was acquired by other process
+ * @ingroup g-phone
+ * @sa @wrap{Jabra_GetLock}
  */
 LIBRARY_API Jabra_ReturnCode Jabra_GetLock(unsigned short deviceID);
 
@@ -1089,6 +1150,8 @@ LIBRARY_API Jabra_ReturnCode Jabra_GetLock(unsigned short deviceID);
  * @return Return_Ok            Call was successful
  * @return Device_Unknown       deviceID is unknown
  * @return Device_NotLock       Lock was acquired by other process
+ * @ingroup g-phone
+ * @sa @wrap{Jabra_ReleaseLock}
  */
 LIBRARY_API Jabra_ReturnCode Jabra_ReleaseLock(unsigned short deviceID);
 
@@ -1097,6 +1160,8 @@ LIBRARY_API Jabra_ReturnCode Jabra_ReleaseLock(unsigned short deviceID);
  * @param[in] deviceID          ID for a device
  * @return true                 Device is locked
  * @return false                Device is not locked
+ * @ingroup g-phone
+ * @sa @wrap{Jabra_IsLocked}
  */
 LIBRARY_API bool Jabra_IsLocked(unsigned short deviceID);
 
@@ -1108,6 +1173,7 @@ LIBRARY_API bool Jabra_IsLocked(unsigned short deviceID);
  * @see Jabra_GetBusylightStatus
  * @see Jabra_SetBusylightStatus
  * @see Jabra_RegisterBusylightEvent
+ * @ingroup g-indicators
  */
 LIBRARY_API bool Jabra_IsBusylightSupported(unsigned short deviceID);
 
@@ -1119,6 +1185,7 @@ LIBRARY_API bool Jabra_IsBusylightSupported(unsigned short deviceID);
  * @see Jabra_IsBusylightSupported
  * @see Jabra_SetBusylightStatus
  * @see Jabra_RegisterBusylightEvent
+ * @ingroup g-indicators
  */
 LIBRARY_API bool Jabra_GetBusylightStatus(unsigned short deviceID);
 
@@ -1132,6 +1199,8 @@ LIBRARY_API bool Jabra_GetBusylightStatus(unsigned short deviceID);
  * @see Jabra_IsBusylightSupported
  * @see Jabra_GetBusylightStatus
  * @see Jabra_RegisterBusylightEvent
+ * @sa @wrap{Jabra_SetBusylightStatus}
+ * @ingroup g-indicators
  */
 LIBRARY_API Jabra_ReturnCode Jabra_SetBusylightStatus(unsigned short deviceID, bool value);
 
@@ -1142,6 +1211,8 @@ LIBRARY_API Jabra_ReturnCode Jabra_SetBusylightStatus(unsigned short deviceID, b
  * @see Jabra_IsBusylightSupported
  * @see Jabra_GetBusylightStatus
  * @see Jabra_SetBusylightStatus
+ * @ingroup g-events
+ * @ingroup g-indicators
  */
 LIBRARY_API void Jabra_RegisterBusylightEvent(void(*BusylightFunc)(unsigned short deviceID, bool busylightValue));
 
@@ -1153,6 +1224,7 @@ LIBRARY_API void Jabra_RegisterBusylightEvent(void(*BusylightFunc)(unsigned shor
  * @see Jabra_GetManualBusylightStatus
  * @see Jabra_SetManualBusylightStatus
  * @see Jabra_RegisterManualBusylightEvent
+ * @ingroup g-indicators
  */
 LIBRARY_API bool Jabra_IsManualBusylightSupported(unsigned short deviceID);
 
@@ -1164,6 +1236,7 @@ LIBRARY_API bool Jabra_IsManualBusylightSupported(unsigned short deviceID);
  * @see Jabra_IsManualBusylightSupported
  * @see Jabra_SetManualBusylightStatus
  * @see Jabra_RegisterManualBusylightEvent
+ * @ingroup g-indicators
  */
 LIBRARY_API bool Jabra_GetManualBusylightStatus(unsigned short deviceID);
 
@@ -1178,11 +1251,13 @@ LIBRARY_API bool Jabra_GetManualBusylightStatus(unsigned short deviceID);
  * @see Jabra_IsManualBusylightSupported
  * @see Jabra_GetManualBusylightStatus
  * @see Jabra_RegisterManualBusylightEvent
+ * @ingroup g-indicators
  */
 LIBRARY_API Jabra_ReturnCode Jabra_SetManualBusylightStatus(unsigned short deviceID, BusyLightValue value);
 
 /**
  * @brief Registration for busylight change event.
+ * @param[in] deviceID      ID for specific device
  * @param[in] listener Callback method. Invoked when busylight change event
  *                     are received from the device. Set to NULL to
  *                     unregister.
@@ -1193,6 +1268,8 @@ LIBRARY_API Jabra_ReturnCode Jabra_SetManualBusylightStatus(unsigned short devic
  * @see Jabra_IsManualBusylightSupported
  * @see Jabra_GetManualBusylightStatus
  * @see Jabra_SetManualBusylightStatus
+ * @ingroup g-events
+ * @ingroup g-indicators
  */
 LIBRARY_API Jabra_ReturnCode Jabra_RegisterManualBusylightEvent(unsigned short deviceID, BusylightChangeListener listener);
 
@@ -1204,6 +1281,8 @@ LIBRARY_API Jabra_ReturnCode Jabra_RegisterManualBusylightEvent(unsigned short d
  * @see Jabra_GetLeftEarbudStatus
  * @see Jabra_RegisterLeftEarbudStatus
  * @see Jabra_RegisterHearThroughSettingChangeHandler
+ * @sa @wrap{Jabra_IsLeftEarbudStatusSupported}
+ * @ingroup g-dev-status
  */
 LIBRARY_API bool Jabra_IsLeftEarbudStatusSupported(unsigned short deviceID);
 
@@ -1215,6 +1294,8 @@ LIBRARY_API bool Jabra_IsLeftEarbudStatusSupported(unsigned short deviceID);
  * @see Jabra_IsLeftEarbudStatusSupported
  * @see Jabra_RegisterLeftEarbudStatus
  * @see Jabra_RegisterHearThroughSettingChangeHandler
+ * @sa @wrap{Jabra_GetLeftEarbudStatus}
+ * @ingroup g-dev-status
  */
 LIBRARY_API bool Jabra_GetLeftEarbudStatus(unsigned short deviceID);
 
@@ -1230,6 +1311,9 @@ LIBRARY_API bool Jabra_GetLeftEarbudStatus(unsigned short deviceID);
  * @see Jabra_IsLeftEarbudStatusSupported
  * @see Jabra_GetLeftEarbudStatus
  * @see Jabra_RegisterHearThroughSettingChangeHandler
+ * @sa @wrap{Jabra_RegisterLeftEarbudStatus}
+ * @ingroup g-events
+ * @ingroup g-dev-status
  */
 LIBRARY_API Jabra_ReturnCode Jabra_RegisterLeftEarbudStatus(unsigned short deviceID, void(*LeftEarbudFunc)(unsigned short deviceID, bool connected));
 
@@ -1240,6 +1324,8 @@ LIBRARY_API Jabra_ReturnCode Jabra_RegisterLeftEarbudStatus(unsigned short devic
  * @see Jabra_IsLeftEarbudStatusSupported
  * @see Jabra_GetLeftEarbudStatus
  * @see Jabra_RegisterLeftEarbudStatus
+ * @ingroup g-events
+ * @ingroup g-dev-status
  */
 LIBRARY_API void Jabra_RegisterHearThroughSettingChangeHandler(void(*HearThroughSettingChangeFunc)(unsigned short deviceID, bool enabled));
 
@@ -1252,6 +1338,8 @@ LIBRARY_API void Jabra_RegisterHearThroughSettingChangeHandler(void(*HearThrough
  * @see Jabra_EnableEqualizer
  * @see Jabra_GetEqualizerParameters
  * @see Jabra_SetEqualizerParameters
+ * @sa @wrap{Jabra_IsEqualizerSupported}
+ * @ingroup g-equalizer
  */
 LIBRARY_API bool Jabra_IsEqualizerSupported(unsigned short deviceID);
 
@@ -1264,6 +1352,8 @@ LIBRARY_API bool Jabra_IsEqualizerSupported(unsigned short deviceID);
  * @see Jabra_EnableEqualizer
  * @see Jabra_GetEqualizerParameters
  * @see Jabra_SetEqualizerParameters
+ * @sa @wrap{Jabra_IsEqualizerEnabled}
+ * @ingroup g-equalizer
 */
 LIBRARY_API bool Jabra_IsEqualizerEnabled(unsigned short deviceID);
 
@@ -1279,6 +1369,8 @@ LIBRARY_API bool Jabra_IsEqualizerEnabled(unsigned short deviceID);
  * @see Jabra_IsEqualizerEnabled
  * @see Jabra_GetEqualizerParameters
  * @see Jabra_SetEqualizerParameters
+ * @sa @wrap{Jabra_EnableEqualizer}
+ * @ingroup g-equalizer
  */
 LIBRARY_API Jabra_ReturnCode Jabra_EnableEqualizer(unsigned short deviceID, bool value);
 
@@ -1299,6 +1391,8 @@ LIBRARY_API Jabra_ReturnCode Jabra_EnableEqualizer(unsigned short deviceID, bool
  * @see Jabra_IsEqualizerEnabled
  * @see Jabra_EnableEqualizer
  * @see Jabra_SetEqualizerParameters
+ * @sa @wrap{Jabra_GetEqualizerParameters}
+ * @ingroup g-equalizer
  */
 LIBRARY_API Jabra_ReturnCode Jabra_GetEqualizerParameters(unsigned short deviceID, Jabra_EqualizerBand * bands, unsigned int * nbands);
 
@@ -1319,12 +1413,14 @@ LIBRARY_API Jabra_ReturnCode Jabra_GetEqualizerParameters(unsigned short deviceI
  * @see Jabra_IsEqualizerEnabled
  * @see Jabra_EnableEqualizer
  * @see Jabra_GetEqualizerParameters
+ * @sa @wrap{Jabra_SetEqualizerParameters}
+ * @ingroup g-equalizer
  */
 LIBRARY_API Jabra_ReturnCode Jabra_SetEqualizerParameters(unsigned short deviceID, float * bands, unsigned int nbands);
 
 /**
  * @deprecated This API has been deprecated, use #Jabra_IsFeatureSupported with
- * parameter #DeviceFeature.RemoteMMI instead.
+ * parameter #DeviceFeature RemoteMMI instead.
  * @brief Checks if remote MMI feature is supported by the device.
  * @param[in] deviceID      ID for specific device
  * @return true             Remote MMI feature is supported
@@ -1341,6 +1437,7 @@ LIBRARY_API bool Jabra_IsRemoteMMISupported(unsigned short deviceID);
  * @return Return_ParameterFail A NULL pointer was passed
  * @return Not_Supported        Functionality is not supported on this device
  * @return Device_WriteFail     Failed while writing to device
+ * @ingroup g-remote-mmi
  */
 LIBRARY_API Jabra_ReturnCode Jabra_GetButtonFocus(unsigned short deviceID, ButtonEvent *buttonEvent);
 
@@ -1353,6 +1450,7 @@ LIBRARY_API Jabra_ReturnCode Jabra_GetButtonFocus(unsigned short deviceID, Butto
  * @return Return_ParameterFail A NULL pointer was passed
  * @return Not_Supported        Functionality is not supported on this device
  * @return Device_WriteFail     Failed while writing to device
+ * @ingroup g-remote-mmi
  */
 LIBRARY_API Jabra_ReturnCode Jabra_ReleaseButtonFocus(unsigned short deviceID, ButtonEvent *buttonEvent);
 
@@ -1361,12 +1459,14 @@ LIBRARY_API Jabra_ReturnCode Jabra_ReleaseButtonFocus(unsigned short deviceID, B
  * @param[in] deviceID      ID for specific device
  * @return Pointer to ButtonEvent struct containing all button events
  * for that device. In case of error, a NULL pointer is returned.
+ * @ingroup g-remote-mmi
  */
 LIBRARY_API ButtonEvent* Jabra_GetSupportedButtonEvents(unsigned short deviceID);
 
 /**
  * @brief Free the memory allocated for the button events.
  * @param[in] eventsSupported Pointer to #ButtonEvent struct to be freed
+ * @ingroup g-remote-mmi
  */
 LIBRARY_API void Jabra_FreeButtonEvents(ButtonEvent *eventsSupported);
 
@@ -1374,6 +1474,8 @@ LIBRARY_API void Jabra_FreeButtonEvents(ButtonEvent *eventsSupported);
  * @brief Registration for GNP button events i.e remote MMI.
  * @param[in] ButtonGNPEventFunc Callback method to receive GNP Button events
  * /remote MMI events. Can be NULL if not used.
+ * @ingroup g-events
+ * @ingroup g-remote-mmi
  */
 LIBRARY_API void Jabra_RegisterForGNPButtonEvent(void(*ButtonGNPEventFunc)(unsigned short deviceID, ButtonEvent *buttonEvent));
 
@@ -1381,11 +1483,13 @@ LIBRARY_API void Jabra_RegisterForGNPButtonEvent(void(*ButtonGNPEventFunc)(unsig
  * @brief Checks if setting protection is enabled.
  * @param[in] deviceID      ID for specific device
  * @return true if setting protection is enabled otherwise false.
+ * @sa @wrap{Jabra_IsSettingProtectionEnabled}
  */
 LIBRARY_API bool Jabra_IsSettingProtectionEnabled(unsigned short deviceID);
 
 /**
  * @brief Get the URL for contacting Jabra customer support.
+ * @param[in] deviceID      ID for specific device
  * @param[in] appName       Name of the application
  * @param[in] appVersion    Version of the application
  * @param[in] deviceBrand   Name of the phone vendor (e.g., "Apple"). May be empty or NULL
@@ -1393,6 +1497,7 @@ LIBRARY_API bool Jabra_IsSettingProtectionEnabled(unsigned short deviceID);
  * @return NPS URL or NULL pointer if it is not available. If no customer support is available this way for the device, NULL is returned.
  * @note As memory is allocated through SDK for the Url, it needs to be freed
  * by calling #Jabra_FreeString.
+ * @ingroup g-dev-info
  */
 LIBRARY_API char* Jabra_GetCustomerSupportUrl(unsigned short deviceID, const char* appName, const char* appVersion, const char* deviceBrand, const char* deviceModel );
 
@@ -1403,6 +1508,7 @@ LIBRARY_API char* Jabra_GetCustomerSupportUrl(unsigned short deviceID, const cha
  * @return NPS URL or NULL pointer if it is not available.
  * @note As memory is allocated through SDK for NPS Url, it needs to be freed
  * by calling #Jabra_FreeString.
+ * @ingroup g-dev-info
  */
 LIBRARY_API char* Jabra_GetNpsUrlForApplication(const char* appName, const char* appVersion);
 
@@ -1414,6 +1520,8 @@ LIBRARY_API char* Jabra_GetNpsUrlForApplication(const char* appName, const char*
  * @return NPS URL or NULL pointer if it is not available.
  * @note As memory is allocated through SDK for NPS Url, it needs to be freed
  * by calling #Jabra_FreeString.
+ * @sa @wrap{Jabra_GetNpsUrl}
+ * @ingroup g-dev-info
  */
 LIBRARY_API char* Jabra_GetNpsUrl(unsigned short deviceID, const char* appName, const char* appVersion);
 
@@ -1425,6 +1533,8 @@ LIBRARY_API char* Jabra_GetNpsUrl(unsigned short deviceID, const char* appName, 
  * @return Device_Unknown       deviceID is unknown
  * @return NetworkRequest_Fail  There was a network problem
  * @return Return_ParameterFail A NULL pointer was passed
+ * @sa @wrap{Jabra_ProductRegistration}
+ * @ingroup g-dev-info
  */
 LIBRARY_API Jabra_ReturnCode Jabra_ProductRegistration(unsigned short deviceID, const ProductRegInfo* prodReg);
 
@@ -1447,6 +1557,7 @@ LIBRARY_API Jabra_ReturnCode Jabra_ExecuteAVRCPCommand(unsigned short deviceID, 
  * @see Jabra_RegisterDevLogCallback
  * @see Jabra_EnableDevLog
  * @see Jabra_IsDevLogEnabled
+ * @ingroup g-dev-status
  */
 LIBRARY_API void Jabra_ConfigureLogging(Jabra_Logging logFlag, bool flag);
 
@@ -1499,6 +1610,8 @@ LIBRARY_API void Jabra_RegisterLoggingCallback(void(*LogDeviceEvent)(char* event
  * @see Jabra_ConfigureLogging
  * @see Jabra_EnableDevLog
  * @see Jabra_IsDevLogEnabled
+ * @ingroup g-events
+ * @ingroup g-dev-status
  */
 LIBRARY_API void Jabra_RegisterDevLogCallback(void(*LogDeviceEvent)(unsigned short deviceID, char* eventStr));
 
@@ -1525,6 +1638,8 @@ LIBRARY_API void Jabra_RegisterDevLogCallback(void(*LogDeviceEvent)(unsigned sho
  * @see Jabra_ConfigureLogging
  * @see Jabra_RegisterDevLogCallback
  * @see Jabra_IsDevLogEnabled
+ * @sa @wrap{Jabra_EnableDevLog}
+ * @ingroup g-dev-status
  */
 LIBRARY_API Jabra_ReturnCode Jabra_EnableDevLog(unsigned short deviceID, bool enable);
 
@@ -1536,12 +1651,15 @@ LIBRARY_API Jabra_ReturnCode Jabra_EnableDevLog(unsigned short deviceID, bool en
  * @see Jabra_ConfigureLogging
  * @see Jabra_RegisterDevLogCallback
  * @see Jabra_EnableDevLog
+ * @sa @wrap{Jabra_IsDevLogEnabled}
+ * @ingroup g-dev-status
  */
 LIBRARY_API bool Jabra_IsDevLogEnabled(unsigned short deviceID);
 
 /**
  * @brief Recreates the session, input and output streams for all devices which
  * are connected to the phone and not to the application.
+ * @ingroup g-dev-status
  */
 LIBRARY_API void Jabra_Reconnect(void);
 
@@ -1553,6 +1671,8 @@ LIBRARY_API void Jabra_Reconnect(void);
  * @return false            Feature is not supported
  * @see Jabra_GetSupportedFeatures
  * @see Jabra_FreeSupportedFeatures
+ * @sa @wrap{Jabra_IsFeatureSupported}
+ * @ingroup g-dev-status
  */
 LIBRARY_API bool Jabra_IsFeatureSupported(unsigned short deviceID, DeviceFeature feature);
 
@@ -1564,6 +1684,8 @@ LIBRARY_API bool Jabra_IsFeatureSupported(unsigned short deviceID, DeviceFeature
  * #Jabra_FreeSupportedFeatures.
  * @see Jabra_IsFeatureSupported
  * @see Jabra_FreeSupportedFeatures
+ * @sa @wrap{Jabra_GetSupportedFeatures}
+ * @ingroup g-dev-status
  */
 LIBRARY_API const DeviceFeature* Jabra_GetSupportedFeatures(unsigned short deviceID, unsigned int* count);
 
@@ -1573,6 +1695,7 @@ LIBRARY_API const DeviceFeature* Jabra_GetSupportedFeatures(unsigned short devic
  * @param[in] features List to delete.
  * @see Jabra_GetSupportedFeatures
  * @see Jabra_FreeSupportedFeatures
+ * @ingroup g-dev-status
  */
 LIBRARY_API void Jabra_FreeSupportedFeatures(const DeviceFeature* features);
 
@@ -1583,6 +1706,8 @@ LIBRARY_API void Jabra_FreeSupportedFeatures(const DeviceFeature* features);
  * @return Return_Ok            Call was successful
  * @return Device_Unknown       deviceID is unknown
  * @return Device_WriteFail     Failed while writing to device
+ * @sa @wrap{Jabra_RequestNoHangupToneNextTime}
+ * @ingroup g-phone
  */
 LIBRARY_API Jabra_ReturnCode Jabra_RequestNoHangupToneNextTime(unsigned short deviceID);
 
@@ -1591,12 +1716,15 @@ LIBRARY_API Jabra_ReturnCode Jabra_RequestNoHangupToneNextTime(unsigned short de
  * @param[in] deviceID      ID for specific device
  * @return true             Device is certified for Skype for Business
  * @return false            Device is not certified for Skype for Business
+ * @sa @wrap{Jabra_IsCertifiedForSkypeForBusiness}
+ * @ingroup g-dev-info
  */
 LIBRARY_API bool Jabra_IsCertifiedForSkypeForBusiness(unsigned short deviceID);
 
 /**
  * @brief Free a char array.
  * @param[in] arrPtr Array to delete.
+ * @ingroup g-sdk
  */
 LIBRARY_API void Jabra_FreeCharArray(const char** arrPtr);
 
@@ -1609,6 +1737,8 @@ LIBRARY_API void Jabra_FreeCharArray(const char** arrPtr);
  * @see Jabra_UploadWavRingtone
  * @see Jabra_GetAudioFileParametersForUpload
  * @see Jabra_RegisterUploadProgress
+ * @sa @wrap{Jabra_IsUploadRingtoneSupported}
+ * @ingroup g-ringtone
  */
 LIBRARY_API bool Jabra_IsUploadRingtoneSupported(unsigned short deviceID);
 
@@ -1627,6 +1757,7 @@ LIBRARY_API bool Jabra_IsUploadRingtoneSupported(unsigned short deviceID);
  * @see Jabra_UploadWavRingtone
  * @see Jabra_GetAudioFileParametersForUpload
  * @see Jabra_RegisterUploadProgress
+ * @ingroup g-ringtone
  */
 LIBRARY_API Jabra_ReturnCode Jabra_UploadRingtone(unsigned short deviceID, const char* fileName);
 
@@ -1643,6 +1774,8 @@ LIBRARY_API Jabra_ReturnCode Jabra_UploadRingtone(unsigned short deviceID, const
  * @see Jabra_UploadRingtone
  * @see Jabra_GetAudioFileParametersForUpload
  * @see Jabra_RegisterUploadProgress
+ * @ingroup g-ringtone
+ * @sa @wrap{Jabra_UploadWavRingtone}
  */
 LIBRARY_API Jabra_ReturnCode Jabra_UploadWavRingtone(unsigned short deviceID, const char* fileName);
 
@@ -1654,6 +1787,8 @@ LIBRARY_API Jabra_ReturnCode Jabra_UploadWavRingtone(unsigned short deviceID, co
  * @see Jabra_UploadRingtone
  * @see Jabra_UploadWavRingtone
  * @see Jabra_RegisterUploadProgress
+ * @ingroup g-ringtone
+ * @sa @wrap{Jabra_GetAudioFileParametersForUpload}
  */
 LIBRARY_API Jabra_AudioFileParams Jabra_GetAudioFileParametersForUpload(unsigned short deviceID);
 
@@ -1670,6 +1805,8 @@ typedef void(*UploadProgress)(unsigned short deviceID, Jabra_UploadEventStatus s
  * @see Jabra_IsUploadImageSupported
  * @see Jabra_UploadRingtone
  * @see Jabra_UploadImage
+ * @ingroup g-events
+ * @ingroup g-ringtone
  */
 LIBRARY_API void Jabra_RegisterUploadProgress(UploadProgress const callback);
 
@@ -1680,6 +1817,8 @@ LIBRARY_API void Jabra_RegisterUploadProgress(UploadProgress const callback);
  * @return false            Image upload not supported
  * @see Jabra_RegisterUploadProgress
  * @see Jabra_UploadImage
+ * @ingroup g-ringtone
+ * @sa @wrap{Jabra_IsUploadImageSupported}
  */
 LIBRARY_API bool Jabra_IsUploadImageSupported(unsigned short deviceID);
 
@@ -1695,14 +1834,16 @@ LIBRARY_API bool Jabra_IsUploadImageSupported(unsigned short deviceID);
  * @return File_Not_Accessible  Unable to access source file
  * @see Jabra_IsUploadImageSupported
  * @see Jabra_RegisterUploadProgress
+ * @ingroup g-ringtone
+ * @sa @wrap{Jabra_UploadImage}
  */
 LIBRARY_API Jabra_ReturnCode Jabra_UploadImage(unsigned short deviceID, const char* fileName);
 
 /**
  * @brief Sets the wizard mode (whether a full setup wizard, a limited setup
  * wizard or none will run on next power-on). Use #Jabra_IsFeatureSupported
- * to query feature support #DeviceFeature.FullWizardMode or
- * #DeviceFeature.LimitedWizardMode.
+ * to query feature support #DeviceFeature FullWizardMode or
+ * LimitedWizardMode.
  * @param[in] deviceID      ID for specific device
  * @param[in] wizardMode Wizard mode to be set (one of WizardModes).
  * @return Return_Ok            Call was successful
@@ -1711,6 +1852,8 @@ LIBRARY_API Jabra_ReturnCode Jabra_UploadImage(unsigned short deviceID, const ch
  * @return Return_ParameterFail wizardMode is invalid
  * @see Jabra_IsFeatureSupported
  * @see Jabra_GetWizardMode
+ * @ingroup g-dev-info
+ * @sa @wrap{Jabra_SetWizardMode}
  */
 LIBRARY_API Jabra_ReturnCode Jabra_SetWizardMode(unsigned short deviceID, WizardModes wizardMode);
 
@@ -1718,7 +1861,7 @@ LIBRARY_API Jabra_ReturnCode Jabra_SetWizardMode(unsigned short deviceID, Wizard
  * @brief Reads the current wizard mode (whether a full setup wizard, a limited
  * setup wizard or none will run on next power-on). Use
  * #Jabra_IsFeatureSupported to query feature support
- * #DeviceFeature.FullWizardMode or #DeviceFeature.LimitedWizardMode.
+ * #DeviceFeature FullWizardMode or LimitedWizardMode.
  * @param[in] deviceID      ID for specific device
  * @param[out] wizardMode Current wizard mode (one of WizardModes).
  * @return Return_Ok            Call was successful
@@ -1727,6 +1870,8 @@ LIBRARY_API Jabra_ReturnCode Jabra_SetWizardMode(unsigned short deviceID, Wizard
  * @return Return_ParameterFail A NULL pointer was passed
  * @see Jabra_IsFeatureSupported
  * @see Jabra_SetWizardMode
+ * @ingroup g-dev-info
+ * @sa @wrap{Jabra_GetWizardMode}
  */
 LIBRARY_API Jabra_ReturnCode Jabra_GetWizardMode(unsigned short deviceID, WizardModes* wizardMode);
 
@@ -1736,6 +1881,8 @@ LIBRARY_API Jabra_ReturnCode Jabra_GetWizardMode(unsigned short deviceID, Wizard
  * @return true             Date and time synchronization is supported
  * @return false            Date and time synchronization is not supported
  * @see Jabra_SetDateTime
+ * @ingroup g-dev-info
+ * @sa @wrap{Jabra_IsSetDateTimeSupported}
  */
 LIBRARY_API bool Jabra_IsSetDateTimeSupported(unsigned short deviceID);
 
@@ -1749,6 +1896,8 @@ LIBRARY_API bool Jabra_IsSetDateTimeSupported(unsigned short deviceID);
  * @return Device_WriteFail     Failed while writing to device
  * @return Return_ParameterFail Invalid value(s) found in dateTime
  * @see Jabra_IsSetDateTimeSupported
+ * @sa @wrap{Jabra_SetDateTime}
+ * @ingroup g-dev-info
  */
 LIBRARY_API Jabra_ReturnCode Jabra_SetDateTime(unsigned short deviceID, const timedate_t* const dateTime);
 
@@ -1761,6 +1910,7 @@ LIBRARY_API Jabra_ReturnCode Jabra_SetDateTime(unsigned short deviceID, const ti
  * @return Return_ParameterFail A NULL pointer was passed
  * @return Device_ReadFails     Failed while reading from device
  * @see Jabra_SetDateTime
+ * @ingroup g-dev-info
  */
 LIBRARY_API Jabra_ReturnCode Jabra_GetDateTime(unsigned short deviceID, timedate_t* const dateTime);
 
@@ -1769,6 +1919,7 @@ LIBRARY_API Jabra_ReturnCode Jabra_GetDateTime(unsigned short deviceID, timedate
  * @param[in] deviceID      ID for specific device
  * @return event mask (0 if nothing supported, or on any error).
  * @see Jabra_SetSubscribedDeviceEvents
+ * @sa @wrap{Jabra_GetSupportedDeviceEvents}
  * @deprecated
  */
 LIBRARY_API uint32_t Jabra_GetSupportedDeviceEvents(unsigned short deviceID);
@@ -1805,6 +1956,7 @@ LIBRARY_API Jabra_ReturnCode Jabra_SetSubscribedDeviceEvents(unsigned short devi
  * @see Jabra_ReleaseRemoteMmiFocus
  * @see Jabra_SetRemoteMmiAction
  * @see Jabra_RegisterRemoteMmiCallback
+ * @ingroup g-remote-mmi
  */
 LIBRARY_API Jabra_ReturnCode Jabra_GetRemoteMmiTypes(unsigned short deviceID, RemoteMmiDefinition** const types, int* count);
 
@@ -1818,6 +1970,7 @@ LIBRARY_API Jabra_ReturnCode Jabra_GetRemoteMmiTypes(unsigned short deviceID, Re
  * @see Jabra_ReleaseRemoteMmiFocus
  * @see Jabra_SetRemoteMmiAction
  * @see Jabra_RegisterRemoteMmiCallback
+ * @ingroup g-remote-mmi
 */
 LIBRARY_API void Jabra_FreeRemoteMmiTypes(RemoteMmiDefinition* types);
 
@@ -1837,13 +1990,14 @@ LIBRARY_API void Jabra_FreeRemoteMmiTypes(RemoteMmiDefinition* types);
  * @see Jabra_ReleaseRemoteMmiFocus
  * @see Jabra_SetRemoteMmiAction
  * @see Jabra_RegisterRemoteMmiCallback
+ * @ingroup g-remote-mmi
  */
 LIBRARY_API Jabra_ReturnCode Jabra_IsRemoteMmiInFocus(unsigned short deviceID, RemoteMmiType type, bool* isInFocus);
 
 /**
  * @brief Gets the focus of the remote MMI specified. Once a remote MMI has
  * focus, the normal functionality of the MMI (button/LED) is suppressed until
- * #Jabra_ReleaseRemoteMmiFocus or #Jabra_ReleaseRemoteMmiFocusAll is called.
+ * Jabra_ReleaseRemoteMmiFocus or Jabra_ReleaseRemoteMmiFocusAll is called.
  * If only the LED output MMI functionality is required, action can be
  * specified as MMI_ACTION_NONE.
  * @param[in] deviceID      ID for specific device
@@ -1863,6 +2017,7 @@ LIBRARY_API Jabra_ReturnCode Jabra_IsRemoteMmiInFocus(unsigned short deviceID, R
  * @see Jabra_ReleaseRemoteMmiFocus
  * @see Jabra_SetRemoteMmiAction
  * @see Jabra_RegisterRemoteMmiCallback
+ * @ingroup g-remote-mmi
  */
 LIBRARY_API Jabra_ReturnCode Jabra_GetRemoteMmiFocus(unsigned short deviceID, RemoteMmiType type, RemoteMmiInput action, RemoteMmiPriority priority);
 
@@ -1882,6 +2037,7 @@ LIBRARY_API Jabra_ReturnCode Jabra_GetRemoteMmiFocus(unsigned short deviceID, Re
  * @see Jabra_GetRemoteMmiFocus
  * @see Jabra_SetRemoteMmiAction
  * @see Jabra_RegisterRemoteMmiCallback
+ * @ingroup g-remote-mmi
  */
 LIBRARY_API Jabra_ReturnCode Jabra_ReleaseRemoteMmiFocus(unsigned short deviceID, RemoteMmiType type);
 
@@ -1909,12 +2065,13 @@ LIBRARY_API Jabra_ReturnCode Jabra_ReleaseRemoteMmiFocus(unsigned short deviceID
  * @see Jabra_GetRemoteMmiFocus
  * @see Jabra_ReleaseRemoteMmiFocus
  * @see Jabra_RegisterRemoteMmiCallback
+ * @ingroup g-remote-mmi
  */
 LIBRARY_API Jabra_ReturnCode Jabra_SetRemoteMmiAction(unsigned short deviceID, RemoteMmiType type, RemoteMmiActionOutput outputAction);
 
 /**
  * @brief Type definition of function pointer to use for
- * #Jabra_RegisterRemoteMmiCallBack.
+ * #Jabra_RegisterRemoteMmiCallback.
  * @note RemoteMMIv2 only.
  */
 typedef void(*RemoteMmiCallback)(unsigned short deviceID, RemoteMmiType type, RemoteMmiInput action);
@@ -1930,6 +2087,8 @@ typedef void(*RemoteMmiCallback)(unsigned short deviceID, RemoteMmiType type, Re
  * @see Jabra_GetRemoteMmiFocus
  * @see Jabra_ReleaseRemoteMmiFocus
  * @see Jabra_SetRemoteMmiAction
+ * @ingroup g-events
+ * @ingroup g-remote-mmi
  */
 LIBRARY_API void Jabra_RegisterRemoteMmiCallback(RemoteMmiCallback const callback);
 
@@ -1940,6 +2099,8 @@ LIBRARY_API void Jabra_RegisterRemoteMmiCallback(RemoteMmiCallback const callbac
  * @note As memory is allocated through SDK, it must be freed by calling
  * #Jabra_FreePanicListType.
  * @see Jabra_FreePanicListType
+ * @sa @wrap{Jabra_GetPanics}
+ * @ingroup g-dev-info
  */
 LIBRARY_API Jabra_PanicListType* Jabra_GetPanics(unsigned short deviceID);
 
@@ -1947,6 +2108,7 @@ LIBRARY_API Jabra_PanicListType* Jabra_GetPanics(unsigned short deviceID);
  * @brief Frees the #Jabra_PanicListType struct.
  * @param[in] panicList #Jabra_PanicListType struct to be freed.
  * @see Jabra_GetPanics
+ * @ingroup g-dev-info
  */
 LIBRARY_API void Jabra_FreePanicListType(Jabra_PanicListType *panicList);
 
@@ -1959,6 +2121,8 @@ LIBRARY_API void Jabra_FreePanicListType(Jabra_PanicListType *panicList);
  * @return Device_Unknown       deviceID is unknown
  * @return Not_Supported        Functionality is not supported on this device
  * @see Jabra_GetTimestamp
+ * @sa @wrap{Jabra_SetTimestamp}
+ * @ingroup g-dev-info
  */
 LIBRARY_API Jabra_ReturnCode Jabra_SetTimestamp(unsigned short deviceID, const uint32_t newTime);
 
@@ -1970,19 +2134,42 @@ LIBRARY_API Jabra_ReturnCode Jabra_SetTimestamp(unsigned short deviceID, const u
  * @return Device_Unknown       deviceID is unknown
  * @return Not_Supported        Functionality is not supported on this device
  * @see Jabra_SetTimestamp
+ * @sa @wrap{Jabra_GetTimestamp}
+ * @ingroup g-dev-info
  */
 LIBRARY_API Jabra_ReturnCode Jabra_GetTimestamp(unsigned short deviceID, uint32_t* const result);
 
 /**
- * @deprecated Please use the DeviceCatalogue_params for #Jabra_Initialize.
- * @brief Preloads the configuration cache with the content of the specified
- * archive. To get the full benefit, this should happen before calling
+ * @brief Preloads the resources with the content of the specified archive.
+ * The content preloaded will take effect in the next attach device event.
+ * To get the full benefit, this should happen before calling
  * #Jabra_Initialize, as that enables device connections and may initiate
  * background updates of device data. No existing data will be overwritten.
  * @param[in] zipFileName Full path name of the ZIP archive to preload from.
  * @return true if preloading succeeds, false otherwise.
  */
 LIBRARY_API bool Jabra_PreloadDeviceInfo(const char* zipFileName);
+
+/**
+ * @brief Preloads the resources with the content of the specified archive for
+ * a specific Device after this being attached.
+ * @param[in] deviceID           ID for specific device
+ * @param[in] zipFileName        Full path name of the ZIP archive to preload from
+ * @return Return_Ok             Call was successful
+ * @return Device_Unknown        deviceID is unknown
+ * @return Return_ParameterFail  The zipFileName parameter are incorrect or the
+ *                               resources were not loaded correctly faulty
+ */
+LIBRARY_API Jabra_ReturnCode Jabra_PreloadAttachedDeviceInfo(unsigned short deviceID, const char* zipFileName);
+
+/**
+ * @brief Gets the Manifest Files' version that are locally
+ * in the Resources folder regarding a given device.
+ * @param[in] deviceID      ID for specific device
+ * @return returns a string with the value "0.0" if there is no Manifest Files locally
+ * or a string with a higher version if there is, or null if any errors occur in the process.
+ */
+LIBRARY_API char* Jabra_GetLocalManifestVersion(unsigned short deviceID);
 
 /**
  * @brief Play ringtone in device.
@@ -1993,6 +2180,8 @@ LIBRARY_API bool Jabra_PreloadDeviceInfo(const char* zipFileName);
  * @return Device_Unknown       deviceID is unknown
  * @return Not_Supported        Functionality is not supported on this device
  * parameters are wrong.
+ * @ingroup g-phone
+ * @sa @wrap{Jabra_PlayRingtone}
  */
 LIBRARY_API Jabra_ReturnCode Jabra_PlayRingtone(unsigned short deviceID, const uint8_t level, const uint8_t type);
 
@@ -2002,6 +2191,8 @@ LIBRARY_API Jabra_ReturnCode Jabra_PlayRingtone(unsigned short deviceID, const u
  * @param[in] listener The callback for JackStatus events. Set to NULL to unsubscribe. Callback will occur on a separate thread.
  * @return Return_Ok            Call was successful
  * @return Device_Unknown       deviceID is unknown
+ * @ingroup g-events
+ * @ingroup g-dev-status
  */
 LIBRARY_API Jabra_ReturnCode Jabra_SetJackConnectorStatusListener(unsigned short deviceID, JackConnectorStatusListener listener);
 
@@ -2012,6 +2203,8 @@ LIBRARY_API Jabra_ReturnCode Jabra_SetJackConnectorStatusListener(unsigned short
  * @return Return_Ok            Call was successful
  * @return Device_Unknown       deviceID is unknown
  * @return Not_Supported        Functionality is not supported on this device or an error occured while communicating with device
+ * @ingroup g-events
+ * @ingroup g-dev-status
  */
 LIBRARY_API Jabra_ReturnCode Jabra_SetHeadDetectionStatusListener(unsigned short deviceID, HeadDetectionStatusListener listener);
 
@@ -2022,6 +2215,8 @@ LIBRARY_API Jabra_ReturnCode Jabra_SetHeadDetectionStatusListener(unsigned short
  * @return Return_Ok            Call was successful
  * @return Device_Unknown       deviceID is unknown
  * @return Not_Supported        Functionality is not supported on this device or an error occured while communicating with device
+ * @ingroup g-events
+ * @ingroup g-dev-status
  */
 LIBRARY_API Jabra_ReturnCode Jabra_SetLinkConnectionStatusListener(unsigned short deviceID, LinkConnectionStatusListener listener);
 
@@ -2031,6 +2226,7 @@ LIBRARY_API Jabra_ReturnCode Jabra_SetLinkConnectionStatusListener(unsigned shor
  * @return Return_Ok            Call was successful
  * @return Device_Unknown       deviceID is unknown
  * @return Not_Supported        Functionality is not supported on this device
+ * @ingroup g-dev-status
  */
 LIBRARY_API Jabra_ReturnCode Jabra_RebootDevice(unsigned short deviceID);
 
@@ -2086,7 +2282,8 @@ typedef struct _DectInfo
  * @brief Registration for dect density and error count events.
  * @param[in] DectInfoFunc Callback method, called when
  * a dect device sends a dect density or dect error count event
- * The #Jabra_DectInfo struct must be freed using #Jabra_freeDectInfoStr
+ * The #Jabra_DectInfo struct must be freed using #Jabra_FreeDectInfoStr
+ * @ingroup g-events
  */
 LIBRARY_API void Jabra_RegisterDectInfoHandler(void(*DectInfoFunc)(unsigned short deviceID, Jabra_DectInfo *dectInfo));
 
@@ -2119,6 +2316,10 @@ LIBRARY_API Jabra_ReturnCode Jabra_ClearPanicCodes(unsigned short deviceID);
 
 #include "Interface_AmbienceModes.h"
 #include "Interface_Bluetooth.h"
+#include "Interface_Constants.h"
 #include "Interface_Firmware.h"
+#include "Interface_Network.h"
+#include "Interface_Video.h"
+#include "Interface_Whiteboard.h"
 
 #endif /* COMMON_H */

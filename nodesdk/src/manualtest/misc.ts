@@ -1,7 +1,7 @@
 import readline = require('readline');
 import util = require('util');
 
-import { createJabraApplication, DeviceType, JabraType, jabraEnums, enumHidState, enumWizardMode, enumSecureConnectionMode, JabraError, AudioFileFormatEnum, DeviceTypeCallbacks, DateTime } from '../main/index';
+import { createJabraApplication, DeviceType, JabraType, jabraEnums, enumHidState, enumWizardMode, enumSecureConnectionMode, JabraError, AudioFileFormatEnum, DeviceTypeCallbacks, PanTilt, enumPTZPreset, enumColorControlPreset, DateTime } from '../main/index';
 
 let reserved1 = {
   proxy: "this.httpProxyService.getProxy()",
@@ -618,6 +618,119 @@ const deviceOperations :Array<{description: string, operation: (app :DeviceType)
         ])
         .then(result => console.log("getButtonFocusAsync returned " + JSON.stringify(result, null, 2)))
         .catch(err => console.error("getButtonFocusAsync failed with error " + err))
+  },
+  {
+    description: 'Whiteboard APIs',
+    operation: async device => {
+      try {
+        await device.setWhiteboardPositionAsync(0, {
+          lowerLeftCorner: {x: 0, y: 1},
+          upperLeftCorner: {x: 2, y: 3},
+          upperRightCorner: {x: 4, y: 5},
+          lowerRightCorner: {x: 6, y: 7}
+        });
+        console.info('setWhiteboardPositionAsync returned');
+      } catch (err) {
+        console.error(err.toString());
+      }
+
+      try {
+        const whiteboard = await device.getWhiteboardPositionAsync(0);
+        console.info(`Whiteboard returned: ${ util.inspect(whiteboard) }`);
+      } catch (err) {
+        console.error(err.toString());
+      }
+    }
+  },
+  {
+    description: 'Zoom APIs',
+    operation: async device => {
+      try {
+        await device.setZoomAsync(1.9);
+        console.info('setZoom returned');
+      } catch (err) {
+        console.error(err.toString());
+      }
+
+      try {
+        let zoom = await device.getZoomAsync();
+        console.info(`Zoom: ${ zoom }`);
+      } catch (err) {
+        console.error(err.toString());
+      }
+
+      try {
+        let limits = await device.getZoomLimitsAsync();
+        console.info(`Zoom limits: ${ util.inspect(limits) }`);
+      } catch (err) {
+        console.error(err.toString());
+      }
+    }
+  },
+  {
+    description: 'Pan-Tilt APIs',
+    operation: async device => {
+      try {
+        await device.setPanTiltAsync({pan: 2500, tilt: -1200});
+        console.info('setPanTilt returned');
+      } catch (err) {
+        console.error(err.toString());
+      }
+
+      try {
+        let { pan, tilt } = await device.getPanTiltAsync();
+        console.info(`Pan: ${ pan }`);
+        console.info(`Tilt: ${ tilt }`);
+      } catch (err) {
+        console.error(err.toString());
+      }
+
+      try {
+        let limits = await device.getPanTiltLimitsAsync();
+        console.info(`PanTilt limits: ${ util.inspect(limits) }`);
+      } catch (err) {
+        console.error(err.toString());
+      }
+
+      // try {
+      //   let limits = await device.getZoomLimitsAsync();
+      //   console.info(`Zoom limits: ${ util.inspect(limits) }`);
+      // } catch (err) {
+      //   console.error(err.toString());
+      // }
+    }
+  },
+  {
+    description: 'Preset APIs',
+    operation: async device => {
+      try {
+        await device.applyPTZPresetAsync(enumPTZPreset.PRESET1);
+        console.info('applyPTZPreset returned');
+      } catch (err) {
+        console.error(err.toString());
+      }
+
+      try {
+        await device.storePTZPresetAsync(enumPTZPreset.PRESET2);
+        console.info('storePTZPreset returned');
+      } catch (err) {
+        console.error(err.toString());
+      }
+
+      try {
+        await device.applyColorControlPresetAsync(enumColorControlPreset.PRESET1);
+        console.info('applyColorControlPreset returned');
+      } catch (err) {
+        console.error(err.toString());
+      }
+
+      try {
+        await device.storeColorControlPresetAsync(enumColorControlPreset.PRESET1);
+        console.info('storeColorControlPreset returned');
+      } catch (err) {
+        console.error(err.toString());
+      }
+    }
   },
 ];
 

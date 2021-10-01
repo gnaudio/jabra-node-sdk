@@ -35,6 +35,7 @@ export enum enumAPIReturnCode {
   Non_Jabra_Device_Detection_disabled = 29,
   Device_Lock = 30,
   Device_NotLock = 31,
+  Return_Timeout = 32,
 }
 
 
@@ -240,6 +241,10 @@ export enum enumDeviceFeature {
   AmbienceModesLoop = 1033,
   FFANC = 1034,
   GoogleBisto = 1035,
+  VirtualDirector = 1036,
+  PictureInPicture = 1037,
+  DateTimeIsUTC = 1038,
+  RemoteControl = 1039,
 }
 
 /**
@@ -271,6 +276,92 @@ export enum enumSecureConnectionMode {
   /** Pairing not allowed */
   SC_RESTRICTED_MODE
 }
+
+/** Represents a color control  preset slot on the device.*/
+export enum enumColorControlPreset {
+  PRESET1 = 0
+}
+
+/** Represents a PTZ preset slot on the device.*/
+export enum enumPTZPreset {
+  PRESET1 = 0,
+  PRESET2 = 1,
+  PRESET3 = 2,
+  DEFAULTS = 0xFF
+}
+
+/** Enum with the notification styles.*/
+export enum enumNotificationStyle {
+  LED = 0,                /* Use only LED(s) */
+  LED_AND_TONES = 1,      /* Use LED and tones */
+  LED_TONES_AND_VOICE = 2 /* Use LED, tones and voice warning */
+}
+
+/** Enum with the notification usages.*/
+export enum enumNotificationUsage {
+  WHEN_VIDEO_IS_ENABLED = 0, /* Only enable during video calls */
+  ALWAYS = 1                 /* Always enable */
+}
+
+/** Enum with choices for automatic white balance.*/
+export enum enumAutoWhiteBalance {
+  USE_WB_TEMP_VALUE = 0,        /* Use manual WB setting */
+  AUTO_ADJUSTMENT = 1           /* Automatic white balance */
+}
+
+/** Choices for the secondary stream.*/
+export enum enumSecondaryStreamContent
+{
+  Disabled = 0,
+  Whiteboard1 = 1,
+  Whiteboard2 = 2,
+  AIFullscreen = 3
+}
+
+/** Pan/tilt/zoom actions.*/
+export enum enumPanDirection
+{
+    stop = 0,
+    clockwise = 1,
+    counterClockwise = 0xFF
+};
+export enum enumTiltDirection
+{
+    stop = 0,
+    up = 1,
+    down = 0xFF
+};
+export enum enumZoomDirection
+{
+    stop = 0,
+    telephoto = 1,
+    wideAngle = 0xFF
+};
+
+/** How the device should control the video.*/
+export enum enumVideoMode
+{
+    FULL_SCREEN = 0,        /* No automatic control */
+    INTELLIGENT_ZOOM = 1,
+    ACTIVE_SPEAKER = 2
+};
+
+/** The video transition styles when using Intelligent Zoom. */
+export enum enumVideoTransitionStyle
+{
+    IMMEDIATE = 0,
+    SMOOTH = 1
+};
+
+/** How long to stay with a speaker when IZ is enabled.*/
+export enum enumIntelligentZoomLatency
+{
+    FASTEST = 0,
+    FASTER = 1,
+    MEDIUM = 3,
+    SLOWER = 5,
+    SLOWEST = 6
+};
 
 /**
  * Enum for types of remote MMI 

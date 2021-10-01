@@ -3,6 +3,15 @@
 #include <string.h>
 #include <ctime>
 
+// ----------------------------------------- Helper functions ------------------------------------------------
+
+static Napi::Object makePoint2D(const Napi::Env& env, const uint16_t x, const uint16_t y) {
+    Napi::Object point2D = Napi::Object::New(env);
+    point2D.Set("x", x);
+    point2D.Set("y", y);
+    return point2D;
+};
+
 // ----------------------------------------- Napi functions  ------------------------------------------------
 
 Napi::Value napi_GetDeviceImagePath(const Napi::CallbackInfo& info) {
@@ -79,6 +88,148 @@ Napi::Value napi_SetHidWorkingState(const Napi::CallbackInfo& info) {
   }
 
   return env.Undefined();
+}
+
+Napi::Value napi_SetVideoMode(const Napi::CallbackInfo& info) {
+  const char * const functionName = __func__;
+  Napi::Env env = info.Env();
+
+  if (util::verifyArguments(functionName, info, {util::NUMBER, util::NUMBER, util::FUNCTION})) {
+    const unsigned short deviceId = (unsigned short)(info[0].As<Napi::Number>().Int32Value());
+    const Jabra_VideoMode mode = (Jabra_VideoMode)(info[1].As<Napi::Number>().Int32Value());
+    Napi::Function javascriptResultCallback = info[2].As<Napi::Function>();
+
+    (new util::JAsyncWorker<void, void>(
+      functionName, 
+      javascriptResultCallback,
+      [functionName, deviceId, mode](){ 
+        Jabra_ReturnCode retv;                       
+        if ((retv = Jabra_SetVideoMode(deviceId, mode)) != Return_Ok) {
+          util::JabraReturnCodeException::LogAndThrow(functionName, retv);
+        }
+      }
+    ))->Queue();
+  }
+
+  return env.Undefined();
+}
+
+Napi::Value napi_GetVideoMode(const Napi::CallbackInfo& info) {
+    const char * const functionName = __func__;
+
+    return util::SimpleDeviceAsyncFunction<Napi::Number, Jabra_VideoMode>(
+        functionName, info,
+        [functionName](unsigned short deviceId) {
+            Jabra_VideoMode mode;
+            Jabra_ReturnCode retCode = Jabra_GetVideoMode(deviceId, &mode);
+
+            if (retCode != Jabra_ReturnCode::Return_Ok) {
+                util::JabraReturnCodeException::LogAndThrow(functionName,
+                    retCode);
+            }
+            return mode;
+        },
+        Napi::Number::New
+    );
+}
+
+Napi::Value napi_SetWhiteboardOnMainStream(const Napi::CallbackInfo& info) {
+  const char * const functionName = __func__;
+  return util::SimpleDeviceAsyncBoolSetter(functionName, info, [functionName](unsigned short deviceId, bool enable) {
+        const Jabra_ReturnCode result = Jabra_SetWhiteboardOnMainStream(deviceId, enable);
+        if (result != Return_Ok) {
+          throw util::JabraReturnCodeException(functionName, result);
+        }
+  });
+}
+
+Napi::Value napi_GetWhiteboardOnMainStream(const Napi::CallbackInfo& info) {
+    const char * const functionName = __func__;
+
+    return util::SimpleDeviceAsyncFunction<Napi::Boolean, bool>(
+        functionName, info,
+        [functionName](unsigned short deviceId) {
+            bool enable;
+            Jabra_ReturnCode retCode = Jabra_GetWhiteboardOnMainStream(deviceId, &enable);
+
+            if (retCode != Jabra_ReturnCode::Return_Ok) {
+                util::JabraReturnCodeException::LogAndThrow(functionName, retCode);
+            }
+            return enable;
+        },
+        Napi::Boolean::New
+    );
+}
+
+Napi::Value napi_IsCameraStreaming(const Napi::CallbackInfo& info) {
+    const char * const functionName = __func__;
+
+    return util::SimpleDeviceAsyncFunction<Napi::Boolean, bool>(
+        functionName, info,
+        [functionName](unsigned short deviceId) {
+            bool streamingStatus;
+            Jabra_ReturnCode retCode = Jabra_IsCameraStreaming(deviceId, &streamingStatus);
+
+            if (retCode != Jabra_ReturnCode::Return_Ok) {
+                util::JabraReturnCodeException::LogAndThrow(functionName, retCode);
+            }
+            return streamingStatus;
+        },
+        Napi::Boolean::New
+    );
+}
+
+Napi::Value napi_IsVideoDeviceStreaming(const Napi::CallbackInfo& info) {
+  const char * const functionName = __func__;
+  return util::SimpleDeviceAsyncFunction<Napi::Object, std::pair<bool, bool>>(functionName, info, [functionName](unsigned short deviceId) {
+    Jabra_ReturnCode retv;
+    bool videoStreaming = false, audioStreaming = false;
+    if ((retv = Jabra_IsVideoDeviceStreaming(deviceId, &videoStreaming, &audioStreaming)) != Return_Ok) {
+      util::JabraReturnCodeException::LogAndThrow(functionName, retv);
+    }
+    return std::make_pair(videoStreaming, audioStreaming);
+  }, [](const Napi::Env& env, std::pair<bool, bool> streamingStatus) {
+    Napi::Object jsStreamingStatus = Napi::Object::New(env);
+    jsStreamingStatus.Set(Napi::String::New(env, "videoStreamingStatus"), Napi::Boolean::New(env, streamingStatus.first));
+    jsStreamingStatus.Set(Napi::String::New(env, "audioStreamingStatus"), Napi::Boolean::New(env, streamingStatus.second));
+    return jsStreamingStatus;
+    });
+}
+
+Napi::Value napi_SetPictureInPicture(const Napi::CallbackInfo& info) {
+  const char * const functionName = __func__;
+  return util::SimpleDeviceAsyncBoolSetter(functionName, info, [functionName](const unsigned short deviceId, const bool enable) {
+        const Jabra_ReturnCode result = Jabra_SetPictureInPicture(deviceId, enable);
+        if (result != Return_Ok) {
+          throw util::JabraReturnCodeException(functionName, result);
+        }
+  });
+}
+
+Napi::Value napi_GetPictureInPicture(const Napi::CallbackInfo& info) {
+  const char * const functionName = __func__;
+  return util::SimpleDeviceAsyncFunction<Napi::Boolean, bool>(functionName, info, [functionName](const unsigned short deviceId) {
+    Jabra_ReturnCode retv;
+    bool enable = false;
+    if ((retv = Jabra_GetPictureInPicture(deviceId, &enable)) != Return_Ok) {
+      util::JabraReturnCodeException::LogAndThrow(functionName, retv);
+    }
+    return enable;
+  }, Napi::Boolean::New
+  );
+}
+
+Napi::Value napi_IsCertifiedForSkypeForBusiness(const Napi::CallbackInfo& info) {
+    const char * const functionName = __func__;
+
+    return util::SimpleDeviceAsyncFunction<Napi::Boolean, bool>(
+        functionName, info,
+        [functionName](unsigned short deviceId) {
+            bool certified = Jabra_IsCertifiedForSkypeForBusiness(deviceId);
+            return certified;
+        },
+        Napi::Boolean::New
+    );
 }
 
 Napi::Value napi_GetLock(const Napi::CallbackInfo& info) {
@@ -453,7 +604,6 @@ Napi::Value napi_IsFeatureSupported(const Napi::CallbackInfo& info) {
   return env.Undefined();
 }
 
-
 Napi::Value napi_IsEqualizerSupported(const Napi::CallbackInfo& info) {
   const char * const functionName = __func__;
   return util::SimpleDeviceAsyncFunction<Napi::Boolean, bool>(__func__, info, [](unsigned short deviceId) {
@@ -688,6 +838,43 @@ Napi::Value napi_SetWizardMode(const Napi::CallbackInfo& info) {
   return env.Undefined();
 }
 
+Napi::Value napi_SetIntelligentZoomLatency(const Napi::CallbackInfo& info) {
+  const char * const functionName = __func__;
+  Napi::Env env = info.Env();
+
+  if (util::verifyArguments(functionName, info, {util::NUMBER, util::NUMBER, util::FUNCTION})) {
+    const unsigned short deviceId = (unsigned short)(info[0].As<Napi::Number>().Int32Value());
+    const int latency = info[1].As<Napi::Number>().Int32Value();
+    Napi::Function javascriptResultCallback = info[2].As<Napi::Function>();
+
+    (new util::JAsyncWorker<void, void>(
+      functionName, 
+      javascriptResultCallback,
+      [functionName, deviceId, latency](){ 
+        Jabra_ReturnCode retv;                       
+        if ((retv = Jabra_SetIntelligentZoomLatency(deviceId, latency)) != Return_Ok) {
+          util::JabraReturnCodeException::LogAndThrow(functionName, retv);
+        }
+      }
+    ))->Queue();
+  }
+
+  return env.Undefined();
+}
+
+Napi::Value napi_GetIntelligentZoomLatency(const Napi::CallbackInfo& info) {
+  const char * const functionName = __func__;
+  return util::SimpleDeviceAsyncFunction<Napi::Number, int>(functionName, info, [functionName](unsigned short deviceId) {
+    Jabra_ReturnCode retv;
+    int latency;
+    if ((retv = Jabra_GetIntelligentZoomLatency(deviceId, &latency)) != Return_Ok)
+    {
+      util::JabraReturnCodeException::LogAndThrow(functionName, retv);
+    }
+    return latency;
+  }, [](const Napi::Env& env, int latency) {  return Napi::Number::New(env, latency); });
+}
+
 /**
  * Convert a napi Button event object to a native sdk ButtonEvent object.
  * 
@@ -832,15 +1019,14 @@ Napi::Value napi_SetDatetime(const Napi::CallbackInfo& info) {
       dateTime.year==0 &&
       dateTime.wday==0;
     
-    // If input is all zeros, set current time
-    const timedate_t* ptrDateTime = (setCurrentTime) ? NULL : &dateTime;
-
     (new util::JAsyncWorker<void, void>(
       functionName,
       javascriptResultCallback,
-      [functionName, deviceId, ptrDateTime](){ 
+      [functionName, deviceId, dateTime, setCurrentTime](){ 
         Jabra_ReturnCode retv;
 
+        // If input is all zeros, set current time
+        const timedate_t* ptrDateTime = (setCurrentTime) ? NULL : &dateTime;
         if ((retv = Jabra_SetDateTime(deviceId, ptrDateTime)) != Return_Ok) {
           util::JabraReturnCodeException::LogAndThrow(functionName, retv);
         }
@@ -1080,4 +1266,1477 @@ Napi::Value napi_SetRemoteMmiAction(const Napi::CallbackInfo& info) {
   }
 
   return env.Undefined();
+}
+
+Napi::Value napi_IsRemoteManagementEnabled(const Napi::CallbackInfo& info) {
+    const char * const functionName = __func__;
+    return util::SimpleDeviceAsyncFunction<Napi::Boolean, bool>(functionName, info,
+        [functionName](unsigned short deviceId) {
+            bool result = false;
+            Jabra_ReturnCode retCode = Jabra_IsRemoteManagementEnabled(deviceId, &result);
+
+            if (retCode != Jabra_ReturnCode::Return_Ok) {
+                util::JabraReturnCodeException::LogAndThrow(functionName, retCode);
+            }
+
+            return result;
+        }, Napi::Boolean::New);
+}
+
+Napi::Value napi_EnableRemoteManagement(const Napi::CallbackInfo& info) {
+    const char * const functionName = __func__;
+    Napi::Env env = info.Env();
+
+    if (util::verifyArguments(functionName, info, {util::NUMBER, util::BOOLEAN, util::NUMBER, util::FUNCTION})) {
+        const unsigned short deviceId = (unsigned short)(info[0].As<Napi::Number>().Int32Value());
+        const bool enable = info[1].As<Napi::Boolean>();
+        const unsigned int timeout = info[2].As<Napi::Number>().Int32Value();
+        Napi::Function javascriptResultCallback = info[3].As<Napi::Function>();
+
+        (new util::JAsyncWorker<void, void>(
+            functionName,
+            javascriptResultCallback,
+            [functionName, deviceId, enable, timeout](){
+                const Jabra_ReturnCode retCode = Jabra_EnableRemoteManagement(deviceId, enable, timeout);
+                if (retCode != Return_Ok) {
+                    util::JabraReturnCodeException::LogAndThrow(functionName, retCode);
+                }
+            }
+        ))->Queue();
+    }
+    return env.Undefined();
+}
+
+Napi::Value napi_SetXpressUrl(const Napi::CallbackInfo& info) {
+    const char * const functionName = __func__;
+    Napi::Env env = info.Env();
+
+    if (util::verifyArguments(functionName, info, {util::NUMBER, util::STRING, util::NUMBER, util::FUNCTION})) {
+        const unsigned short deviceId = (unsigned short)(info[0].As<Napi::Number>().Int32Value());
+        const std::string url = info[1].As<Napi::String>();
+        const unsigned int timeout = info[2].As<Napi::Number>().Int32Value();
+        Napi::Function javascriptResultCallback = info[3].As<Napi::Function>();
+
+        (new util::JAsyncWorker<void, void>(
+            functionName,
+            javascriptResultCallback,
+            [functionName, deviceId, url, timeout](){
+                Jabra_ReturnCode retCode = Jabra_SetXpressUrl(deviceId, url.c_str(), timeout);
+                if (retCode != Return_Ok) {
+                    util::JabraReturnCodeException::LogAndThrow(functionName, retCode);
+                }
+            }
+        ))->Queue();
+  }
+
+  return env.Undefined();
+}
+
+Napi::Value napi_PreloadAttachedDeviceInfo(const Napi::CallbackInfo& info) {
+  const char * const functionName = __func__;
+  Napi::Env env = info.Env();
+
+  if (util::verifyArguments(functionName, info, {util::NUMBER, util::STRING, util::FUNCTION})) {
+    const unsigned short deviceId = (unsigned short)(info[0].As<Napi::Number>().Int32Value());
+    const std::string zipFilename = info[1].As<Napi::String>();  
+    Napi::Function javascriptResultCallback = info[2].As<Napi::Function>();  
+
+    (new util::JAsyncWorker<void, void>(
+      functionName, 
+      javascriptResultCallback,
+      [functionName, deviceId, zipFilename](){ 
+        Jabra_ReturnCode retv = Jabra_PreloadAttachedDeviceInfo(deviceId, zipFilename.c_str());     
+
+        if (retv != Return_Ok) {
+          util::JabraReturnCodeException::LogAndThrow(functionName, retv);
+        } 
+      }
+    ))->Queue();
+  }
+  return env.Undefined();
+}
+
+Napi::Value napi_GetLocalManifestVersion(const Napi::CallbackInfo& info) {
+    const char * const functionName = __func__;
+    return util::SimpleDeviceAsyncFunction<Napi::String, std::string>(functionName, info,
+        [functionName](unsigned short deviceId) {
+            char* strManifestVersion = Jabra_GetLocalManifestVersion(deviceId);
+            if (strManifestVersion == nullptr) {
+                util::JabraReturnCodeException::LogAndThrow(functionName, Jabra_ReturnCode::File_Not_Accessible);
+            }
+            std::string result(strManifestVersion);
+            Jabra_FreeString(strManifestVersion);
+            return util::toUtf8(result, functionName);
+        }, [](const Napi::Env& env, const std::string& cppResult) {
+            return Napi::String::New(env, cppResult);
+        });
+}
+
+Napi::Value napi_GetXpressUrl(const Napi::CallbackInfo& info) {
+    const char * const functionName = __func__;
+    return util::SimpleDeviceAsyncFunction<Napi::String, std::string>(functionName, info,
+        [functionName](unsigned short deviceId) {
+            int size = 2000;
+            std::vector<char> buffer(size);
+
+            Jabra_ReturnCode retCode = Jabra_GetXpressUrl(deviceId, buffer.data(), size);
+            if (retCode != Return_Ok) {
+                util::JabraReturnCodeException::LogAndThrow(functionName, retCode);
+            }
+
+            std::string result(buffer.data());
+            return util::toUtf8(result, functionName);
+        }, [](const Napi::Env& env, const std::string& cppResult) {
+            return Napi::String::New(env, cppResult);
+        });
+}
+
+Napi::Value napi_GetDiagnosticLogFile(const Napi::CallbackInfo& info) {
+    const char * const functionName = __func__;
+    Napi::Env env = info.Env();
+
+    if (util::verifyArguments(functionName, info, {util::NUMBER, util::STRING, util::FUNCTION})) {
+        const unsigned short deviceId = (unsigned short)(info[0].As<Napi::Number>().Int32Value());
+        const std::string filename = info[1].As<Napi::String>();
+        Napi::Function javascriptResultCallback = info[2].As<Napi::Function>();
+
+        (new util::JAsyncWorker<void, void>(
+            functionName,
+            javascriptResultCallback,
+            [functionName, deviceId, filename](){
+                Jabra_ReturnCode retCode = Jabra_GetDiagnosticLogFile(deviceId, filename.c_str());
+                if (retCode != Return_Ok) {
+                    util::JabraReturnCodeException::LogAndThrow(functionName, retCode);
+                }
+            }
+        ))->Queue();
+    }
+
+  return env.Undefined();
+}
+
+Napi::Value napi_TriggerDiagnosticLogGeneration(const Napi::CallbackInfo& info) {
+    const char * const functionName = __func__;
+
+    Napi::Env env = info.Env();
+
+    if (util::verifyArguments(functionName, info, {util::NUMBER, util::FUNCTION})) {
+        const unsigned short deviceId = (unsigned short)(info[0].As<Napi::Number>().Int32Value());
+        Napi::Function javascriptResultCallback = info[1].As<Napi::Function>();
+
+        (new util::JAsyncWorker<void, void>(
+            functionName,
+            javascriptResultCallback,
+            [functionName, deviceId](){
+                Jabra_ReturnCode retCode = Jabra_TriggerDiagnosticLogGeneration(deviceId);
+                if (retCode != Return_Ok) {
+                    util::JabraReturnCodeException::LogAndThrow(functionName, retCode);
+                }
+            }
+        ))->Queue();
+    }
+
+  return env.Undefined();
+}
+
+Napi::Value napi_RestoreVideoRoomDefaults(const Napi::CallbackInfo& info) {
+    const char * const functionName = __func__;
+
+    Napi::Env env = info.Env();
+
+    if (util::verifyArguments(functionName, info, {util::NUMBER, util::FUNCTION})) {
+        const unsigned short deviceId = (unsigned short)(info[0].As<Napi::Number>().Int32Value());
+        Napi::Function javascriptResultCallback = info[1].As<Napi::Function>();
+
+        (new util::JAsyncWorker<void, void>(
+            functionName,
+            javascriptResultCallback,
+            [functionName, deviceId](){
+                Jabra_ReturnCode retCode = Jabra_RestoreVideoRoomDefaults(deviceId);
+                if (retCode != Return_Ok) {
+                    util::JabraReturnCodeException::LogAndThrow(functionName, retCode);
+                }
+            }
+        ))->Queue();
+    }
+
+  return env.Undefined();
+}
+
+Napi::Value napi_ResetPanTiltZoom(const Napi::CallbackInfo& info) {
+    const char * const functionName = __func__;
+
+    Napi::Env env = info.Env();
+
+    if (util::verifyArguments(functionName, info, {util::NUMBER, util::FUNCTION})) {
+        const unsigned short deviceId = (unsigned short)(info[0].As<Napi::Number>().Int32Value());
+        Napi::Function javascriptResultCallback = info[1].As<Napi::Function>();
+
+        (new util::JAsyncWorker<void, void>(
+            functionName,
+            javascriptResultCallback,
+            [functionName, deviceId](){
+                Jabra_ReturnCode retCode = Jabra_ResetPanTiltZoom(deviceId);
+                if (retCode != Return_Ok) {
+                    util::JabraReturnCodeException::LogAndThrow(functionName, retCode);
+                }
+            }
+        ))->Queue();
+    }
+
+  return env.Undefined();
+}
+
+Napi::Value napi_ResetImageQualityControls(const Napi::CallbackInfo& info) {
+    const char * const functionName = __func__;
+
+    Napi::Env env = info.Env();
+
+    if (util::verifyArguments(functionName, info, {util::NUMBER, util::FUNCTION})) {
+        const unsigned short deviceId = (unsigned short)(info[0].As<Napi::Number>().Int32Value());
+        Napi::Function javascriptResultCallback = info[1].As<Napi::Function>();
+
+        (new util::JAsyncWorker<void, void>(
+            functionName,
+            javascriptResultCallback,
+            [functionName, deviceId](){
+                Jabra_ReturnCode retCode = Jabra_ResetImageQualityControls(deviceId);
+                if (retCode != Return_Ok) {
+                    util::JabraReturnCodeException::LogAndThrow(functionName, retCode);
+                }
+            }
+        ))->Queue();
+    }
+
+  return env.Undefined();
+}
+
+Napi::Value napi_SetPasswordProvisioning(const Napi::CallbackInfo& info) {
+    const char * const functionName = __func__;
+    Napi::Env env = info.Env();
+
+    if (util::verifyArguments(functionName, info, {util::NUMBER, util::STRING, util::FUNCTION})) {
+        const unsigned short deviceId = (unsigned short)(info[0].As<Napi::Number>().Int32Value());
+        const std::string password = info[1].As<Napi::String>();
+        Napi::Function javascriptResultCallback = info[2].As<Napi::Function>();
+
+        (new util::JAsyncWorker<void, void>(
+            functionName,
+            javascriptResultCallback,
+            [functionName, deviceId, password](){
+                Jabra_ReturnCode retCode = Jabra_SetPasswordProvisioning(deviceId, password.c_str());
+                if (retCode != Return_Ok) {
+                  util::JabraReturnCodeException::LogAndThrow(functionName, retCode);
+                }
+            }
+        ))->Queue();
+  }
+
+  return env.Undefined();
+}
+
+Napi::Value napi_GetPasswordProvisioning(const Napi::CallbackInfo& info) {
+    const char * const functionName = __func__;
+    return util::SimpleDeviceAsyncFunction<Napi::String, std::string>(functionName, info,
+        [functionName](unsigned short deviceId) {
+            // 2 * 1024 == 2 Kb is the maximum allowed by Jabra_GetPasswordProvisioning
+            int size = 2 * 1024;
+            std::vector<char> buffer(size);
+
+            Jabra_ReturnCode retCode = Jabra_GetPasswordProvisioning(deviceId, buffer.data(), size);
+            if (retCode != Return_Ok) {
+                util::JabraReturnCodeException::LogAndThrow(functionName, retCode);
+                return std::string(); // Dummy return - avoid compiler warnings.
+            }
+
+            std::string result(buffer.data());
+            return util::toUtf8(result, functionName);
+        }, [](const Napi::Env& env, const std::string& cppResult) {
+            return Napi::String::New(env, cppResult);
+        });
+}
+
+Napi::Value napi_GetWhiteboardPosition(const Napi::CallbackInfo& info) {
+    const char * const functionName = __func__;
+    Napi::Env env = info.Env();
+
+    if (!util::verifyArguments(functionName, info, {util::NUMBER, util::NUMBER, util::FUNCTION})) {
+        return env.Undefined();
+    }
+
+    /*
+     * If you wonder why we don't use SimpleDeviceAsyncFunction it's because
+     * there's an extra parameter (the whiteboard id)
+     */
+    const unsigned short deviceId = (unsigned short)(info[0].As<Napi::Number>().Int32Value());
+    const uint8_t whiteboardId = (uint8_t)(info[1].As<Napi::Number>().Int32Value());
+    Napi::Function javascriptResultCallback = info[2].As<Napi::Function>();
+
+    (new util::JAsyncWorker<Jabra_WhiteboardPosition, Napi::Object>(
+        functionName,
+        javascriptResultCallback,
+        [functionName, deviceId, whiteboardId]() {
+            Jabra_WhiteboardPosition whiteboardPosition;
+            Jabra_ReturnCode retCode = Jabra_GetWhiteboardPosition(deviceId,
+                whiteboardId, &whiteboardPosition);
+
+            if (retCode != Jabra_ReturnCode::Return_Ok) {
+                util::JabraReturnCodeException::LogAndThrow(functionName,
+                    retCode);
+            }
+
+            return whiteboardPosition;
+        },
+        [](const Napi::Env& env, const Jabra_WhiteboardPosition& whiteboard) {
+            Napi::Object jsWhiteboard = Napi::Object::New(env);
+
+            jsWhiteboard.Set("lowerLeftCorner", makePoint2D(env,
+                whiteboard.lowerLeftCornerX, whiteboard.lowerLeftCornerY));
+            jsWhiteboard.Set("lowerRightCorner", makePoint2D(env,
+                whiteboard.lowerRightCornerX, whiteboard.lowerRightCornerY));
+            jsWhiteboard.Set("upperRightCorner", makePoint2D(env,
+                whiteboard.upperRightCornerX, whiteboard.upperRightCornerY));
+            jsWhiteboard.Set("upperLeftCorner", makePoint2D(env,
+                whiteboard.upperLeftCornerX, whiteboard.upperLeftCornerY));
+
+            return jsWhiteboard;
+        }
+    ))->Queue();
+
+    return env.Undefined();
+}
+
+Napi::Value napi_SetWhiteboardPosition(const Napi::CallbackInfo& info) {
+    const char * const functionName = __func__;
+    Napi::Env env = info.Env();
+
+    if (!util::verifyArguments(functionName, info, {util::NUMBER, util::NUMBER, util::OBJECT, util::FUNCTION})) {
+        return env.Undefined();
+    }
+
+    const unsigned short deviceId = (unsigned short)(info[0].As<Napi::Number>().Int32Value());
+    const uint8_t whiteboardId = (uint8_t)(info[1].As<Napi::Number>().Int32Value());
+    Napi::Object whiteboardCorners = info[2].As<Napi::Object>();
+    Napi::Function javascriptResultCallback = info[3].As<Napi::Function>();
+
+    Napi::Object lowerLeftCorner = whiteboardCorners.Get("lowerLeftCorner").As<Napi::Object>();
+    Napi::Object lowerRightCorner = whiteboardCorners.Get("lowerRightCorner").As<Napi::Object>();
+    Napi::Object upperRightCorner = whiteboardCorners.Get("upperRightCorner").As<Napi::Object>();
+    Napi::Object upperLeftCorner = whiteboardCorners.Get("upperLeftCorner").As<Napi::Object>();
+
+    Jabra_WhiteboardPosition whiteboardPosition;
+    whiteboardPosition.lowerLeftCornerX = (uint16_t) util::getObjInt32OrDefault(lowerLeftCorner, "x", 0);
+    whiteboardPosition.lowerLeftCornerY = (uint16_t) util::getObjInt32OrDefault(lowerLeftCorner, "y", 0);
+    whiteboardPosition.lowerRightCornerX = (uint16_t) util::getObjInt32OrDefault(lowerRightCorner, "x", 0);
+    whiteboardPosition.lowerRightCornerY = (uint16_t) util::getObjInt32OrDefault(lowerRightCorner, "y", 0);
+    whiteboardPosition.upperRightCornerX = (uint16_t) util::getObjInt32OrDefault(upperRightCorner, "x", 0);
+    whiteboardPosition.upperRightCornerY = (uint16_t) util::getObjInt32OrDefault(upperRightCorner, "y", 0);
+    whiteboardPosition.upperLeftCornerX = (uint16_t) util::getObjInt32OrDefault(upperLeftCorner, "x", 0);
+    whiteboardPosition.upperLeftCornerY = (uint16_t) util::getObjInt32OrDefault(upperLeftCorner, "y", 0);
+
+    (new util::JAsyncWorker<void, void>(
+        functionName,
+        javascriptResultCallback,
+        [functionName, deviceId, whiteboardId, whiteboardPosition]() {
+            Jabra_ReturnCode retCode = Jabra_SetWhiteboardPosition(deviceId,
+                whiteboardId, &whiteboardPosition);
+
+            if (retCode != Jabra_ReturnCode::Return_Ok) {
+                util::JabraReturnCodeException::LogAndThrow(functionName,
+                    retCode);
+            }
+        }
+    ))->Queue();
+
+    return env.Undefined();
+}
+
+Napi::Value napi_GetZoom(const Napi::CallbackInfo& info) {
+    const char * const functionName = __func__;
+
+    return util::SimpleDeviceAsyncFunction<Napi::Number, uint16_t>(
+        functionName, info,
+        [functionName](unsigned short deviceId) {
+            uint16_t zoom;
+            Jabra_ReturnCode retCode = Jabra_GetZoom(deviceId, &zoom);
+
+            if (retCode != Jabra_ReturnCode::Return_Ok) {
+                util::JabraReturnCodeException::LogAndThrow(functionName,
+                    retCode);
+                return zoom; // Dummy return - avoid compiler warnings.
+            }
+
+            return zoom;
+        },
+        Napi::Number::New
+    );
+}
+
+Napi::Value napi_SetZoom(const Napi::CallbackInfo& info) {
+    const char * const functionName = __func__;
+    Napi::Env env = info.Env();
+
+    if (!util::verifyArguments(functionName, info, {util::NUMBER, util::NUMBER, util::FUNCTION})) {
+        return env.Undefined();
+    }
+
+    const unsigned short deviceId = (unsigned short)(info[0].As<Napi::Number>().Int32Value());
+    uint16_t zoom = (uint16_t) info[1].As<Napi::Number>().Int32Value();
+    Napi::Function javascriptResultCallback = info[2].As<Napi::Function>();
+
+    (new util::JAsyncWorker<void, void>(
+        functionName,
+        javascriptResultCallback,
+        [functionName, deviceId, zoom]() {
+            Jabra_ReturnCode retCode = Jabra_SetZoom(deviceId, zoom);
+
+            if (retCode != Jabra_ReturnCode::Return_Ok) {
+                util::JabraReturnCodeException::LogAndThrow(functionName,
+                    retCode);
+            }
+        }
+    ))->Queue();
+
+    return env.Undefined();
+}
+
+Napi::Value napi_GetZoomLimits(const Napi::CallbackInfo& info) {
+    const char * const functionName = __func__;
+
+    return util::SimpleDeviceAsyncFunction<Napi::Object, Jabra_ZoomLimits>(
+        functionName, info,
+        [functionName](unsigned short deviceId) {
+            Jabra_ZoomLimits limits;
+            Jabra_ReturnCode retCode = Jabra_GetZoomLimits(deviceId, &limits);
+
+            if (retCode != Jabra_ReturnCode::Return_Ok) {
+                util::JabraReturnCodeException::LogAndThrow(functionName,
+                    retCode);
+            }
+
+            return limits;
+        },
+        [](const Napi::Env& env, const Jabra_ZoomLimits& cLimits) {
+            auto jsLimits = Napi::Object::New(env);
+
+            jsLimits.Set("min", Napi::Number::New(env, cLimits.min));
+            jsLimits.Set("max", Napi::Number::New(env, cLimits.max));
+            jsLimits.Set("stepSize", Napi::Number::New(env, cLimits.stepSize));
+
+            return jsLimits;
+        }
+    );
+}
+
+Napi::Value napi_SetZoomRelativeAction(const Napi::CallbackInfo& info) {
+    const char * const functionName = __func__;
+    Napi::Env env = info.Env();
+
+    if (!util::verifyArguments(functionName, info, {util::NUMBER, util::OBJECT, util::FUNCTION})) {
+        return env.Undefined();
+    }
+
+    const unsigned short deviceId = (unsigned short)(info[0].As<Napi::Number>().Int32Value());
+    Napi::Object jsAction = info[1].As<Napi::Object>();
+    Napi::Function javascriptResultCallback = info[2].As<Napi::Function>();
+
+    Jabra_ZoomRelative zoom;
+    zoom.ZoomDirection = static_cast<enumZoomDirection>(util::getObjInt32OrDefault(jsAction, "direction", 0));
+    zoom.ZoomSpeed = util::getObjInt32OrDefault(jsAction, "speed", 0);
+
+    (new util::JAsyncWorker<void, void>(
+        functionName,
+        javascriptResultCallback,
+        [functionName, deviceId, zoom]() {
+            Jabra_ReturnCode retCode = Jabra_SetZoomRelativeAction(deviceId, zoom);
+            if (retCode != Jabra_ReturnCode::Return_Ok) {
+                util::JabraReturnCodeException::LogAndThrow(functionName,
+                    retCode);
+            }
+        }
+    ))->Queue();
+
+    return env.Undefined();
+}
+
+Napi::Value napi_GetContrastLimits(const Napi::CallbackInfo& info) {
+    const char * const functionName = __func__;
+
+    return util::SimpleDeviceAsyncFunction<Napi::Object, std::tuple<int, int, int>>(
+        functionName, info,
+        [functionName](unsigned short deviceId) {
+            int min, max, stepsize;
+            Jabra_ReturnCode retCode = Jabra_GetContrastLimits(deviceId, &min, &max, &stepsize);
+
+            if (retCode != Jabra_ReturnCode::Return_Ok) {
+                util::JabraReturnCodeException::LogAndThrow(functionName,
+                    retCode);
+            }
+
+            return std::make_tuple(min, max, stepsize);
+        },
+        [](const Napi::Env& env, const std::tuple<int, int, int>& limits) {
+            auto jsLimits = Napi::Object::New(env);
+
+            jsLimits.Set("min", Napi::Number::New(env, std::get<0>(limits)));
+            jsLimits.Set("max", Napi::Number::New(env, std::get<1>(limits)));
+            jsLimits.Set("stepSize", Napi::Number::New(env, std::get<2>(limits)));
+
+            return jsLimits;
+        }
+    );
+}
+
+Napi::Value napi_GetSharpnessLimits(const Napi::CallbackInfo& info) {
+    const char * const functionName = __func__;
+
+    return util::SimpleDeviceAsyncFunction<Napi::Object, std::tuple<int, int>>(
+        functionName, info,
+        [functionName](unsigned short deviceId) {
+            int min, max;
+            Jabra_ReturnCode retCode = Jabra_GetSharpnessLimits(deviceId, &min, &max);
+
+            if (retCode != Jabra_ReturnCode::Return_Ok) {
+                util::JabraReturnCodeException::LogAndThrow(functionName,
+                    retCode);
+            }
+
+            return std::make_tuple(min, max);
+        },
+        [](const Napi::Env& env, const std::tuple<int, int>& limits) {
+            auto jsLimits = Napi::Object::New(env);
+
+            jsLimits.Set("min", Napi::Number::New(env, std::get<0>(limits)));
+            jsLimits.Set("max", Napi::Number::New(env, std::get<1>(limits)));
+
+            return jsLimits;
+        }
+    );
+}
+
+Napi::Value napi_GetBrightnessLimits(const Napi::CallbackInfo& info) {
+    const char * const functionName = __func__;
+
+    return util::SimpleDeviceAsyncFunction<Napi::Object, std::tuple<int, int, int>>(
+        functionName, info,
+        [functionName](unsigned short deviceId) {
+            int min, max, stepsize;
+            Jabra_ReturnCode retCode = Jabra_GetBrightnessLimits(deviceId, &min, &max, &stepsize);
+
+            if (retCode != Jabra_ReturnCode::Return_Ok) {
+                util::JabraReturnCodeException::LogAndThrow(functionName,
+                    retCode);
+            }
+
+            return std::make_tuple(min, max, stepsize);
+        },
+        [](const Napi::Env& env, const std::tuple<int, int, int>& limits) {
+            auto jsLimits = Napi::Object::New(env);
+
+            jsLimits.Set("min", Napi::Number::New(env, std::get<0>(limits)));
+            jsLimits.Set("max", Napi::Number::New(env, std::get<1>(limits)));
+            jsLimits.Set("stepSize", Napi::Number::New(env, std::get<2>(limits)));
+
+            return jsLimits;
+        }
+    );
+}
+
+Napi::Value napi_GetSaturationLimits(const Napi::CallbackInfo& info) {
+    const char * const functionName = __func__;
+
+    return util::SimpleDeviceAsyncFunction<Napi::Object, std::tuple<int, int>>(
+        functionName, info,
+        [functionName](unsigned short deviceId) {
+            int min, max;
+            Jabra_ReturnCode retCode = Jabra_GetSaturationLimits(deviceId, &min, &max);
+
+            if (retCode != Jabra_ReturnCode::Return_Ok) {
+                util::JabraReturnCodeException::LogAndThrow(functionName,
+                    retCode);
+            }
+
+            return std::make_tuple(min, max);
+        },
+        [](const Napi::Env& env, const std::tuple<int, int>& limits) {
+            auto jsLimits = Napi::Object::New(env);
+
+            jsLimits.Set("min", Napi::Number::New(env, std::get<0>(limits)));
+            jsLimits.Set("max", Napi::Number::New(env, std::get<1>(limits)));
+
+            return jsLimits;
+        }
+    );
+}
+
+Napi::Value napi_GetWhiteBalanceLimits(const Napi::CallbackInfo& info) {
+    const char * const functionName = __func__;
+
+    return util::SimpleDeviceAsyncFunction<Napi::Object, std::tuple<int, int>>(
+        functionName, info,
+        [functionName](unsigned short deviceId) {
+            int min, max;
+            Jabra_ReturnCode retCode = Jabra_GetWhiteBalanceLimits(deviceId, &min, &max);
+
+            if (retCode != Jabra_ReturnCode::Return_Ok) {
+                util::JabraReturnCodeException::LogAndThrow(functionName,
+                    retCode);
+            }
+
+            return std::make_tuple(min, max);
+        },
+        [](const Napi::Env& env, const std::tuple<int, int>& limits) {
+            auto jsLimits = Napi::Object::New(env);
+
+            jsLimits.Set("min", Napi::Number::New(env, std::get<0>(limits)));
+            jsLimits.Set("max", Napi::Number::New(env, std::get<1>(limits)));
+
+            return jsLimits;
+        }
+    );
+}
+
+Napi::Value napi_GetPanTilt(const Napi::CallbackInfo& info) {
+    const char * const functionName = __func__;
+
+    return util::SimpleDeviceAsyncFunction<Napi::Object, std::pair<int32_t, int32_t>>(
+        functionName, info,
+        [functionName](unsigned short deviceId) {
+            std::pair<int32_t, int32_t> panTilt;
+
+            Jabra_ReturnCode retCode = Jabra_GetPanTilt(deviceId,
+                &panTilt.first, &panTilt.second);
+
+            if (retCode != Jabra_ReturnCode::Return_Ok) {
+                util::JabraReturnCodeException::LogAndThrow(functionName,
+                    retCode);
+                return panTilt; // Dummy return - avoid compiler warnings.
+            }
+
+            return panTilt;
+        },
+        [](const Napi::Env& env, const std::pair<int32_t, int32_t>& cPanTilt) {
+            Napi::Object jsPanTilt = Napi::Object::New(env);
+            jsPanTilt.Set("pan", Napi::Number::New(env, cPanTilt.first));
+            jsPanTilt.Set("tilt", Napi::Number::New(env, cPanTilt.second));
+            return jsPanTilt;
+        }
+    );
+}
+
+Napi::Value napi_SetPanTilt(const Napi::CallbackInfo& info) {
+    const char * const functionName = __func__;
+    Napi::Env env = info.Env();
+
+    if (!util::verifyArguments(functionName, info, {util::NUMBER, util::OBJECT, util::FUNCTION})) {
+        return env.Undefined();
+    }
+
+    const unsigned short deviceId = (unsigned short)(info[0].As<Napi::Number>().Int32Value());
+    Napi::Object jsPanTilt = info[1].As<Napi::Object>();
+    Napi::Function javascriptResultCallback = info[2].As<Napi::Function>();
+
+    int32_t pan = util::getObjInt32OrDefault(jsPanTilt, "pan", 0);
+    int32_t tilt = util::getObjInt32OrDefault(jsPanTilt, "tilt", 0);
+
+    (new util::JAsyncWorker<void, void>(
+        functionName,
+        javascriptResultCallback,
+        [functionName, deviceId, pan, tilt]() {
+            Jabra_ReturnCode retCode = Jabra_SetPanTilt(deviceId,
+                pan, tilt);
+
+            if (retCode != Jabra_ReturnCode::Return_Ok) {
+                util::JabraReturnCodeException::LogAndThrow(functionName,
+                    retCode);
+            }
+        }
+    ))->Queue();
+
+    return env.Undefined();
+}
+
+Napi::Value napi_GetPanTiltLimits(const Napi::CallbackInfo& info) {
+    const char * const functionName = __func__;
+    return util::SimpleDeviceAsyncFunction<Napi::Object, std::pair<Jabra_PanTiltLimits, Jabra_PanTiltLimits>>(
+        functionName, info,
+        [functionName](unsigned short deviceId) {
+            std::pair<Jabra_PanTiltLimits, Jabra_PanTiltLimits> panTiltLimits; // pan,tilt
+
+            Jabra_ReturnCode retCode = Jabra_GetPanTiltLimits(deviceId,
+                &panTiltLimits.first, &panTiltLimits.second);
+
+            if (retCode != Jabra_ReturnCode::Return_Ok) {
+                util::JabraReturnCodeException::LogAndThrow(functionName, retCode);
+            }
+            return panTiltLimits;
+        },
+        [](const Napi::Env& env, const std::pair<Jabra_PanTiltLimits, Jabra_PanTiltLimits>& cPanTiltLimits) {
+            Napi::Object jsPanLimits = Napi::Object::New(env);
+            jsPanLimits.Set("min", Napi::Number::New(env, cPanTiltLimits.first.min));
+            jsPanLimits.Set("max", Napi::Number::New(env, cPanTiltLimits.first.max));
+            jsPanLimits.Set("stepSize", Napi::Number::New(env, cPanTiltLimits.first.stepSize));
+            Napi::Object jsTiltLimits = Napi::Object::New(env);
+            jsTiltLimits.Set("min", Napi::Number::New(env, cPanTiltLimits.second.min));
+            jsTiltLimits.Set("max", Napi::Number::New(env, cPanTiltLimits.second.max));
+            jsTiltLimits.Set("stepSize", Napi::Number::New(env, cPanTiltLimits.second.stepSize));
+            Napi::Object jsPanTiltLimits = Napi::Object::New(env);
+            jsPanTiltLimits.Set("pan", jsPanLimits);
+            jsPanTiltLimits.Set("tilt", jsTiltLimits);
+            return jsPanTiltLimits;
+        }
+    );
+}
+
+Napi::Value napi_SetPanTiltRelativeAction(const Napi::CallbackInfo& info) {
+    const char * const functionName = __func__;
+    Napi::Env env = info.Env();
+
+    if (!util::verifyArguments(functionName, info, {util::NUMBER, util::OBJECT, util::FUNCTION})) {
+        return env.Undefined();
+    }
+
+    const unsigned short deviceId = (unsigned short)(info[0].As<Napi::Number>().Int32Value());
+    Napi::Object jsAction = info[1].As<Napi::Object>();
+    Napi::Function javascriptResultCallback = info[2].As<Napi::Function>();
+
+    Jabra_PanTiltRelative pantilt;
+    pantilt.PanDirection = static_cast<enumPanDirection>(util::getObjInt32OrDefault(jsAction, "panDirection", 0));
+    pantilt.PanSpeed = util::getObjInt32OrDefault(jsAction, "panSpeed", 0);
+    pantilt.TiltDirection = static_cast<enumTiltDirection>(util::getObjInt32OrDefault(jsAction, "tiltDirection", 0));
+    pantilt.TiltSpeed = util::getObjInt32OrDefault(jsAction, "tiltSpeed", 0);
+
+    (new util::JAsyncWorker<void, void>(
+        functionName,
+        javascriptResultCallback,
+        [functionName, deviceId, pantilt]() {
+            Jabra_ReturnCode retCode = Jabra_SetPanTiltRelativeAction(deviceId, pantilt);
+            if (retCode != Jabra_ReturnCode::Return_Ok) {
+                util::JabraReturnCodeException::LogAndThrow(functionName,
+                    retCode);
+            }
+        }
+    ))->Queue();
+
+    return env.Undefined();
+}
+
+Napi::Value napi_SetVideoHDR(const Napi::CallbackInfo& info) {
+    const char * const functionName = __func__;
+
+    return util::SimpleDeviceAsyncBoolSetter(functionName, info, [functionName](unsigned short deviceId, bool enable) {
+        const Jabra_ReturnCode result = Jabra_SetVideoHDR(deviceId, enable);
+        if (result != Return_Ok) {
+            throw util::JabraReturnCodeException(functionName, result);
+        }
+    });
+}
+
+Napi::Value napi_GetVideoHDR(const Napi::CallbackInfo& info) {
+    const char * const functionName = __func__;
+
+    return util::SimpleDeviceAsyncFunction<Napi::Boolean, bool>(
+        functionName, info,
+        [functionName](unsigned short deviceId) {
+            bool enable = false;
+            Jabra_ReturnCode retCode = Jabra_GetVideoHDR(deviceId, &enable);
+
+            if (retCode != Jabra_ReturnCode::Return_Ok) {
+                util::JabraReturnCodeException::LogAndThrow(functionName, retCode);
+            }
+            return enable;
+        },
+        Napi::Boolean::New
+    );
+}
+
+Napi::Value napi_SetVideoHDRDefault(const Napi::CallbackInfo& info) {
+    const char * const functionName = __func__;
+
+    return util::SimpleDeviceAsyncBoolSetter(functionName, info, [functionName](unsigned short deviceId, bool enable) {
+        const Jabra_ReturnCode result = Jabra_SetVideoHDRDefault(deviceId, enable);
+        if (result != Return_Ok) {
+            throw util::JabraReturnCodeException(functionName, result);
+        }
+    });
+}
+
+Napi::Value napi_GetVideoHDRDefault(const Napi::CallbackInfo& info) {
+    const char * const functionName = __func__;
+
+    return util::SimpleDeviceAsyncFunction<Napi::Boolean, bool>(
+        functionName, info,
+        [functionName](unsigned short deviceId) {
+            bool enable = false;
+            Jabra_ReturnCode retCode = Jabra_GetVideoHDRDefault(deviceId, &enable);
+
+            if (retCode != Jabra_ReturnCode::Return_Ok) {
+                util::JabraReturnCodeException::LogAndThrow(functionName, retCode);
+            }
+            return enable;
+        },
+        Napi::Boolean::New
+    );
+}
+
+Napi::Value napi_SetContrastLevel(const Napi::CallbackInfo& info) {
+    const char * const functionName = __func__;
+    Napi::Env env = info.Env();
+
+    if (util::verifyArguments(functionName, info, {util::NUMBER, util::NUMBER, util::FUNCTION})) {
+        const unsigned short deviceId = (unsigned short)(info[0].As<Napi::Number>().Int32Value());
+        const int level = info[1].As<Napi::Number>().Int32Value();
+        Napi::Function javascriptResultCallback = info[2].As<Napi::Function>();
+
+        (new util::JAsyncWorker<void, void>(
+            functionName,
+            javascriptResultCallback,
+            [functionName, deviceId, level](){
+                Jabra_ReturnCode retCode = Jabra_SetContrastLevel(deviceId, level);
+                if (retCode != Return_Ok) {
+                    util::JabraReturnCodeException::LogAndThrow(functionName, retCode);
+                }
+            }
+        ))->Queue();
+  }
+  return env.Undefined();
+}
+
+Napi::Value napi_GetContrastLevel(const Napi::CallbackInfo& info) {
+    const char * const functionName = __func__;
+
+    return util::SimpleDeviceAsyncFunction<Napi::Number, int32_t>(
+        functionName, info,
+        [functionName](unsigned short deviceId) {
+            int32_t level;
+            Jabra_ReturnCode retCode = Jabra_GetContrastLevel(deviceId, &level);
+
+            if (retCode != Jabra_ReturnCode::Return_Ok) {
+                util::JabraReturnCodeException::LogAndThrow(functionName,
+                    retCode);
+                return level; // Dummy return - avoid compiler warnings.
+            }
+
+            return level;
+        },
+        Napi::Number::New
+    );
+}
+
+Napi::Value napi_SetSharpnessLevel(const Napi::CallbackInfo& info) {
+    const char * const functionName = __func__;
+    Napi::Env env = info.Env();
+
+    if (util::verifyArguments(functionName, info, {util::NUMBER, util::NUMBER, util::FUNCTION})) {
+        const unsigned short deviceId = (unsigned short)(info[0].As<Napi::Number>().Int32Value());
+        const int level = info[1].As<Napi::Number>().Int32Value();
+        Napi::Function javascriptResultCallback = info[2].As<Napi::Function>();
+
+        (new util::JAsyncWorker<void, void>(
+            functionName,
+            javascriptResultCallback,
+            [functionName, deviceId, level](){
+                Jabra_ReturnCode retCode = Jabra_SetSharpnessLevel(deviceId, level);
+                if (retCode != Return_Ok) {
+                    util::JabraReturnCodeException::LogAndThrow(functionName, retCode);
+                }
+            }
+        ))->Queue();
+  }
+  return env.Undefined();
+}
+
+Napi::Value napi_GetSharpnessLevel(const Napi::CallbackInfo& info) {
+    const char * const functionName = __func__;
+
+    return util::SimpleDeviceAsyncFunction<Napi::Number, int32_t>(
+        functionName, info,
+        [functionName](unsigned short deviceId) {
+            int32_t level;
+            Jabra_ReturnCode retCode = Jabra_GetSharpnessLevel(deviceId, &level);
+
+            if (retCode != Jabra_ReturnCode::Return_Ok) {
+                util::JabraReturnCodeException::LogAndThrow(functionName,
+                    retCode);
+                return level; // Dummy return - avoid compiler warnings.
+            }
+
+            return level;
+        },
+        Napi::Number::New
+    );
+}
+
+Napi::Value napi_SetBrightnessLevel(const Napi::CallbackInfo& info) {
+    const char * const functionName = __func__;
+    Napi::Env env = info.Env();
+
+    if (util::verifyArguments(functionName, info, {util::NUMBER, util::NUMBER, util::FUNCTION})) {
+        const unsigned short deviceId = (unsigned short)(info[0].As<Napi::Number>().Int32Value());
+        const int level = info[1].As<Napi::Number>().Int32Value();
+        Napi::Function javascriptResultCallback = info[2].As<Napi::Function>();
+
+        (new util::JAsyncWorker<void, void>(
+            functionName,
+            javascriptResultCallback,
+            [functionName, deviceId, level](){
+                Jabra_ReturnCode retCode = Jabra_SetBrightnessLevel(deviceId, level);
+                if (retCode != Return_Ok) {
+                    util::JabraReturnCodeException::LogAndThrow(functionName, retCode);
+                }
+            }
+        ))->Queue();
+  }
+  return env.Undefined();
+}
+
+Napi::Value napi_GetBrightnessLevel(const Napi::CallbackInfo& info) {
+    const char * const functionName = __func__;
+
+    return util::SimpleDeviceAsyncFunction<Napi::Number, int32_t>(
+        functionName, info,
+        [functionName](unsigned short deviceId) {
+            int32_t level;
+            Jabra_ReturnCode retCode = Jabra_GetBrightnessLevel(deviceId, &level);
+
+            if (retCode != Jabra_ReturnCode::Return_Ok) {
+                util::JabraReturnCodeException::LogAndThrow(functionName,
+                    retCode);
+                return level; // Dummy return - avoid compiler warnings.
+            }
+
+            return level;
+        },
+        Napi::Number::New
+    );
+}
+
+Napi::Value napi_SetSaturationLevel(const Napi::CallbackInfo& info) {
+    const char * const functionName = __func__;
+    Napi::Env env = info.Env();
+
+    if (util::verifyArguments(functionName, info, {util::NUMBER, util::NUMBER, util::FUNCTION})) {
+        const unsigned short deviceId = (unsigned short)(info[0].As<Napi::Number>().Int32Value());
+        const int level = info[1].As<Napi::Number>().Int32Value();
+        Napi::Function javascriptResultCallback = info[2].As<Napi::Function>();
+
+        (new util::JAsyncWorker<void, void>(
+            functionName,
+            javascriptResultCallback,
+            [functionName, deviceId, level](){
+                Jabra_ReturnCode retCode = Jabra_SetSaturationLevel(deviceId, level);
+                if (retCode != Return_Ok) {
+                    util::JabraReturnCodeException::LogAndThrow(functionName, retCode);
+                }
+            }
+        ))->Queue();
+  }
+  return env.Undefined();
+}
+
+Napi::Value napi_GetSaturationLevel(const Napi::CallbackInfo& info) {
+    const char * const functionName = __func__;
+
+    return util::SimpleDeviceAsyncFunction<Napi::Number, int32_t>(
+        functionName, info,
+        [functionName](unsigned short deviceId) {
+            int32_t level;
+            Jabra_ReturnCode retCode = Jabra_GetSaturationLevel(deviceId, &level);
+
+            if (retCode != Jabra_ReturnCode::Return_Ok) {
+                util::JabraReturnCodeException::LogAndThrow(functionName,
+                    retCode);
+                return level; // Dummy return - avoid compiler warnings.
+            }
+
+            return level;
+        },
+        Napi::Number::New
+    );
+}
+
+Napi::Value napi_SetWhiteBalance(const Napi::CallbackInfo& info) {
+    const char * const functionName = __func__;
+    Napi::Env env = info.Env();
+
+    if (util::verifyArguments(functionName, info, {util::NUMBER, util::OBJECT, util::FUNCTION})) {
+        const unsigned short deviceId = (unsigned short)(info[0].As<Napi::Number>().Int32Value());
+        Napi::Object jsWhiteBalance = info[1].As<Napi::Object>();
+        const int value = util::getObjInt32OrDefault(jsWhiteBalance, "value", 0);
+        const Jabra_AutoWhiteBalance autoWB = static_cast<Jabra_AutoWhiteBalance>(util::getObjInt32OrDefault(jsWhiteBalance, "autoWB", 0));
+        Napi::Function javascriptResultCallback = info[2].As<Napi::Function>();
+
+        (new util::JAsyncWorker<void, void>(
+            functionName,
+            javascriptResultCallback,
+            [functionName, deviceId, value, autoWB](){
+                Jabra_ReturnCode retCode = Jabra_SetWhiteBalance(deviceId, value, autoWB);
+                if (retCode != Return_Ok) {
+                    util::JabraReturnCodeException::LogAndThrow(functionName, retCode);
+                }
+            }
+        ))->Queue();
+  }
+  return env.Undefined();
+}
+
+Napi::Value napi_GetWhiteBalance(const Napi::CallbackInfo& info) {
+    const char * const functionName = __func__;
+
+    return util::SimpleDeviceAsyncFunction<Napi::Object, std::pair<int, Jabra_AutoWhiteBalance>>(
+        functionName, info,
+        [functionName](unsigned short deviceId) {
+            int value = 0;
+            Jabra_AutoWhiteBalance autoWB;
+            Jabra_ReturnCode retCode = Jabra_GetWhiteBalance(deviceId, &value, &autoWB);
+
+            if (retCode != Jabra_ReturnCode::Return_Ok) {
+                util::JabraReturnCodeException::LogAndThrow(functionName,
+                    retCode);
+            }
+
+            return std::make_pair(value, autoWB);
+        },
+        [](const Napi::Env& env, const std::pair<int, Jabra_AutoWhiteBalance>& whiteBalance) {
+            Napi::Object jsWhiteBalance = Napi::Object::New(env);
+            jsWhiteBalance.Set("value", Napi::Number::New(env, whiteBalance.first));
+            jsWhiteBalance.Set("autoWB", Napi::Number::New(env, whiteBalance.second));
+            return jsWhiteBalance;
+        }
+    );
+}
+
+Napi::Value napi_SetRoomCapacity(const Napi::CallbackInfo& info) {
+    const char * const functionName = __func__;
+    Napi::Env env = info.Env();
+
+    if (util::verifyArguments(functionName, info, {util::NUMBER, util::NUMBER, util::FUNCTION})) {
+        const unsigned short deviceId = (unsigned short)(info[0].As<Napi::Number>().Int32Value());
+        const int16_t capacity = info[1].As<Napi::Number>().Int32Value();
+        Napi::Function javascriptResultCallback = info[2].As<Napi::Function>();
+
+        (new util::JAsyncWorker<void, void>(
+            functionName,
+            javascriptResultCallback,
+            [functionName, deviceId, capacity](){
+                Jabra_ReturnCode retCode = Jabra_SetRoomCapacity(deviceId, capacity);
+                if (retCode != Return_Ok) {
+                    util::JabraReturnCodeException::LogAndThrow(functionName, retCode);
+                }
+            }
+        ))->Queue();
+  }
+  return env.Undefined();
+}
+
+Napi::Value napi_GetRoomCapacity(const Napi::CallbackInfo& info) {
+    const char * const functionName = __func__;
+
+    return util::SimpleDeviceAsyncFunction<Napi::Number, int16_t>(
+        functionName, info,
+        [functionName](unsigned short deviceId) {
+            int16_t capacity = 0;
+            Jabra_ReturnCode retCode = Jabra_GetRoomCapacity(deviceId, &capacity);
+
+            if (retCode != Jabra_ReturnCode::Return_Ok) {
+                util::JabraReturnCodeException::LogAndThrow(functionName,
+                    retCode);
+                return capacity; // Dummy return - avoid compiler warnings.
+            }
+
+            return capacity;
+        },
+        Napi::Number::New
+    );
+}
+
+Napi::Value napi_SetRoomCapacityNotificationEnabled(const Napi::CallbackInfo& info) {
+  const char * const functionName = __func__;
+  return util::SimpleDeviceAsyncBoolSetter(functionName, info, [functionName](unsigned short deviceId, bool enable) {
+        const Jabra_ReturnCode result = Jabra_SetRoomCapacityNotificationEnabled(deviceId, enable);
+        if (result != Return_Ok) {
+          throw util::JabraReturnCodeException(functionName, result);
+        }
+  });
+}
+
+Napi::Value napi_GetRoomCapacityNotificationEnabled(const Napi::CallbackInfo& info) {
+    const char * const functionName = __func__;
+
+    return util::SimpleDeviceAsyncFunction<Napi::Boolean, bool>(
+        functionName, info,
+        [functionName](unsigned short deviceId) {
+            bool enable = false;
+            Jabra_ReturnCode retCode = Jabra_GetRoomCapacityNotificationEnabled(deviceId, &enable);
+
+            if (retCode != Jabra_ReturnCode::Return_Ok) {
+                util::JabraReturnCodeException::LogAndThrow(functionName,
+                    retCode);
+                return enable; // Dummy return - avoid compiler warnings.
+            }
+
+            return enable;
+        },
+        Napi::Boolean::New
+    );
+}
+
+Napi::Value napi_SetNotificationStyle(const Napi::CallbackInfo& info) {
+    const char * const functionName = __func__;
+    Napi::Env env = info.Env();
+
+    if (!util::verifyArguments(functionName, info, {util::NUMBER, util::NUMBER, util::FUNCTION})) {
+        return env.Undefined();
+    }
+
+    const unsigned short deviceId = (unsigned short)(info[0].As<Napi::Number>().Int32Value());
+    const Jabra_NotificationStyle style = (Jabra_NotificationStyle)(info[1].As<Napi::Number>().Int32Value());
+    Napi::Function javascriptResultCallback = info[2].As<Napi::Function>();
+
+    (new util::JAsyncWorker<void, void>(
+        functionName,
+        javascriptResultCallback,
+        [functionName, deviceId, style]() {
+            Jabra_ReturnCode retCode = Jabra_SetNotificationStyle(deviceId, style);
+
+            if (retCode != Jabra_ReturnCode::Return_Ok) {
+                util::JabraReturnCodeException::LogAndThrow(functionName,
+                    retCode);
+            }
+        }
+    ))->Queue();
+
+    return env.Undefined();
+}
+
+Napi::Value napi_GetNotificationStyle(const Napi::CallbackInfo& info) {
+    const char * const functionName = __func__;
+
+    return util::SimpleDeviceAsyncFunction<Napi::Number, Jabra_NotificationStyle>(
+        functionName, info,
+        [functionName](unsigned short deviceId) {
+            Jabra_NotificationStyle style;
+            Jabra_ReturnCode retCode = Jabra_GetNotificationStyle(deviceId, &style);
+
+            if (retCode != Jabra_ReturnCode::Return_Ok) {
+                util::JabraReturnCodeException::LogAndThrow(functionName,
+                    retCode);
+                return style; // Dummy return - avoid compiler warnings.
+            }
+
+            return style;
+        },
+        Napi::Number::New
+    );
+}
+
+Napi::Value napi_SetNotificationUsage(const Napi::CallbackInfo& info) {
+    const char * const functionName = __func__;
+    Napi::Env env = info.Env();
+
+    if (!util::verifyArguments(functionName, info, {util::NUMBER, util::NUMBER, util::FUNCTION})) {
+        return env.Undefined();
+    }
+
+    const unsigned short deviceId = (unsigned short)(info[0].As<Napi::Number>().Int32Value());
+    const Jabra_NotificationUsage enable = (Jabra_NotificationUsage)(info[1].As<Napi::Number>().Int32Value());
+    Napi::Function javascriptResultCallback = info[2].As<Napi::Function>();
+
+    (new util::JAsyncWorker<void, void>(
+        functionName,
+        javascriptResultCallback,
+        [functionName, deviceId, enable]() {
+            Jabra_ReturnCode retCode = Jabra_SetNotificationUsage(deviceId, enable);
+
+            if (retCode != Jabra_ReturnCode::Return_Ok) {
+                util::JabraReturnCodeException::LogAndThrow(functionName,
+                    retCode);
+            }
+        }
+    ))->Queue();
+
+    return env.Undefined();
+}
+
+Napi::Value napi_GetNotificationUsage(const Napi::CallbackInfo& info) {
+    const char * const functionName = __func__;
+
+    return util::SimpleDeviceAsyncFunction<Napi::Number, Jabra_NotificationUsage>(
+        functionName, info,
+        [functionName](unsigned short deviceId) {
+            Jabra_NotificationUsage enable;
+            Jabra_ReturnCode retCode = Jabra_GetNotificationUsage(deviceId, &enable);
+
+            if (retCode != Jabra_ReturnCode::Return_Ok) {
+                util::JabraReturnCodeException::LogAndThrow(functionName,
+                    retCode);
+                return enable; // Dummy return - avoid compiler warnings.
+            }
+
+            return enable;
+        },
+        Napi::Number::New
+    );
+}
+
+Napi::Value napi_StoreColorControlPreset(const Napi::CallbackInfo& info) {
+  const char * const functionName = __func__;
+  Napi::Env env = info.Env();
+
+  if (util::verifyArguments(functionName, info, {util::NUMBER, util::NUMBER, util::FUNCTION})) {
+    const unsigned short deviceId = (unsigned short)(info[0].As<Napi::Number>().Int32Value());
+    const Jabra_ColorControlPreset preset = (Jabra_ColorControlPreset)(info[1].As<Napi::Number>().Int32Value());
+    Napi::Function javascriptResultCallback = info[2].As<Napi::Function>();
+
+    (new util::JAsyncWorker<void, void>(
+      functionName, 
+      javascriptResultCallback,
+      [functionName, deviceId, preset](){ 
+        Jabra_ReturnCode retv;                       
+        if ((retv = Jabra_StoreColorControlPreset(deviceId, preset)) != Return_Ok) {
+          util::JabraReturnCodeException::LogAndThrow(functionName, retv);
+        }
+      }
+    ))->Queue();
+  }
+
+  return env.Undefined();
+}
+
+Napi::Value napi_ApplyColorControlPreset(const Napi::CallbackInfo& info) {
+  const char * const functionName = __func__;
+  Napi::Env env = info.Env();
+
+  if (util::verifyArguments(functionName, info, {util::NUMBER, util::NUMBER, util::FUNCTION})) {
+    const unsigned short deviceId = (unsigned short)(info[0].As<Napi::Number>().Int32Value());
+    const Jabra_ColorControlPreset preset = (Jabra_ColorControlPreset)(info[1].As<Napi::Number>().Int32Value());
+    Napi::Function javascriptResultCallback = info[2].As<Napi::Function>();
+
+    (new util::JAsyncWorker<void, void>(
+      functionName, 
+      javascriptResultCallback,
+      [functionName, deviceId, preset](){ 
+        Jabra_ReturnCode retv;                       
+        if ((retv = Jabra_ApplyColorControlPreset(deviceId, preset)) != Return_Ok) {
+          util::JabraReturnCodeException::LogAndThrow(functionName, retv);
+        }
+      }
+    ))->Queue();
+  }
+
+  return env.Undefined();
+}
+
+Napi::Value napi_StorePTZPreset(const Napi::CallbackInfo& info) {
+  const char * const functionName = __func__;
+  Napi::Env env = info.Env();
+
+  if (util::verifyArguments(functionName, info, {util::NUMBER, util::NUMBER, util::FUNCTION})) {
+    const unsigned short deviceId = (unsigned short)(info[0].As<Napi::Number>().Int32Value());
+    const Jabra_PTZPreset preset = (Jabra_PTZPreset)(info[1].As<Napi::Number>().Int32Value());
+    Napi::Function javascriptResultCallback = info[2].As<Napi::Function>();
+
+    (new util::JAsyncWorker<void, void>(
+      functionName, 
+      javascriptResultCallback,
+      [functionName, deviceId, preset](){ 
+        Jabra_ReturnCode retv;                       
+        if ((retv = Jabra_StorePTZPreset(deviceId, preset)) != Return_Ok) {
+          util::JabraReturnCodeException::LogAndThrow(functionName, retv);
+        }
+      }
+    ))->Queue();
+  }
+
+  return env.Undefined();
+}
+
+Napi::Value napi_ApplyPTZPreset(const Napi::CallbackInfo& info) {
+  const char * const functionName = __func__;
+  Napi::Env env = info.Env();
+
+  if (util::verifyArguments(functionName, info, {util::NUMBER, util::NUMBER, util::FUNCTION})) {
+    const unsigned short deviceId = (unsigned short)(info[0].As<Napi::Number>().Int32Value());
+    const Jabra_PTZPreset preset = (Jabra_PTZPreset)(info[1].As<Napi::Number>().Int32Value());
+    Napi::Function javascriptResultCallback = info[2].As<Napi::Function>();
+
+    (new util::JAsyncWorker<void, void>(
+      functionName, 
+      javascriptResultCallback,
+      [functionName, deviceId, preset](){ 
+        Jabra_ReturnCode retv;                       
+        if ((retv = Jabra_ApplyPTZPreset(deviceId, preset)) != Return_Ok) {
+          util::JabraReturnCodeException::LogAndThrow(functionName, retv);
+        }
+      }
+    ))->Queue();
+  }
+
+  return env.Undefined();
+}
+
+Napi::Value napi_SetSecondVideoStream(const Napi::CallbackInfo& info) {
+  const char * const functionName = __func__;
+  Napi::Env env = info.Env();
+
+  if (util::verifyArguments(functionName, info, {util::NUMBER, util::NUMBER, util::FUNCTION})) {
+    const unsigned short deviceId = (unsigned short)(info[0].As<Napi::Number>().Int32Value());
+    const SecondaryStreamContent content = (SecondaryStreamContent)(info[1].As<Napi::Number>().Int32Value());
+    Napi::Function javascriptResultCallback = info[2].As<Napi::Function>();
+
+    (new util::JAsyncWorker<void, void>(
+      functionName, 
+      javascriptResultCallback,
+      [functionName, deviceId, content](){ 
+        Jabra_ReturnCode retv;                       
+        if ((retv = Jabra_SetSecondVideoStream(deviceId, content)) != Return_Ok) {
+          util::JabraReturnCodeException::LogAndThrow(functionName, retv);
+        }
+      }
+    ))->Queue();
+  }
+
+  return env.Undefined();
+}
+
+Napi::Value napi_GetSecondVideoStream(const Napi::CallbackInfo& info) {
+    const char * const functionName = __func__;
+
+    return util::SimpleDeviceAsyncFunction<Napi::Number, SecondaryStreamContent>(
+        functionName, info,
+        [functionName](unsigned short deviceId) {
+            SecondaryStreamContent content;
+            Jabra_ReturnCode retCode = Jabra_GetSecondVideoStream(deviceId, &content);
+
+            if (retCode != Jabra_ReturnCode::Return_Ok) {
+                util::JabraReturnCodeException::LogAndThrow(functionName,
+                    retCode);
+            }
+
+            return content;
+        },
+        Napi::Number::New
+    );
+}
+
+Napi::Value napi_SetVideoTransitionStyle(const Napi::CallbackInfo& info) {
+  const char * const functionName = __func__;
+  Napi::Env env = info.Env();
+
+  if (util::verifyArguments(functionName, info, {util::NUMBER, util::NUMBER, util::FUNCTION})) {
+    const unsigned short deviceId = (unsigned short)(info[0].As<Napi::Number>().Int32Value());
+    const Jabra_VideoTransitionStyle style = (Jabra_VideoTransitionStyle)(info[1].As<Napi::Number>().Int32Value());
+    Napi::Function javascriptResultCallback = info[2].As<Napi::Function>();
+
+    (new util::JAsyncWorker<void, void>(
+      functionName, 
+      javascriptResultCallback,
+      [functionName, deviceId, style](){ 
+        Jabra_ReturnCode retv;                       
+        if ((retv = Jabra_SetVideoTransitionStyle(deviceId, style)) != Return_Ok) {
+          util::JabraReturnCodeException::LogAndThrow(functionName, retv);
+        }
+      }
+    ))->Queue();
+  }
+
+  return env.Undefined();
+}
+
+Napi::Value napi_GetVideoTransitionStyle(const Napi::CallbackInfo& info) {
+    const char * const functionName = __func__;
+
+    return util::SimpleDeviceAsyncFunction<Napi::Number, Jabra_VideoTransitionStyle>(
+        functionName, info,
+        [functionName](unsigned short deviceId) {
+            Jabra_VideoTransitionStyle style;
+            Jabra_ReturnCode retCode = Jabra_GetVideoTransitionStyle(deviceId, &style);
+
+            if (retCode != Jabra_ReturnCode::Return_Ok) {
+                util::JabraReturnCodeException::LogAndThrow(functionName,
+                    retCode);
+            }
+
+            return style;
+        },
+        Napi::Number::New
+    );
+}
+
+Napi::Value napi_GetEthernetIPv4Status(const Napi::CallbackInfo& info) {
+    const char * const functionName = __func__;
+
+    return util::SimpleDeviceAsyncFunction<Napi::Object, IPv4Status>(
+        functionName, info,
+        [functionName](unsigned short deviceId) {
+            IPv4Status status;
+            Jabra_ReturnCode retCode = Jabra_GetEthernetIPv4Status(deviceId, &status);
+
+            if (retCode != Jabra_ReturnCode::Return_Ok) {
+                util::JabraReturnCodeException::LogAndThrow(functionName,
+                    retCode);
+            }
+
+            return status;
+        },
+        [](const Napi::Env& env, const IPv4Status& status) {
+            auto jsStatus = Napi::Object::New(env);
+            auto jsIP = Napi::Object::New(env);
+            auto jsSubnetMask = Napi::Object::New(env);
+
+            jsIP.Set("octet1", Napi::Number::New(env, status.IP.octet1));
+            jsIP.Set("octet2", Napi::Number::New(env, status.IP.octet2));
+            jsIP.Set("octet3", Napi::Number::New(env, status.IP.octet3));
+            jsIP.Set("octet4", Napi::Number::New(env, status.IP.octet4));
+            jsSubnetMask.Set("octet1", Napi::Number::New(env, status.SubNetMask.octet1));
+            jsSubnetMask.Set("octet2", Napi::Number::New(env, status.SubNetMask.octet2));
+            jsSubnetMask.Set("octet3", Napi::Number::New(env, status.SubNetMask.octet3));
+            jsSubnetMask.Set("octet4", Napi::Number::New(env, status.SubNetMask.octet4));
+            jsStatus.Set("interfaceEnabled", Napi::Boolean::New(env, status.InterfaceEnabled));
+            jsStatus.Set("DHCPEnabled", Napi::Boolean::New(env, status.DHCPEnabled));
+            jsStatus.Set("connectionStatus", Napi::Boolean::New(env, status.ConnectionStatus));
+            jsStatus.Set("IP", jsIP);
+            jsStatus.Set("subnetMask", jsSubnetMask);
+            return jsStatus;
+        }
+    );
+}
+
+Napi::Value napi_GetWLANIPv4Status(const Napi::CallbackInfo& info) {
+    const char * const functionName = __func__;
+
+    return util::SimpleDeviceAsyncFunction<Napi::Object, IPv4Status>(
+        functionName, info,
+        [functionName](unsigned short deviceId) {
+            IPv4Status status;
+            Jabra_ReturnCode retCode = Jabra_GetWLANIPv4Status(deviceId, &status);
+
+            if (retCode != Jabra_ReturnCode::Return_Ok) {
+                util::JabraReturnCodeException::LogAndThrow(functionName,
+                    retCode);
+            }
+
+            return status;
+        },
+        [](const Napi::Env& env, const IPv4Status& status) {
+            auto jsStatus = Napi::Object::New(env);
+            auto jsIP = Napi::Object::New(env);
+            auto jsSubnetMask = Napi::Object::New(env);
+
+            jsIP.Set("octet1", Napi::Number::New(env, status.IP.octet1));
+            jsIP.Set("octet2", Napi::Number::New(env, status.IP.octet2));
+            jsIP.Set("octet3", Napi::Number::New(env, status.IP.octet3));
+            jsIP.Set("octet4", Napi::Number::New(env, status.IP.octet4));
+            jsSubnetMask.Set("octet1", Napi::Number::New(env, status.SubNetMask.octet1));
+            jsSubnetMask.Set("octet2", Napi::Number::New(env, status.SubNetMask.octet2));
+            jsSubnetMask.Set("octet3", Napi::Number::New(env, status.SubNetMask.octet3));
+            jsSubnetMask.Set("octet4", Napi::Number::New(env, status.SubNetMask.octet4));
+            jsStatus.Set("interfaceEnabled", Napi::Boolean::New(env, status.InterfaceEnabled));
+            jsStatus.Set("DHCPEnabled", Napi::Boolean::New(env, status.DHCPEnabled));
+            jsStatus.Set("connectionStatus", Napi::Boolean::New(env, status.ConnectionStatus));
+            jsStatus.Set("IP", jsIP);
+            jsStatus.Set("subnetMask", jsSubnetMask);
+            return jsStatus;
+        }
+    );
 }

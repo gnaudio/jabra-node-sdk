@@ -99,6 +99,5 @@
         "titleBar.activeBackground": "#536382",
     },
     "editor.trimAutoWhitespace": false,
-    "files.trimTrailingWhitespace": false,
-    "python.pythonPath": "C:\\Program Files\\Python38\\python.exe"
+    "files.trimTrailingWhitespace": false
 }

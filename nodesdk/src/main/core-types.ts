@@ -3,7 +3,7 @@
  * and the internal sdk integration.
  */
 
-import { enumDeviceConnectionType, enumSettingCtrlType, enumSettingDataType, enumAPIReturnCode, enumBTPairedListType, enumRemoteMmiSequence } from './jabra-enums';
+import { enumDeviceConnectionType, enumSettingCtrlType, enumSettingDataType, enumAPIReturnCode, enumBTPairedListType, enumRemoteMmiSequence, enumAutoWhiteBalance, enumPanDirection, enumTiltDirection, enumZoomDirection } from './jabra-enums';
 
 /**
  * The type of error returned from rejected Jabra API promises.
@@ -80,6 +80,39 @@ export interface DeviceCatalogueParams {
     refreshAtConnect: boolean,
     refreshScope: number,
     fetchDataForUnknownDevicesInTheBackground: boolean,
+}
+
+/**
+ * Holds information about the network interface.
+ */
+export interface IPv4
+{
+    octet1: number;
+    octet2: number;
+    octet3: number;
+    octet4: number;
+}
+export interface IPv4Status
+{
+    interfaceEnabled: boolean;
+    DHCPEnabled: boolean;
+    connectionStatus: boolean;
+    IP: IPv4;
+    subnetMask: IPv4;
+}
+
+/** Action controls for pan/tilt/zoom.*/
+export interface PanTiltRelative
+{
+    panDirection: enumPanDirection;
+    panSpeed: number; // Currently must be 1
+    tiltDirection: enumTiltDirection;
+    tiltSpeed: number; // Currently must be 1
+}
+export interface ZoomRelative
+{
+    direction: enumZoomDirection;
+    speed: number; // Currently must be 1
 }
 
 /**
@@ -286,3 +319,62 @@ export interface DectInfoErrorCount extends DectInfoCommon {
     hubAErrors: number;		/* Number of errors in HUB A field.*/
     handoversCount: number; /* Handover count.*/
 }
+
+export interface Point2D {
+    x: number;  /* X coordinate of the point */
+    y: number;  /* y coordinate of the point */
+}
+
+export interface WhiteboardPosition {
+    lowerLeftCorner: Point2D;   /* Lower-left corner of the whiteboard */
+    lowerRightCorner: Point2D;  /* Lower-right corner of the whiteboard */
+    upperRightCorner: Point2D;  /* Upper-right corner of the whiteboard */
+    upperLeftCorner: Point2D;   /* Upper-left corner of the whiteboard */
+}
+
+/**
+ * This structure represents a device camera's limits for parameters such
+ * as sharpness and saturation.
+ */
+export interface VideoLimits {
+    /* The minimum value the parameter level can be set to. */
+    min: number;
+    /* The maximum value the parameter level can be set to. */
+    max: number;
+    /* The minimum amount that the value needs to change for it to have any effect. */
+    stepSize?: number;
+}
+
+/**
+ * This structure represents a video device's streaming status.
+ */
+ export interface VideoDeviceStreamingStatus {
+    /* Whether the device is actively streaming video. */
+    videoStreamingStatus: boolean;
+    /* Whether the device is actively streaming audio. */
+    audioStreamingStatus: boolean;
+}
+
+/**
+ * This structure represents a device camera's pan an tilt values.
+ */
+export interface PanTilt {
+  pan: number,
+  tilt: number
+}
+
+/**
+ * This structure represents a device camera's pan and tilt limits
+ */
+export interface PanTiltLimits {
+    pan: VideoLimits,
+    tilt: VideoLimits
+  }
+
+/**
+ * This structure represents the white balance settings
+ */
+export interface WhiteBalance {
+    value: number,
+    autoWB: enumAutoWhiteBalance
+  }

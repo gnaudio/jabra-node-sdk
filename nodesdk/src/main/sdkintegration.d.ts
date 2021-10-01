@@ -5,10 +5,10 @@
  */
 
 import { ConfigParamsCloud, GenericConfigParams, enumHidState, AudioFileFormatEnum, DeviceSettings, DeviceInfo, PairedListInfo,
-         NamedAsset, AddonLogSeverity, JabraError, RemoteMmiActionOutput, DectInfo } from './core-types';
+         NamedAsset, AddonLogSeverity, JabraError, RemoteMmiActionOutput, DectInfo, WhiteboardPosition, ZoomLimits, PanTilt, DateTime, VideoLimitsStepSize, PanTiltRelative, ZoomRelative, IPv4Status } from './core-types';
 import { enumDeviceBtnType, enumFirmwareEventType, enumFirmwareEventStatus,
          enumUploadEventStatus, enumBTPairedListType, enumRemoteMmiType,
-         enumRemoteMmiInput, enumRemoteMmiPriority, enumRemoteMmiSequence, enumWizardMode } from './jabra-enums';
+         enumRemoteMmiInput, enumRemoteMmiPriority, enumRemoteMmiSequence, enumColorControlPreset, enumPTZPreset, enumAutoWhiteBalance, enumZoomDirection, enumSecondaryStreamContent, enumVideoTransitionStyle, enumWizardMode } from './jabra-enums';
 
 /** 
  * Declares all natively implemented n-api functions that call into the Jabra C SDK.
@@ -36,13 +36,16 @@ export declare interface SdkIntegration {
                deAttached: (deviceId: number, event_time_ms: number) => void,
                buttonInDataTranslated: (deviceId: number, translatedInData: enumDeviceBtnType, buttonInData: bool) => void,
                devLogCallback: (deviceId: number, json: string) => void,
+               diagnosticLogCallback: (deviceId: number) => void,
                batteryStatusCallback: (deviceId: number, levelInPercent: number, isCharging: boolean, isBatteryLow: boolean) => void,
                onRemoteMmiEvent: (deviceId: number, type: enumRemoteMmiType, input: enumRemoteMmiInput) => void,
+               xpressConnectionStatusCallback: (deviceId: number, status: boolean) => void,
                downloadFirmwareProgressCallback: (deviceId: number, type: enumFirmwareEventType, status: enumFirmwareEventStatus, dwnFirmPercentage: number) => void,
                uploadProgressCallback: (deviceId: number, status: enumUploadEventStatus, percentage: number) => void,
                registerPairingListCallback: (deviceId: number, pairedListInfo: PairedListInfo) => void,
                onGNPBtnEventCallback: (deviceId: number, btnEvents: Array<{ buttonTypeKey: number, buttonTypeValue: string, buttonEventType: Array<{ key: number, value: string }> }>) => void,
                dectInfoCallback: (deviceId: number, dectInfo: DectInfo) => void,
+               cameraStatusCallback: (deviceId: number, status: boolean) => void,
                configParams: ConfigParamsCloud & GenericConfigParams) : void;
 
     /**
@@ -118,7 +121,6 @@ export declare interface SdkIntegration {
     GetHidWorkingState(deviceId: number, callback: (error: JabraError, result: enumHidState) => void): void;
     SetHidWorkingState(deviceId: number, state: enumHidState, callback: (error: JabraError, result: void) => void): void;
 
-    GetSettingsNoFilter(deviceId: number, callback: (error: JabraError, result: DeviceSettings) => void): void;
     GetSettings(deviceId: number, callback: (error: JabraError, result: DeviceSettings) => void): void;
     GetSetting(deviceId: number, guid: string, callback: (error: JabraError, result: DeviceSettings) => void): void;
     SetSettings(deviceId: number, settings: DeviceSettings, callback: (error: JabraError, result: void) => void): void;
@@ -141,6 +143,7 @@ export declare interface SdkIntegration {
 
     GetBatteryStatus(deviceId: number, callback: (error: JabraError, result: BatteryStatusType) => void): void;
     IsBatteryStatusSupported(deviceId: number, callback: (error: JabraError, result: boolean) => void): void;
+    GetRemoteControlBatteryStatus(deviceId: number, callback: (error: JabraError, result: BatteryStatusType) => void): void;
     
     UploadRingtone(deviceId: number, filename: string, callback: (error: JabraError, result: void) => void): void;
     UploadWavRingtone(deviceId: number, filename: string, callback: (error: JabraError, result: void) => void): void;
@@ -223,4 +226,87 @@ export declare interface SdkIntegration {
     ReleaseRemoteMmiFocus(deviceId: number, type: enumRemoteMmiType, callback: (error: JabraError, result: void) => void): void;
     IsRemoteMmiInFocus(deviceId: number, type: enumRemoteMmiType, callback: (error: JabraError, result: boolean) => void): void;
     SetRemoteMmiAction(deviceId: number, type: enumRemoteMmiType, actionOuput: RemoteMmiActionOutput, callback: (error: JabraError, result: void) => void): void;
+
+    IsCertifiedForSkypeForBusiness(deviceId: number, callback: (error: JabraError, result: boolean) => void): void;
+    IsRemoteManagementEnabled(deviceId: number, callback: (error: JabraError, result: boolean) => void): void;
+    EnableRemoteManagement(deviceId: number, enable: boolean, timeout: number, callback: (error: JabraError, result: void) => void): void;
+    SetXpressUrl(deviceId: number, url: string, timeout: number, callback: (error: JabraError, result: void) => void): void;
+    GetXpressUrl(deviceId: number, callback: (error: JabraError, result: string) => void): void;
+    SetPasswordProvisioning(deviceId: number, password: string, callback: (error: JabraError, result: void) => void): void;
+    GetPasswordProvisioning(deviceId: number, callback: (error: JabraError, result: string) => void): void;
+
+    GetDiagnosticLogFile(deviceId: number, filename: string, callback: (error: JabraError, result: void) => void): void;
+    TriggerDiagnosticLogGeneration(deviceId: number, callback: (error: JabraError, result: void) => void): void;
+    
+    PreloadDeviceInfo(zipFileName: string, callback: (error: JabraError, result: void) => void): void;
+    PreloadAttachedDeviceInfo(deviceId: number, zipFileName: string, callback: (error: JabraError, result: void) => void): void;
+    GetLocalManifestVersion(deviceId: number, callback: (error: JabraError, result: string) => void): void;
+
+    GetWhiteboardPosition(deviceId: number, whiteboardId: number, callback: (error: JabraError, result: WhiteboardPosition) => void): void;
+    SetWhiteboardPosition(deviceId: number, whiteboardId: number, whiteboardPosition: WhiteboardPosition, callback: (error: JabraError, result: void) => void): void;
+
+    GetZoom(deviceId: number, callback: (error: JabraError, result: number) => void): void;
+    SetZoom(deviceId: number, zoom: number, callback: (error: JabraError, result: void) => void): void;
+    GetZoomLimits(deviceId: number, callback: (error: JabraError, result: VideoLimits2) => void): void;
+    SetZoomRelativeAction(deviceId: number, action: ZoomRelative, callback: (error: JabraError, result: void) => void): void;
+    
+    GetPanTilt(deviceId: number, callback: (error: JabraError, result: PanTilt) => void): void;
+    SetPanTilt(deviceId: number, panTilt: PanTilt, callback: (error: JabraError, result: void) => void): void;
+    GetPanTiltLimits(deviceId: number, callback: (error: JabraError, result: PanTiltLimits) => void): void;
+    SetPanTiltRelativeAction(deviceId: number, action: PanTiltRelative, callback: (error: JabraError, result: void) => void): void;
+    
+    GetIntelligentZoomLatency(deviceId: number, callback: (error: JabraError, result: enumIntelligentZoomLatency) => void): void;
+    SetIntelligentZoomLatency(deviceId: number, latency: enumIntelligentZoomLatency, callback: (error: JabraError, result: void) => void): void;
+    RestoreVideoRoomDefaults(deviceId: number, callback: (error: JabraError, result: void) => void): void;
+    IsCameraStreaming(deviceId: number, callback: (error: JabraError, result: boolean) => void): void;
+    IsVideoDeviceStreaming(deviceId: number, callback: (error: JabraError, result: VideoDeviceStreamingStatus) => void): void;
+    GetPictureInPicture(deviceId: number, callback: (error: JabraError, result: boolean) => void): void;
+    SetPictureInPicture(deviceId: number, enable: boolean, callback: (error: JabraError, result: void) => void): void;
+    SetVideoMode(deviceId: number, mode: enumVideoMode, callback: (error: JabraError, result: void) => void): void;
+    GetVideoMode(deviceId: number, callback: (error: JabraError, result: enumVideoMode) => void): void;
+    SetWhiteboardOnMainStream(deviceId: number, mode: bool, callback: (error: JabraError, result: void) => void): void;
+    GetWhiteboardOnMainStream(deviceId: number, callback: (error: JabraError, result: bool) => void): void;
+    SetVideoTransitionStyle(deviceId: number, mode: enumVideoTransitionStyle, callback: (error: JabraError, result: void) => void): void;
+    GetVideoTransitionStyle(deviceId: number, callback: (error: JabraError, result: enumVideoTransitionStyle) => void): void;
+    GetVideoHDRDefault(deviceId: number, callback: (error: JabraError, result: boolean) => void): void;
+    SetVideoHDRDefault(deviceId: number, enable: boolean, callback: (error: JabraError, result: void) => void): void;
+    GetVideoHDR(deviceId: number, callback: (error: JabraError, result: boolean) => void): void;
+    SetVideoHDR(deviceId: number, enable: boolean, callback: (error: JabraError, result: void) => void): void;
+    GetContrastLevel(deviceId: number, callback: (error: JabraError, result: number) => void): void;
+    SetContrastLevel(deviceId: number, level: number, callback: (error: JabraError, result: void) => void): void;
+    GetSharpnessLevel(deviceId: number, callback: (error: JabraError, result: number) => void): void;
+    SetSharpnessLevel(deviceId: number, level: number, callback: (error: JabraError, result: void) => void): void;
+    GetBrightnessLevel(deviceId: number, callback: (error: JabraError, result: number) => void): void;
+    SetBrightnessLevel(deviceId: number, level: number, callback: (error: JabraError, result: void) => void): void;
+    GetSaturationLevel(deviceId: number, callback: (error: JabraError, result: number) => void): void;
+    SetSaturationLevel(deviceId: number, level: number, callback: (error: JabraError, result: void) => void): void;
+    GetWhiteBalance(deviceId: number, callback: (error: JabraError, result: WhiteBalance) => void): void;
+    SetWhiteBalance(deviceId: number, setting: WhiteBalance, callback: (error: JabraError, result: void) => void): void;
+    
+    GetContrastLimits(deviceId: number, callback: (error: JabraError, result: VideoLimits) => void): void;
+    GetSharpnessLimits(deviceId: number, callback: (error: JabraError, result: VideoLimits) => void): void;
+    GetBrightnessLimits(deviceId: number, callback: (error: JabraError, result: VideoLimits) => void): void;
+    GetSaturationLimits(deviceId: number, callback: (error: JabraError, result: VideoLimits) => void): void;
+    GetWhiteBalanceLimits(deviceId: number, callback: (error: JabraError, result: VideoLimits) => void): void;
+
+    SetRoomCapacity(deviceId: number, capacity: number, callback: (error: JabraError, result: void) => void): void;
+    GetRoomCapacity(deviceId: number, callback: (error: JabraError, result: number) => void): void;
+    SetRoomCapacityNotificationEnabled(deviceId: number, enable: boolean, callback: (error: JabraError, result: void) => void): void;
+    GetRoomCapacityNotificationEnabled(deviceId: number, callback: (error: JabraError, result: boolean) => void): void;
+    SetNotificationStyle(deviceId: number, style: enumNotificationStyle, callback: (error: JabraError, result: void) => void): void;
+    GetNotificationStyle(deviceId: number, callback: (error: JabraError, result: enumNotificationStyle) => void): void;
+    SetNotificationUsage(deviceId: number, usage: enumNotificationUsage, callback: (error: JabraError, result: void) => void): void;
+    GetNotificationUsage(deviceId: number, callback: (error: JabraError, result: enumNotificationUsage) => void): void;
+    
+    StoreColorControlPreset(deviceId: number, type: enumColorControlPreset, callback: (error: JabraError, result: void) => void): void;
+    ApplyColorControlPreset(deviceId: number, type: enumColorControlPreset, callback: (error: JabraError, result: void) => void): void;
+    StorePTZPreset(deviceId: number, type: enumPTZPreset, callback: (error: JabraError, result: void) => void): void;
+    ApplyPTZPreset(deviceId: number, type: enumPTZPreset, callback: (error: JabraError, result: void) => void): void;
+    ResetPanTiltZoom(deviceId: number, callback: (error: JabraError, result: void) => void): void;
+    ResetImageQualityControls(deviceId: number, callback: (error: JabraError, result: void) => void): void;
+    
+    SetSecondVideoStream(deviceId: number, stream: enumSecondaryStreamContent, callback: (error: JabraError, result: void) => void): void;
+    GetSecondVideoStream(deviceId: number, callback: (error: JabraError, result: enumSecondaryStreamContent) => void): void;
+    GetEthernetIPv4Status(deviceId: number, callback: (error: JabraError, result: IPv4Status) => void): void;
+    GetWLANIPv4Status(deviceId: number, callback: (error: JabraError, result: IPv4Status) => void): void;
   }

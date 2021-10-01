@@ -1,5 +1,6 @@
 import { SdkIntegration } from "./sdkintegration";
-import { AddonLogSeverity, DeviceTiming, DevLogData, AudioFileFormatEnum, RemoteMmiActionOutput, DateTime } from "./core-types";
+import { AddonLogSeverity, DeviceTiming, DevLogData, AudioFileFormatEnum,
+  RemoteMmiActionOutput, WhiteboardPosition, PanTilt, PanTiltLimits, WhiteBalance, DateTime, VideoLimits, IPv4Status, ZoomRelative, PanTiltRelative, VideoDeviceStreamingStatus } from "./core-types";
 import { isNodeJs } from './util';
 import { _JabraNativeAddonLog } from './logger';
 
@@ -30,7 +31,9 @@ import { enumAPIReturnCode, enumDeviceErrorStatus, enumDeviceBtnType, enumDevice
     enumSettingDataType, enumSettingCtrlType, enumSettingLoadMode, enumFirmwareEventStatus,
     enumFirmwareEventType, enumBTPairedListType, enumUploadEventStatus,
     enumDeviceFeature, enumHidState, enumWizardMode, enumSecureConnectionMode,
-    enumRemoteMmiType, enumRemoteMmiInput, enumRemoteMmiPriority } from './jabra-enums';
+    enumRemoteMmiType, enumRemoteMmiInput, enumRemoteMmiPriority, enumVideoMode,
+    enumNotificationUsage, enumNotificationStyle, enumSecondaryStreamContent, enumPTZPreset,
+    enumColorControlPreset, enumVideoTransitionStyle, enumIntelligentZoomLatency } from './jabra-enums';
 import * as _jabraEnums from './jabra-enums';
 
 import { MetaApi, ClassEntry, _getJabraApiMetaSync } from './meta';
@@ -45,14 +48,17 @@ export namespace DeviceTypeCallbacks {
     export type onBTParingListChange = (pairedListInfo: PairedListInfo) => void;
     export type onGNPBtnEvent = (btnEvents: Array<{ buttonTypeKey: number, buttonTypeValue: string, buttonEventType: Array<{ key: number, value: string }> }>) => void;
     export type onDevLogEvent = (data: DevLogData) => void;
+    export type onDiagLogEvent = () => void;
     export type onBatteryStatusUpdate = (levelInPercent: number, isCharging: boolean, isBatteryLow: boolean) => void;
     export type onRemoteMmiEvent = (type: enumRemoteMmiType, input: enumRemoteMmiInput) => void;
+    export type onxpressConnectionStatusEvent = (status: boolean) => void;
     export type onUploadProgress = (status: enumUploadEventStatus, levelInPercent: number) => void;
     export type onDectInfoEvent = (dectInfo: DectInfo) => void;
+    export type onCameraStatusEvent = (status: boolean) => void;
 }
 
-export type DeviceTypeEvents = 'btnPress' | 'busyLightChange' | 'downloadFirmwareProgress' | 'onBTParingListChange' | 'onGNPBtnEvent' | 'onDevLogEvent' | 'onBatteryStatusUpdate' | 'onRemoteMmiEvent'| 'onUploadProgress' | 'onDectInfoEvent' ;
-export const DeviceEventsList : DeviceTypeEvents[] = ['btnPress', 'busyLightChange', 'downloadFirmwareProgress', 'onBTParingListChange', 'onGNPBtnEvent', 'onDevLogEvent', 'onBatteryStatusUpdate', 'onRemoteMmiEvent', 'onUploadProgress', 'onDectInfoEvent'];
+export type DeviceTypeEvents = 'btnPress' | 'busyLightChange' | 'downloadFirmwareProgress' | 'onBTParingListChange' | 'onGNPBtnEvent' | 'onDevLogEvent' | 'onDiagLogEvent' | 'onBatteryStatusUpdate' | 'onRemoteMmiEvent'| 'onxpressConnectionStatusEvent' | 'onUploadProgress' | 'onDectInfoEvent' | 'onCameraStatusEvent';
+export const DeviceEventsList : DeviceTypeEvents[] = ['btnPress', 'busyLightChange', 'downloadFirmwareProgress', 'onBTParingListChange', 'onGNPBtnEvent', 'onDevLogEvent', 'onDiagLogEvent', 'onBatteryStatusUpdate', 'onRemoteMmiEvent', 'onxpressConnectionStatusEvent', 'onUploadProgress', 'onDectInfoEvent', 'onCameraStatusEvent'];
 
 /** 
  * Represents a concrete Jabra device and the operations that can be done on it.   
@@ -365,6 +371,19 @@ export class DeviceType implements DeviceInfo, DeviceTiming, MetaApi {
     }
 
     /**
+     * Get remote control battery status, if supported by device.
+     * @returns {Promise<BatteryInfo, JabraError>} - Resolve batteryInfo `object` if successful otherwise Reject with `error`.
+    
+     */
+     getRemoteControlBatteryStatusAsync(): Promise<{ levelInPercent?: number, isCharging?: boolean, isBatteryLow?: boolean }> {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getRemoteControlBatteryStatusAsync.name, "called with", this.deviceID); 
+        return util.promisify(sdkIntegration.GetRemoteControlBatteryStatus)(this.deviceID).then((result) => {
+            _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getRemoteControlBatteryStatusAsync.name, "returned with", result);
+            return result;
+        });
+    }
+
+    /**
      * Gets  the device image path.
      * @returns {Promise<string, JabraError>} - Resolve imagePath `string` if successful otherwise Reject with `error`.
    
@@ -385,6 +404,29 @@ export class DeviceType implements DeviceInfo, DeviceTiming, MetaApi {
         _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getImageThumbnailPathAsync.name, "called with", this.deviceID); 
         return util.promisify(sdkIntegration.GetDeviceImageThumbnailPath)(this.deviceID).then((result) => {
             _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getImageThumbnailPathAsync.name, "returned with", result);
+            return result;
+        });
+    }
+
+    /**
+     * Preloads the resources with the content of the specified archive for a specific device after this being attached.
+     * @returns {Promise<void, JabraError>} - if operation failed, reject with `JabraError`.
+     */
+    preloadAttachedDeviceInfoAsync(zipFileName: string): Promise<void> {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.preloadAttachedDeviceInfoAsync.name, "called with", this.deviceID); 
+        return util.promisify(sdkIntegration.PreloadAttachedDeviceInfo)(this.deviceID, zipFileName).then((result) => {
+            _JabraNativeAddonLog(AddonLogSeverity.verbose, this.preloadAttachedDeviceInfoAsync.name, "returned");
+        });
+    }
+
+    /**
+     * Gets the Manifest Files' version that are found locally in the Resources folder for a given device.
+     * @returns {Promise<string, JabraError>} - Returns a `string` with the version number if successful, otherwise reject with `JabraError`.
+     */
+    getLocalManifestVersionAsync(): Promise<string> {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getLocalManifestVersionAsync.name, "called with", this.deviceID); 
+        return util.promisify(sdkIntegration.GetLocalManifestVersion)(this.deviceID).then((result) => {
+            _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getLocalManifestVersionAsync.name, "returned with", result);
             return result;
         });
     }
@@ -427,18 +469,6 @@ export class DeviceType implements DeviceInfo, DeviceTiming, MetaApi {
 
     // settings APIs
     /**
-     * Gets the complete settings details (all groups and its settings) for a device. Also includes unsupported settings.
-     * @returns {Promise<Array<Setting>, JabraError>}  - Resolve setting `array` if successful otherwise Reject with `error`.
-     */
-    getSettingsNoFilterAsync(): Promise<DeviceSettings> {
-        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getSettingsNoFilterAsync.name, "called with", this.deviceID); 
-        return util.promisify(sdkIntegration.GetSettingsNoFilter)(this.deviceID).then((result) => {
-            _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getSettingsNoFilterAsync.name, "returned with", result);
-            return result;
-        });
-    }
-
-    /**
      * Gets the complete settings details (all groups and its settings) for a device.
      * @returns {Promise<Array<Setting>, JabraError>}  - Resolve setting `array` if successful otherwise Reject with `error`.
      */
@@ -475,6 +505,32 @@ export class DeviceType implements DeviceInfo, DeviceTiming, MetaApi {
         _JabraNativeAddonLog(AddonLogSeverity.verbose, this.setSettingsAsync.name, "called with", settings); 
         return util.promisify(sdkIntegration.SetSettings)(this.deviceID, settings).then(() => {
             _JabraNativeAddonLog(AddonLogSeverity.verbose, this.setSettingsAsync.name, "returned");
+        });
+    }
+
+    /**
+     * Gets the minimum time in seconds to stay with a participant before being allowed to change zoom/direction.
+     * @returns {Promise<enumIntelligentZoomLatency, JabraError>}  - Resolve setting `enumIntelligentZoomLatency`
+     * if successful otherwise Reject with `error`.
+     */
+    getIntelligentZoomLatencyAsync(): Promise<enumIntelligentZoomLatency> {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getIntelligentZoomLatencyAsync.name, "called with", this.deviceID); 
+        return util.promisify(sdkIntegration.GetIntelligentZoomLatency)(this.deviceID).then((result) => {
+            _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getIntelligentZoomLatencyAsync.name, "returned with", result);
+            return result;
+        });
+    }
+
+    /**
+     * Controls how often the camera is allowed to change speaker focus.
+     * @param {enumIntelligentZoomLatency} latency - The minimum time in seconds to stay with a participant before being
+     *                                               allowed to change zoom/direction. Valid range 0-30 seconds.
+     * @returns {Promise<void, JabraError>} - Resolve `void` if successful otherwise Reject with `error`
+     */
+    setIntelligentZoomLatencyAsync(latency: enumIntelligentZoomLatency): Promise<void> {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.setIntelligentZoomLatencyAsync.name, "called with", latency); 
+        return util.promisify(sdkIntegration.SetIntelligentZoomLatency)(this.deviceID, latency).then(() => {
+            _JabraNativeAddonLog(AddonLogSeverity.verbose, this.setIntelligentZoomLatencyAsync.name, "returned");
         });
     }
 
@@ -520,6 +576,104 @@ export class DeviceType implements DeviceInfo, DeviceTiming, MetaApi {
         return util.promisify(sdkIntegration.IsLocked)(this.deviceID).then((isLocked) => {
             _JabraNativeAddonLog(AddonLogSeverity.verbose, this.isLockedAsync.name, "returned");
             return isLocked;
+        });
+    }
+
+    /**
+     * Select how the video viewport is managed (runtime).
+     * @returns {Promise<void, JabraError>} - Resolve `void` if successful otherwise Reject with `error`.
+     */
+    setVideoModeAsync(mode: enumVideoMode): Promise<void> {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.setVideoModeAsync.name, "called with", this.deviceID); 
+        return util.promisify(sdkIntegration.SetVideoMode)(this.deviceID, mode).then(() => {
+            _JabraNativeAddonLog(AddonLogSeverity.verbose, this.setVideoModeAsync.name, "returned");
+        });
+    }
+
+    /**
+     * Gets how the video viewport is managed (runtime).
+     * @returns {Promise<enumVideoMode, JabraError>} - Resolve `enumVideoMode` if successful otherwise Reject with `error`.
+     */
+    getVideoModeAsync(): Promise<enumVideoMode> {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.setVideoModeAsync.name, "called with", this.deviceID); 
+        return util.promisify(sdkIntegration.GetVideoMode)(this.deviceID).then((result) => {
+            _JabraNativeAddonLog(AddonLogSeverity.verbose, this.setVideoModeAsync.name, "returned");
+            return result;
+        });
+    }
+
+    /**
+     * Enables or disables Picture-In-Picture on a supported video device
+     * @param {enable} - The enable state
+     * @returns {Promise<void, JabraError>} - Resolves to `void` on success,
+     *    rejects with `JabraError` on error.
+     */
+    setPictureInPictureAsync(enable: boolean) : Promise<void> {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.setPictureInPictureAsync.name, "called with", this.deviceID);
+        return util.promisify(sdkIntegration.SetPictureInPicture)(this.deviceID, enable).then(() => {
+          _JabraNativeAddonLog(AddonLogSeverity.verbose, this.setPictureInPictureAsync.name, "returned");
+        });
+    }
+
+    /**
+     * Gets whether Picture-In-Picture is active on a supported video device
+     * @returns {Promise<boolean, JabraError>} - Resolves to `boolean` result on success,
+     *    rejects with `JabraError` on error.
+     */
+    getPictureInPictureAsync() : Promise<boolean> {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getPictureInPictureAsync.name, "called with", this.deviceID);
+        return util.promisify(sdkIntegration.GetPictureInPicture)(this.deviceID).then((enable) => {
+          _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getPictureInPictureAsync.name, "returned");
+          return enable;
+        });
+    }
+
+    /**
+     * Resets runtime pan, tilt and zoom settings to factory defaults on a video device.
+     * @returns {Promise<void, JabraError>} - Resolves to `void` on success,
+     *    rejects with `JabraError` on error.
+     */
+    resetPanTiltZoom() : Promise<void> {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.resetPanTiltZoom.name, "called with", this.deviceID);
+        return util.promisify(sdkIntegration.ResetPanTiltZoom)(this.deviceID).then(() => {
+          _JabraNativeAddonLog(AddonLogSeverity.verbose, this.resetPanTiltZoom.name, "returned");
+        });
+    }
+
+    /**
+     * Resets runtime image quality settings to factory defaults on a video device.
+     * IQ is Brightness+Contrast+Sharpness+Saturation+White Balance.
+     * @returns {Promise<void, JabraError>} - Resolves to `void` on success,
+     *    rejects with `JabraError` on error.
+     */
+    resetImageQualityControls() : Promise<void> {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.resetImageQualityControls.name, "called with", this.deviceID);
+        return util.promisify(sdkIntegration.ResetImageQualityControls)(this.deviceID).then(() => {
+          _JabraNativeAddonLog(AddonLogSeverity.verbose, this.resetImageQualityControls.name, "returned");
+        });
+    }
+
+    /**
+     * Gets whether the camera is actively streaming.
+     * @returns {Promise<boolean, JabraError>} - Resolve `boolean` if successful otherwise Reject with `error`.
+     */
+    getIsCameraStreamingAsync(): Promise<boolean> {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getIsCameraStreamingAsync.name, "called with", this.deviceID); 
+        return util.promisify(sdkIntegration.IsCameraStreaming)(this.deviceID).then((result) => {
+            _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getIsCameraStreamingAsync.name, "returned");
+            return result;
+        });
+    }
+
+    /**
+     * Gets whether a video is actively streaming video and/or audio.
+     * @returns {Promise<VideoDeviceStreamingStatus, JabraError>} - Resolve `VideoDeviceStreamingStatus` if successful otherwise Reject with `error`.
+     */
+     isVideoDeviceStreamingAsync(): Promise<VideoDeviceStreamingStatus> {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.isVideoDeviceStreamingAsync.name, "called with", this.deviceID); 
+        return util.promisify(sdkIntegration.IsVideoDeviceStreaming)(this.deviceID).then((result) => {
+            _JabraNativeAddonLog(AddonLogSeverity.verbose, this.isVideoDeviceStreamingAsync.name, "returned");
+            return result;
         });
     }
 
@@ -1332,10 +1486,785 @@ export class DeviceType implements DeviceInfo, DeviceTiming, MetaApi {
         });
     }
     
-   /**
-    * Get meta information about methods, properties etc. that can be used 
-    * for reflective usage of this class.
-    */
+    /**
+     * Checks whether remote management is enabled
+     * @returns {Promise<boolean, JabraError>} - Resolves to true if remote
+     *   management is enabled, false if it is not. Rejects to JabraError in
+     *   case of errors.
+     */
+    isRemoteManagementEnabledAsync() : Promise<boolean> {
+      _JabraNativeAddonLog(AddonLogSeverity.verbose, this.isRemoteManagementEnabledAsync.name, "called with", this.deviceID);
+      return util.promisify(sdkIntegration.IsRemoteManagementEnabled)(this.deviceID).then((result) => {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.isRemoteManagementEnabledAsync.name, "returned");
+        return result;
+      });
+    }
+
+    /**
+     * Enables/disables remote management
+     * @param {boolean} enable - True to enable remote management, false to
+     *   disable it
+     * @param {number} timeout - Time in ms to wait for a valid network connection
+     * Set to 0 to disable network connection check.
+     * @returns {Promise<void, JabraError>} - Resolves to `void` on success,
+     *   rejects with `JabraError` if an error occurs.
+     */
+    enableRemoteManagementAsync(enable: boolean, timeout: number) : Promise<void> {
+      _JabraNativeAddonLog(AddonLogSeverity.verbose, this.enableRemoteManagementAsync.name, "called with", this.deviceID);
+      return util.promisify(sdkIntegration.EnableRemoteManagement)(this.deviceID, enable, timeout).then(() => {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.enableRemoteManagementAsync.name, "returned");
+      });
+    }
+    
+    /**
+     * Sets the Jabra Xpress URL
+     * @param {string} url - The new Jabra Xpress URL
+     * @param {number} timeout - Maximum allowed time in ms for URL validation.
+     * Set to 0 to disable URL validation.
+     * @returns {Promise<void, JabraError>} - Resolves to `void` on success,
+     *   rejects with `JabraError` if an error occurs.
+     */
+    setXpressUrlAsync(url: string, timeout: number) : Promise<void> {
+      _JabraNativeAddonLog(AddonLogSeverity.verbose, this.setXpressUrlAsync.name, "called with", this.deviceID);
+      return util.promisify(sdkIntegration.SetXpressUrl)(this.deviceID, url, timeout).then(() => {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.setXpressUrlAsync.name, "returned");
+      });
+    }
+
+    /**
+     * Returns the Jabra Xpress URL
+     * @returns {Promise<string, JabraError>} - Resolves to the Xpress url on success,
+     *   rejects with `JabraError` if an error occurs.
+     */
+    getXpressUrlAsync() : Promise<string> {
+      _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getXpressUrlAsync.name, "called with", this.deviceID);
+      return util.promisify(sdkIntegration.GetXpressUrl)(this.deviceID).then((result) => {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getXpressUrlAsync.name, "returned");
+        return result;
+      });
+    }
+    
+    /**
+     * Sets the password for provisioning
+     * @param {string} password - The password
+     * @returns {Promise<void, JabraError>} - Resolves to `void` on success,
+     *   rejects with `JabraError` if an error occurs.
+     */
+    setPasswordProvisioningAsync(password: string) : Promise<void> {
+      _JabraNativeAddonLog(AddonLogSeverity.verbose, this.setPasswordProvisioningAsync.name, "called with", this.deviceID);
+      return util.promisify(sdkIntegration.SetPasswordProvisioning)(this.deviceID, password).then(() => {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.setPasswordProvisioningAsync.name, "returned");
+      });
+    }
+  
+    /**
+     * Get the password for provisioning
+     * @returns {Promise<string, JabraError>} - Resolves to password string on success,
+     *   rejects with `JabraError` if an error occurs.
+     */
+    getPasswordProvisioningAsync() : Promise<string> {
+      _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getPasswordProvisioningAsync.name, "called with", this.deviceID);
+      return util.promisify(sdkIntegration.GetPasswordProvisioning)(this.deviceID).then((result) => {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getPasswordProvisioningAsync.name, "returned with", result);
+        return result;
+      });
+    }
+
+    /**
+     * Gets the pre-generated diagnostic log file on supported devices
+     * @param {string} filename - Destination filename on local file system
+     * @returns {Promise<void, JabraError>} - Resolves to `void` on success,
+     *   rejects with `JabraError` if an error occurs.
+     * @see triggerDiagnosticLogGenerationAsync
+     */
+    getDiagnosticLogFileAsync(filename: string) : Promise<void> {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getDiagnosticLogFileAsync.name, "called with", this.deviceID);
+        return util.promisify(sdkIntegration.GetDiagnosticLogFile)(this.deviceID, filename).then(() => {
+          _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getDiagnosticLogFileAsync.name, "returned");
+      });
+    }
+
+    /**
+     * Triggers the generation of the diagnostic log file
+     * @returns {Promise<void, JabraError>} - Resolves to `void` on success,
+     *   rejects with `JabraError` if an error occurs.
+     */
+    triggerDiagnosticLogGenerationAsync() : Promise<void> {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.triggerDiagnosticLogGenerationAsync.name, "called with", this.deviceID);
+        return util.promisify(sdkIntegration.TriggerDiagnosticLogGeneration)(this.deviceID).then(() => {
+          _JabraNativeAddonLog(AddonLogSeverity.verbose, this.triggerDiagnosticLogGenerationAsync.name, "returned");
+      });
+    }
+
+    /**
+     * Returns whether the device is certified for Skype For Business
+     * @returns {Promise<boolean, JabraError>} - Resolves to a boolean telling if the device is certified
+     */
+     isCertifiedForSkypeForBusinessAsync() : Promise<boolean> {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.isCertifiedForSkypeForBusinessAsync.name, "called with", this.deviceID);
+        return util.promisify(sdkIntegration.IsCertifiedForSkypeForBusiness)(this.deviceID).then((result) => {
+          _JabraNativeAddonLog(AddonLogSeverity.verbose, this.isCertifiedForSkypeForBusinessAsync.name, "returned");
+          return result;
+        });
+      }
+
+      /**
+     * Returns the position of the provided whiteboard corners as coordinates.
+     * @param {number} whiteboardId - The whiteboard id number.
+     * @returns {Promise<number, JabraError>} - Resolves to the whiteboard
+     *    corners position on success, rejects with `JabraError` if an error
+     *    occurs.
+     */
+    getWhiteboardPositionAsync(whiteboardId: number) : Promise<WhiteboardPosition> {
+      _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getWhiteboardPositionAsync.name, "called with", this.deviceID);
+      return util.promisify(sdkIntegration.GetWhiteboardPosition)(this.deviceID, whiteboardId).then((result) => {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getWhiteboardPositionAsync.name, "returned");
+        return result;
+      });
+    }
+
+    /**
+     * Sets the position of the provided whiteboard corners.
+     * @param {number} whiteboardId - The whiteboard id number.
+     * @param {WhiteboardPosition} whiteboardPosition - The whiteboard corners.
+     * @returns {Promise<number, JabraError>} - Resolves to `void` on success,
+     *    rejects with `JabraError` on error.
+     */
+    setWhiteboardPositionAsync(whiteboardId: number, whiteboardPosition: WhiteboardPosition) : Promise<void> {
+      _JabraNativeAddonLog(AddonLogSeverity.verbose, this.setWhiteboardPositionAsync.name, "called with", this.deviceID);
+      return util.promisify(sdkIntegration.SetWhiteboardPosition)(this.deviceID, whiteboardId, whiteboardPosition).then(() => {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.setWhiteboardPositionAsync.name, "returned");
+      });
+    }
+
+    /**
+     * Returns the current zoom value from the device's camera.
+     * @returns {Promise<number, JabraError>} - Resolves to the current zoom
+     *    value on success, else rejects with `JabraError`
+     */
+    getZoomAsync() : Promise<number> {
+      _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getZoomAsync.name, "called with", this.deviceID);
+      return util.promisify(sdkIntegration.GetZoom)(this.deviceID).then((result) => {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getZoomAsync.name, "returned");
+        return result;
+      });
+    }
+
+    /**
+     * Controls the device's camera zoom functionality.
+     * @param {number} - The new value for the device camera's zoom.
+     * @returns {Promise<void, JabraError>} - Resolves to `void` on success,
+     *    rejects with `JabraError` on error.
+     */
+    setZoomAsync(zoom: number) : Promise<void> {
+      _JabraNativeAddonLog(AddonLogSeverity.verbose, this.setZoomAsync.name, "called with", this.deviceID);
+      return util.promisify(sdkIntegration.SetZoom)(this.deviceID, zoom).then(() => {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.setZoomAsync.name, "returned");
+      });
+    }
+
+    /**
+     * Returns the zoom limit values from the device's camera.
+     * @returns {Promise<VideoLimits, JabraError>} - Resolves to the current
+     *    zoom limit values on success, else rejects with `JabraError`
+     */
+    getZoomLimitsAsync() : Promise<VideoLimits> {
+      _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getZoomLimitsAsync.name, "called with", this.deviceID);
+      return util.promisify(sdkIntegration.GetZoomLimits)(this.deviceID).then((result) => {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getZoomLimitsAsync.name, "returned");
+        return result;
+      });
+    }
+
+    /**
+     * Starts or stops the relative zoom action of the camera lens.
+     * Note that this method should be used in pairs:
+     * Initially to start the action (button down), next to stop the action (button up).
+     * @param {ZoomRelative} - The action for the device camera's zoom.
+     * @returns {Promise<void, JabraError>} - Resolves to `void` on success,
+     *    rejects with `JabraError` on error.
+     */
+    setZoomRelativeActionAsync(action: ZoomRelative) : Promise<void> {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.setZoomRelativeActionAsync.name, "called with", this.deviceID);
+        return util.promisify(sdkIntegration.SetZoomRelativeAction)(this.deviceID, action).then(() => {
+          _JabraNativeAddonLog(AddonLogSeverity.verbose, this.setZoomRelativeActionAsync.name, "returned");
+        });
+    }
+
+    /** Returns the current pan-tilt values from the device's camera.
+     * @returns {Promise<PanTilt, JabraError>} - Resolves to the current
+     *    pan-tilt parameters on success, else rejects with `JabraError`
+     */
+    getPanTiltAsync() : Promise<PanTilt> {
+      _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getPanTiltAsync.name, "called with", this.deviceID);
+      return util.promisify(sdkIntegration.GetPanTilt)(this.deviceID).then((result) => {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getPanTiltAsync.name, "returned");
+        return result;
+      });
+    }
+    
+    /**
+     * Controls the device's camera pan-tilt functionality.
+     * @param {PanTilt} - The new values for the device camera's pan-tilt.
+     * @returns {Promise<void, JabraError>} - Resolves to `void` on success,
+     *    rejects with `JabraError` on error.
+     */
+    setPanTiltAsync(panTilt: PanTilt) : Promise<void> {
+      _JabraNativeAddonLog(AddonLogSeverity.verbose, this.setPanTiltAsync.name, "called with", this.deviceID);
+      return util.promisify(sdkIntegration.SetPanTilt)(this.deviceID, panTilt).then(() => {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.setPanTiltAsync.name, "returned");
+      });
+    }
+
+    /** Returns the current pan-tilt limits values from the device's camera.
+     * @returns {Promise<PanTiltLimits, JabraError>} - Resolves to the
+     *    pan-tilt limits on success, else rejects with `JabraError`
+     */
+    getPanTiltLimitsAsync() : Promise<PanTiltLimits> {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getPanTiltLimitsAsync.name, "called with", this.deviceID);
+        return util.promisify(sdkIntegration.GetPanTiltLimits)(this.deviceID).then((result) => {
+          _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getPanTiltLimitsAsync.name, "returned");
+          return result;
+        });
+    }
+
+    /**
+     * Starts or stops the relative pan and/or tilt action of the camera lens.
+     * Note that this method should be used in pairs:
+     * Initially to start the action (button down), next to stop the action (button up).
+     * @param {PanTiltRelative} - The action for the device camera's zoom.
+     * @returns {Promise<void, JabraError>} - Resolves to `void` on success,
+     *    rejects with `JabraError` on error.
+     */
+    setPanTiltRelativeActionAsync(action: PanTiltRelative) : Promise<void> {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.setPanTiltRelativeActionAsync.name, "called with", this.deviceID);
+        return util.promisify(sdkIntegration.SetPanTiltRelativeAction)(this.deviceID, action).then(() => {
+          _JabraNativeAddonLog(AddonLogSeverity.verbose, this.setPanTiltRelativeActionAsync.name, "returned");
+        });
+    }
+
+    /**
+     * Enables or disables the active HDR setting
+     * @param {boolean} - Enable setting
+     * @returns {Promise<void, JabraError>} - Resolves to `void` on success,
+     *    rejects with `JabraError` on error.
+     */
+    setVideoHDRAsync(enable: boolean) : Promise<void> {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.setVideoHDRAsync.name, "called with", this.deviceID);
+        return util.promisify(sdkIntegration.SetVideoHDR)(this.deviceID, enable).then(() => {
+          _JabraNativeAddonLog(AddonLogSeverity.verbose, this.setVideoHDRAsync.name, "returned");
+        });
+    }
+
+    /**
+     * Gets the active HDR enable setting on a video device
+     * @returns {Promise<boolean, JabraError>} - Resolves to `boolean` on success,
+     *    rejects with `JabraError` on error.
+     */
+    getVideoHDRAsync() : Promise<boolean> {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getVideoHDRAsync.name, "called with", this.deviceID);
+        return util.promisify(sdkIntegration.GetVideoHDR)(this.deviceID).then((result) => {
+          _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getVideoHDRAsync.name, "returned");
+          return result;
+        });
+    }
+
+    /**
+     * Enables or disables the default HDR setting
+     * @param {boolean} - Enable setting
+     * @returns {Promise<void, JabraError>} - Resolves to `void` on success,
+     *    rejects with `JabraError` on error.
+     */
+    setVideoHDRDefaultAsync(enable: boolean) : Promise<void> {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.setVideoHDRDefaultAsync.name, "called with", this.deviceID);
+        return util.promisify(sdkIntegration.SetVideoHDRDefault)(this.deviceID, enable).then(() => {
+          _JabraNativeAddonLog(AddonLogSeverity.verbose, this.setVideoHDRDefaultAsync.name, "returned");
+        });
+    }
+
+    /**
+     * Gets the default HDR enable setting on a video device
+     * @returns {Promise<boolean, JabraError>} - Resolves to `boolean` on success,
+     *    rejects with `JabraError` on error.
+     */
+    getVideoHDRDefaultAsync() : Promise<boolean> {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getVideoHDRDefaultAsync.name, "called with", this.deviceID);
+        return util.promisify(sdkIntegration.GetVideoHDRDefault)(this.deviceID).then((result) => {
+          _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getVideoHDRDefaultAsync.name, "returned");
+          return result;
+        });
+    }
+
+    /**
+     * Sets the contrast level on a camera device
+     * @param {number} - The contrast level in the range [0;191]
+     * @returns {Promise<void, JabraError>} - Resolves to `void` on success,
+     *    rejects with `JabraError` on error.
+     */
+    setContrastLevelAsync(Level: number) : Promise<void> {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.setContrastLevelAsync.name, "called with", this.deviceID);
+        return util.promisify(sdkIntegration.SetContrastLevel)(this.deviceID, Level).then(() => {
+          _JabraNativeAddonLog(AddonLogSeverity.verbose, this.setContrastLevelAsync.name, "returned");
+        });
+    }
+
+    /**
+     * Gets the current contrast level on a camera device
+     * @returns {Promise<number, JabraError>} - Resolves to `number` level on success,
+     *    rejects with `JabraError` on error.
+     */
+    getContrastLevelAsync() : Promise<number> {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getContrastLevelAsync.name, "called with", this.deviceID);
+        return util.promisify(sdkIntegration.GetContrastLevel)(this.deviceID).then((result) => {
+          _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getContrastLevelAsync.name, "returned");
+          return result;
+        });
+    }
+
+    /**
+     * Sets the brightness level on a camera device
+     * @param {number} - The brightness level in the range [0;255]
+     * @returns {Promise<void, JabraError>} - Resolves to `void` on success,
+     *    rejects with `JabraError` on error.
+     */
+    setBrightnessLevelAsync(Level: number) : Promise<void> {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.setBrightnessLevelAsync.name, "called with", this.deviceID);
+        return util.promisify(sdkIntegration.SetBrightnessLevel)(this.deviceID, Level).then(() => {
+          _JabraNativeAddonLog(AddonLogSeverity.verbose, this.setBrightnessLevelAsync.name, "returned");
+        });
+    }
+
+    /**
+     * Gets the current brightness level on a camera device
+     * @returns {Promise<number, JabraError>} - Resolves to `number` level on success,
+     *    rejects with `JabraError` on error.
+     */
+    getBrightnessLevelAsync() : Promise<number> {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getBrightnessLevelAsync.name, "called with", this.deviceID);
+        return util.promisify(sdkIntegration.GetBrightnessLevel)(this.deviceID).then((result) => {
+          _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getBrightnessLevelAsync.name, "returned");
+          return result;
+        });
+    }
+
+    /**
+     * Sets the sharpness level on a camera device
+     * @param {number} - The sharpness level in the range [0;255]
+     * @returns {Promise<void, JabraError>} - Resolves to `void` on success,
+     *    rejects with `JabraError` on error.
+     */
+    setSharpnessLevelAsync(Level: number) : Promise<void> {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.setSharpnessLevelAsync.name, "called with", this.deviceID);
+        return util.promisify(sdkIntegration.SetSharpnessLevel)(this.deviceID, Level).then(() => {
+          _JabraNativeAddonLog(AddonLogSeverity.verbose, this.setSharpnessLevelAsync.name, "returned");
+        });
+    }
+
+    /**
+     * Gets the current sharpness level on a camera device
+     * @returns {Promise<number, JabraError>} - Resolves to `number` level on success,
+     *    rejects with `JabraError` on error.
+     */
+    getSharpnessLevelAsync() : Promise<number> {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getSharpnessLevelAsync.name, "called with", this.deviceID);
+        return util.promisify(sdkIntegration.GetSharpnessLevel)(this.deviceID).then((result) => {
+          _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getSharpnessLevelAsync.name, "returned");
+          return result;
+        });
+    }
+
+    /**
+     * Sets the saturation level on a camera device
+     * @param {number} - The saturation level in the range [128;176]
+     * @returns {Promise<void, JabraError>} - Resolves to `void` on success,
+     *    rejects with `JabraError` on error.
+     */
+    setSaturationLevelAsync(Level: number) : Promise<void> {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.setSaturationLevelAsync.name, "called with", this.deviceID);
+        return util.promisify(sdkIntegration.SetSaturationLevel)(this.deviceID, Level).then(() => {
+          _JabraNativeAddonLog(AddonLogSeverity.verbose, this.setSaturationLevelAsync.name, "returned");
+        });
+    }
+
+    /**
+     * Gets the current saturation level on a camera device
+     * @returns {Promise<number, JabraError>} - Resolves to `number` level on success,
+     *    rejects with `JabraError` on error.
+     */
+    getSaturationLevelAsync() : Promise<number> {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getSaturationLevelAsync.name, "called with", this.deviceID);
+        return util.promisify(sdkIntegration.GetSaturationLevel)(this.deviceID).then((result) => {
+          _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getSaturationLevelAsync.name, "returned");
+          return result;
+        });
+    }
+    
+    /**
+     * Sets the white balance on a camera device
+     * @param {WhiteBalance} - The white balance in the range [0;6500] [K] and whether auto adjust is enabled
+     * @returns {Promise<void, JabraError>} - Resolves to `void` on success,
+     *    rejects with `JabraError` on error.
+     */
+    setWhiteBalanceAsync(setting: WhiteBalance) : Promise<void> {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.setWhiteBalanceAsync.name, "called with", this.deviceID);
+        return util.promisify(sdkIntegration.SetWhiteBalance)(this.deviceID, setting).then(() => {
+          _JabraNativeAddonLog(AddonLogSeverity.verbose, this.setWhiteBalanceAsync.name, "returned");
+        });
+    }
+
+    /**
+     * Gets the current white balance on a camera device
+     * @returns {Promise<WhiteBalance, JabraError>} - Resolves to `WhiteBalance` result on success,
+     *    rejects with `JabraError` on error.
+     */
+    getWhiteBalanceAsync() : Promise<WhiteBalance> {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getWhiteBalanceAsync.name, "called with", this.deviceID);
+        return util.promisify(sdkIntegration.GetWhiteBalance)(this.deviceID).then((result) => {
+          _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getWhiteBalanceAsync.name, "returned");
+          return result;
+        });
+    }
+
+    /**
+     * Gets the contrast limits on a camera device
+     * @returns {Promise<VideoLimits, JabraError>} - Resolves to `VideoLimits` limits on success,
+     *    rejects with `JabraError` on error.
+     */
+    getContrastLimitsAsync() : Promise<VideoLimits> {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getContrastLimitsAsync.name, "called with", this.deviceID);
+        return util.promisify(sdkIntegration.GetContrastLimits)(this.deviceID).then((limits) => {
+          _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getContrastLimitsAsync.name, "returned");
+          return limits;
+        });
+    }
+
+    /**
+     * Gets the sharpness limits on a camera device
+     * @returns {Promise<VideoLimits, JabraError>} - Resolves to `VideoLimits` limits on success,
+     *    rejects with `JabraError` on error.
+     */
+    getSharpnessLimitsAsync() : Promise<VideoLimits> {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getSharpnessLimitsAsync.name, "called with", this.deviceID);
+        return util.promisify(sdkIntegration.GetSharpnessLimits)(this.deviceID).then((limits) => {
+          _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getSharpnessLimitsAsync.name, "returned");
+          return limits;
+        });
+    }
+
+    /**
+     * Gets the brightness limits on a camera device
+     * @returns {Promise<VideoLimits, JabraError>} - Resolves to `VideoLimits` limits on success,
+     *    rejects with `JabraError` on error.
+     */
+    getBrightnessLimitsAsync() : Promise<VideoLimits> {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getBrightnessLimitsAsync.name, "called with", this.deviceID);
+        return util.promisify(sdkIntegration.GetBrightnessLimits)(this.deviceID).then((limits) => {
+          _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getBrightnessLimitsAsync.name, "returned");
+          return limits;
+        });
+    }
+
+    /**
+     * Gets the saturation limits on a camera device
+     * @returns {Promise<VideoLimits, JabraError>} - Resolves to `VideoLimits` limits on success,
+     *    rejects with `JabraError` on error.
+     */
+    getSaturationLimitsAsync() : Promise<VideoLimits> {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getSaturationLimitsAsync.name, "called with", this.deviceID);
+        return util.promisify(sdkIntegration.GetSaturationLimits)(this.deviceID).then((limits) => {
+          _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getSaturationLimitsAsync.name, "returned");
+          return limits;
+        });
+    }
+
+    /**
+     * Gets the white balance limits on a camera device
+     * @returns {Promise<VideoLimits, JabraError>} - Resolves to `VideoLimits` limits on success,
+     *    rejects with `JabraError` on error.
+     */
+    getWhiteBalanceLimitsAsync() : Promise<VideoLimits> {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getWhiteBalanceLimitsAsync.name, "called with", this.deviceID);
+        return util.promisify(sdkIntegration.GetWhiteBalanceLimits)(this.deviceID).then((limits) => {
+          _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getWhiteBalanceLimitsAsync.name, "returned");
+          return limits;
+        });
+    }
+
+    /**
+     * Restores the video settings to room defaults like when a new call is started
+     * @returns {Promise<void, JabraError>} - Resolves to `void` on success,
+     *    rejects with `JabraError` on error.
+     */
+    restoreVideoRoomDefaultsAsync() : Promise<void> {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.restoreVideoRoomDefaultsAsync.name, "called with", this.deviceID);
+        return util.promisify(sdkIntegration.RestoreVideoRoomDefaults)(this.deviceID).then(() => {
+          _JabraNativeAddonLog(AddonLogSeverity.verbose, this.restoreVideoRoomDefaultsAsync.name, "returned");
+        });
+    }
+
+    /**
+     * Sets the room capacity setting on a video device
+     * @param {number} - Room capacity in no of people
+     * @returns {Promise<void, JabraError>} - Resolves to `void` on success,
+     *    rejects with `JabraError` on error.
+     */
+    setRoomCapacityAsync(capacity: number) : Promise<void> {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.setRoomCapacityAsync.name, "called with", this.deviceID);
+        return util.promisify(sdkIntegration.SetRoomCapacity)(this.deviceID, capacity).then(() => {
+          _JabraNativeAddonLog(AddonLogSeverity.verbose, this.setRoomCapacityAsync.name, "returned");
+        });
+    }
+
+    /**
+     * Gets the room capacity setting on a video device
+     * @returns {Promise<number, JabraError>} - Resolves to `number` room capacity on success,
+     *    rejects with `JabraError` on error.
+     */
+    getRoomCapacityAsync() : Promise<number> {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getRoomCapacityAsync.name, "called with", this.deviceID);
+        return util.promisify(sdkIntegration.GetRoomCapacity)(this.deviceID).then((capacity) => {
+          _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getRoomCapacityAsync.name, "returned");
+          return capacity;
+        });
+    }
+
+    /**
+     * Sets whether capacity notifications are enabled on a video device
+     * @param {boolean} - Notification enable state
+     * @returns {Promise<void, JabraError>} - Resolves to `void` on success,
+     *    rejects with `JabraError` on error.
+     */
+    setRoomCapacityNotificationEnabledAsync(enable: boolean) : Promise<void> {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.setRoomCapacityNotificationEnabledAsync.name, "called with", this.deviceID);
+        return util.promisify(sdkIntegration.SetRoomCapacityNotificationEnabled)(this.deviceID, enable).then(() => {
+          _JabraNativeAddonLog(AddonLogSeverity.verbose, this.setRoomCapacityNotificationEnabledAsync.name, "returned");
+        });
+    }
+
+    /**
+     * Gets whether capacity notifications are enabled on a video device
+     * @returns {Promise<boolean, JabraError>} - Resolves to `boolean` enable state on success,
+     *    rejects with `JabraError` on error.
+     */
+    getRoomCapacityNotificationEnabledAsync() : Promise<boolean> {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getRoomCapacityNotificationEnabledAsync.name, "called with", this.deviceID);
+        return util.promisify(sdkIntegration.GetRoomCapacityNotificationEnabled)(this.deviceID).then((enable) => {
+          _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getRoomCapacityNotificationEnabledAsync.name, "returned");
+          return enable;
+        });
+    }
+
+    /**
+     * Sets the style of notifications on a video device
+     * @param {enumNotificationStyle} - Notification style
+     * @returns {Promise<void, JabraError>} - Resolves to `void` on success,
+     *    rejects with `JabraError` on error.
+     */
+    setNotificationStyleAsync(style: enumNotificationStyle) : Promise<void> {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.setNotificationStyleAsync.name, "called with", this.deviceID);
+        return util.promisify(sdkIntegration.SetNotificationStyle)(this.deviceID, style).then(() => {
+          _JabraNativeAddonLog(AddonLogSeverity.verbose, this.setNotificationStyleAsync.name, "returned");
+        });
+    }
+
+    /**
+     * Gets the style of notifications on a video device
+     * @returns {Promise<enumNotificationStyle, JabraError>} - Resolves to `enumNotificationStyle` on success,
+     *    rejects with `JabraError` on error.
+     */
+    getNotificationStyleAsync() : Promise<enumNotificationStyle> {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getNotificationStyleAsync.name, "called with", this.deviceID);
+        return util.promisify(sdkIntegration.GetNotificationStyle)(this.deviceID).then((style) => {
+          _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getNotificationStyleAsync.name, "returned");
+          return style;
+        });
+    }
+
+    /**
+     * Sets when notifications are active on a video device
+     * @param {enumNotificationUsage} - Notification style
+     * @returns {Promise<void, JabraError>} - Resolves to `void` on success,
+     *    rejects with `JabraError` on error.
+     */
+    setNotificationUsageAsync(style: enumNotificationUsage) : Promise<void> {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.setNotificationUsageAsync.name, "called with", this.deviceID);
+        return util.promisify(sdkIntegration.SetNotificationUsage)(this.deviceID, style).then(() => {
+          _JabraNativeAddonLog(AddonLogSeverity.verbose, this.setNotificationUsageAsync.name, "returned");
+        });
+    }
+
+    /**
+     * Gets when notifications are active on a video device
+     * @returns {Promise<enumNotificationUsage, JabraError>} - Resolves to `enumNotificationUsage` on success,
+     *    rejects with `JabraError` on error.
+     */
+    getNotificationUsageAsync() : Promise<enumNotificationUsage> {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getNotificationUsageAsync.name, "called with", this.deviceID);
+        return util.promisify(sdkIntegration.GetNotificationUsage)(this.deviceID).then((usage) => {
+          _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getNotificationUsageAsync.name, "returned");
+          return usage;
+        });
+    }
+
+    /**
+     * Stores the current color controls into a preset slot.
+     * @param {enumColorControlPreset} - The preset slot to be used.
+     * @returns {Promise<void, JabraError>} - Resolves to `void` on success,
+     *    rejects with `JabraError` on error.
+     */
+    storeColorControlPresetAsync(PresetSlot: enumColorControlPreset) : Promise<void> {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.storeColorControlPresetAsync.name, "called with", this.deviceID);
+        return util.promisify(sdkIntegration.StoreColorControlPreset)(this.deviceID, PresetSlot).then(() => {
+          _JabraNativeAddonLog(AddonLogSeverity.verbose, this.storeColorControlPresetAsync.name, "returned");
+        });
+    }
+
+    /**
+     * Applies color controls from a given preset slot.
+     * @param {enumColorControlPreset} - The preset slot to be used.
+     * @returns {Promise<void, JabraError>} - Resolves to `void` on success,
+     *    rejects with `JabraError` on error.
+     */
+    applyColorControlPresetAsync(PresetSlot: enumColorControlPreset) : Promise<void> {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.applyColorControlPresetAsync.name, "called with", this.deviceID);
+        return util.promisify(sdkIntegration.ApplyColorControlPreset)(this.deviceID, PresetSlot).then(() => {
+          _JabraNativeAddonLog(AddonLogSeverity.verbose, this.applyColorControlPresetAsync.name, "returned");
+        });
+    }
+
+    /**
+     * Stores the current Pan/Tilt/Zoom settings into a preset slot.
+     * @param {enumPTZPreset} - The preset slot to be used.
+     * @returns {Promise<void, JabraError>} - Resolves to `void` on success,
+     *    rejects with `JabraError` on error.
+     */
+    storePTZPresetAsync(PresetSlot: enumPTZPreset) : Promise<void> {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.storePTZPresetAsync.name, "called with", this.deviceID);
+        return util.promisify(sdkIntegration.StorePTZPreset)(this.deviceID, PresetSlot).then(() => {
+          _JabraNativeAddonLog(AddonLogSeverity.verbose, this.storePTZPresetAsync.name, "returned");
+        });
+    }
+
+    /**
+     * Applies Pan/Tilt/Zoom settings from a given preset slot.
+     * @param {enumPTZPreset} - The preset slot to be used.
+     * @returns {Promise<void, JabraError>} - Resolves to `void` on success,
+     *    rejects with `JabraError` on error.
+     */
+    applyPTZPresetAsync(PresetSlot: enumPTZPreset) : Promise<void> {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.applyPTZPresetAsync.name, "called with", this.deviceID);
+        return util.promisify(sdkIntegration.ApplyPTZPreset)(this.deviceID, PresetSlot).then(() => {
+          _JabraNativeAddonLog(AddonLogSeverity.verbose, this.applyPTZPresetAsync.name, "returned");
+        });
+    }
+
+    /**
+     * Controls what is shown on the secondary video stream.
+     * @param {enumSecondaryStreamContent} - Choice of stream
+     * @returns {Promise<void, JabraError>} - Resolves to `void` on success,
+     *    rejects with `JabraError` on error.
+     */
+    setSecondVideoStreamAsync(stream: enumSecondaryStreamContent) : Promise<void> {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.setSecondVideoStreamAsync.name, "called with", this.deviceID);
+        return util.promisify(sdkIntegration.SetSecondVideoStream)(this.deviceID, stream).then(() => {
+          _JabraNativeAddonLog(AddonLogSeverity.verbose, this.setSecondVideoStreamAsync.name, "returned");
+        });
+    }
+
+    /**
+     * Returns which stream is shown in the secondary video stream.
+     * @returns {Promise<enumSecondaryStreamContent, JabraError>} - Resolves to `enumSecondaryStreamContent` on success,
+     *    rejects with `JabraError` on error.
+     */
+    getSecondVideoStreamAsync() : Promise<enumSecondaryStreamContent> {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getSecondVideoStreamAsync.name, "called with", this.deviceID);
+        return util.promisify(sdkIntegration.GetSecondVideoStream)(this.deviceID).then((stream) => {
+          _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getSecondVideoStreamAsync.name, "returned");
+          return stream;
+        });
+    }
+
+    /**
+     * Set whether the main stream shows the whiteboard.
+     * @param {boolean} - Whiteboard on main stream enable status
+     * @returns {Promise<void, JabraError>} - Resolves to `void` on success,
+     *    rejects with `JabraError` on error.
+     */
+    setWhiteboardOnMainStreamAsync(whiteboardEnable: boolean) : Promise<void> {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.setWhiteboardOnMainStreamAsync.name, "called with", this.deviceID);
+        return util.promisify(sdkIntegration.SetWhiteboardOnMainStream)(this.deviceID, whiteboardEnable).then(() => {
+          _JabraNativeAddonLog(AddonLogSeverity.verbose, this.setWhiteboardOnMainStreamAsync.name, "returned");
+        });
+    }
+
+    /**
+     * Get whether the main stream shows the whiteboard.
+     * @returns {Promise<boolean, JabraError>} - Resolves to `bool` on success,
+     *    rejects with `JabraError` on error.
+     */
+    getWhiteboardOnMainStreamAsync() : Promise<boolean> {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getWhiteboardOnMainStreamAsync.name, "called with", this.deviceID);
+        return util.promisify(sdkIntegration.GetWhiteboardOnMainStream)(this.deviceID).then((whiteboardEnable) => {
+          _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getWhiteboardOnMainStreamAsync.name, "returned");
+          return whiteboardEnable;
+        });
+    }
+
+    /**
+     * Sets the active video transition style with Intelligent Zoom.
+     * @returns {Promise<void, JabraError>} - Resolves to `void` on success,
+     *    rejects with `JabraError` on error.
+     */
+    setVideoTransitionStyleAsync(style: enumVideoTransitionStyle) : Promise<void> {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.setVideoTransitionStyleAsync.name, "called with", this.deviceID);
+        return util.promisify(sdkIntegration.SetVideoTransitionStyle)(this.deviceID, style).then(() => {
+          _JabraNativeAddonLog(AddonLogSeverity.verbose, this.setVideoTransitionStyleAsync.name, "returned");
+        });
+    }
+
+    /**
+     * Returns the active video transition style with Intelligent Zoom.
+     * @returns {Promise<enumVideoTransitionStyle, JabraError>} - Resolves to `enumVideoTransitionStyle` on success,
+     *    rejects with `JabraError` on error.
+     */
+    getVideoTransitionStyleAsync() : Promise<enumVideoTransitionStyle> {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getVideoTransitionStyleAsync.name, "called with", this.deviceID);
+        return util.promisify(sdkIntegration.GetVideoTransitionStyle)(this.deviceID).then((style) => {
+          _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getVideoTransitionStyleAsync.name, "returned");
+          return style;
+        });
+    }
+
+    /**
+     * Returns the status of the Ethernet connection.
+     * @returns {Promise<IPv4Status, JabraError>} - Resolves to `IPv4Status` on success,
+     *    rejects with `JabraError` on error.
+     */
+    getEthernetIPv4StatusAsync() : Promise<IPv4Status> {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getEthernetIPv4StatusAsync.name, "called with", this.deviceID);
+        return util.promisify(sdkIntegration.GetEthernetIPv4Status)(this.deviceID).then((ethernetStatus) => {
+          _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getEthernetIPv4StatusAsync.name, "returned");
+          return ethernetStatus;
+        });
+    }
+
+    /**
+     * Returns the status of the WLAN connection.
+     * @returns {Promise<IPv4Status, JabraError>} - Resolves to `IPv4Status` on success,
+     *    rejects with `JabraError` on error.
+     */
+    getWLANIPv4StatusAsync() : Promise<IPv4Status> {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getWLANIPv4StatusAsync.name, "called with", this.deviceID);
+        return util.promisify(sdkIntegration.GetWLANIPv4Status)(this.deviceID).then((ethernetStatus) => {
+          _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getWLANIPv4StatusAsync.name, "returned");
+          return ethernetStatus;
+        });
+    }
+
+    /**
+   * Get meta information about methods, properties etc. that can be used 
+   * for reflective usage of this class.
+   */
    getMeta() : ClassEntry {
       _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getMeta.name, "called with", this.deviceID);
 
@@ -1393,6 +2322,13 @@ export class DeviceType implements DeviceInfo, DeviceTiming, MetaApi {
    on(event: 'onDevLogEvent', listener: DeviceTypeCallbacks.onDevLogEvent): this;
          
    /**
+   * Add event handler for onDiagLogEvent device events.
+   *
+   * *Please make sure your callback arguments matches the event type or you will get a misleading typescript error. See also {@link https://github.com/microsoft/TypeScript/issues/30843 30843}*
+   */
+   on(event: 'onDiagLogEvent', listener: DeviceTypeCallbacks.onDiagLogEvent): this;
+  
+   /**
    * Add event handler for onBatteryStatusUpdate device events.
    * 
    * *Please make sure your callback arguments matches the event type or you will get a misleading typescript error. See also {@link https://github.com/microsoft/TypeScript/issues/30843 30843}*
@@ -1405,6 +2341,11 @@ export class DeviceType implements DeviceInfo, DeviceTiming, MetaApi {
     * *Please make sure your callback arguments matches the event type or you will get a misleading typescript error. See also {@link https://github.com/microsoft/TypeScript/issues/30843 30843}*
     */
    on(event: 'onRemoteMmiEvent', listener: DeviceTypeCallbacks.onRemoteMmiEvent): this;
+   
+   /**
+    *  Add event handler for when the Xpress connection status is changed
+    */
+   on(event: 'onxpressConnectionStatusEvent', listener: DeviceTypeCallbacks.onxpressConnectionStatusEvent): this;
    
    /**
    * Add event handler for onUploadProgress device events.
@@ -1421,14 +2362,21 @@ export class DeviceType implements DeviceInfo, DeviceTiming, MetaApi {
    on(event: 'onDectInfoEvent', listener: DeviceTypeCallbacks.onDectInfoEvent): this;
    
    /**
+   * Add event handler for onCameraStatusEvent device events.
+   *
+   * *Please make sure your callback arguments matches the event type or you will get a misleading typescript error. See also {@link https://github.com/microsoft/TypeScript/issues/30843 30843}*
+   */
+   on(event: 'onCameraStatusEvent', listener: DeviceTypeCallbacks.onCameraStatusEvent): this;
+
+    /**
      * Add event handler for one of the different device events.
      * 
      * *Please make sure your callback arguments matches the event type or you will get a misleading typescript error. See also {@link https://github.com/microsoft/TypeScript/issues/30843 30843}*
      */
    on(event: DeviceTypeEvents,
       listener: DeviceTypeCallbacks.btnPress | DeviceTypeCallbacks.busyLightChange | DeviceTypeCallbacks.downloadFirmwareProgress | DeviceTypeCallbacks.onBTParingListChange |
-                DeviceTypeCallbacks.onGNPBtnEvent | DeviceTypeCallbacks.onDevLogEvent | DeviceTypeCallbacks.onBatteryStatusUpdate | DeviceTypeCallbacks.onRemoteMmiEvent |
-                DeviceTypeCallbacks.onUploadProgress | DeviceTypeCallbacks.onDectInfoEvent ): this {
+                DeviceTypeCallbacks.onGNPBtnEvent | DeviceTypeCallbacks.onDevLogEvent | DeviceTypeCallbacks.onDiagLogEvent | DeviceTypeCallbacks.onBatteryStatusUpdate | DeviceTypeCallbacks.onRemoteMmiEvent |
+                DeviceTypeCallbacks.onxpressConnectionStatusEvent | DeviceTypeCallbacks.onUploadProgress | DeviceTypeCallbacks.onDectInfoEvent | DeviceTypeCallbacks.onCameraStatusEvent): this {
 
       _JabraNativeAddonLog(AddonLogSeverity.verbose, this.on.name, "called with", this.deviceID, event, "<listener>"); 
 
@@ -1482,6 +2430,13 @@ export class DeviceType implements DeviceInfo, DeviceTiming, MetaApi {
     off(event: 'onDevLogEvent', listener: DeviceTypeCallbacks.onDevLogEvent): this;
    
     /**
+    * Remove event handler for previosly setup onDiagLogEvent device events.
+    *
+    * *Please make sure your callback arguments matches the event type or you will get a misleading typescript error. See also {@link https://github.com/microsoft/TypeScript/issues/30843 30843}*
+    */
+    off(event: 'onDiagLogEvent', listener: DeviceTypeCallbacks.onDiagLogEvent): this;
+   
+    /**
     * Remove event handler for previosly setup onBatteryStatusUpdate device events.
     * 
     * *Please make sure your callback arguments matches the event type or you will get a misleading typescript error. See also {@link https://github.com/microsoft/TypeScript/issues/30843 30843}*
@@ -1495,6 +2450,11 @@ export class DeviceType implements DeviceInfo, DeviceTiming, MetaApi {
     */
     off(event: 'onRemoteMmiEvent', listener: DeviceTypeCallbacks.onRemoteMmiEvent): this;
 
+    /**
+    * Remove event handler for onxpressConnectionStatusEvent.
+    */        
+    off(event: 'onxpressConnectionStatusEvent', listener: DeviceTypeCallbacks.onxpressConnectionStatusEvent): this;
+    
     /**
     * Remove event handler for previosly setup onUploadProgress device events.
     * 
@@ -1510,14 +2470,21 @@ export class DeviceType implements DeviceInfo, DeviceTiming, MetaApi {
     off(event: 'onDectInfoEvent', listener: DeviceTypeCallbacks.onDectInfoEvent): this;
   
     /**
+    * Remove event handler for previosly setup onCameraStatusEvent device events.
+    *
+    * *Please make sure your callback arguments matches the event type or you will get a misleading typescript error. See also {@link https://github.com/microsoft/TypeScript/issues/30843 30843}*
+    */
+    off(event: 'onCameraStatusEvent', listener: DeviceTypeCallbacks.onCameraStatusEvent): this;
+
+    /**
     * Remove previosly setup event handler for device events.
     * 
     * *Please make sure your callback arguments matches the event type or you will get a misleading typescript error. See also {@link https://github.com/microsoft/TypeScript/issues/30843 30843}*
     */
     off(event: DeviceTypeEvents,
         listener: DeviceTypeCallbacks.btnPress | DeviceTypeCallbacks.busyLightChange | DeviceTypeCallbacks.downloadFirmwareProgress | DeviceTypeCallbacks.onBTParingListChange |
-        DeviceTypeCallbacks.onGNPBtnEvent | DeviceTypeCallbacks.onDevLogEvent | DeviceTypeCallbacks.onBatteryStatusUpdate | DeviceTypeCallbacks.onRemoteMmiEvent |
-        DeviceTypeCallbacks.onUploadProgress | DeviceTypeCallbacks.onDectInfoEvent ): this {
+        DeviceTypeCallbacks.onGNPBtnEvent | DeviceTypeCallbacks.onDevLogEvent | DeviceTypeCallbacks.onDiagLogEvent | DeviceTypeCallbacks.onBatteryStatusUpdate | DeviceTypeCallbacks.onRemoteMmiEvent |
+        DeviceTypeCallbacks.onxpressConnectionStatusEvent | DeviceTypeCallbacks.onUploadProgress | DeviceTypeCallbacks.onDectInfoEvent | DeviceTypeCallbacks.onCameraStatusEvent): this {
 
       _JabraNativeAddonLog(AddonLogSeverity.verbose, this.off.name, "called with", this.deviceID, event, "<listener>"); 
 

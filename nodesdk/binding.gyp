@@ -15,6 +15,11 @@
         "jabralibfolder": "libjabra/mac",
         "jabralibfile": "libjabra.dylib"
       }],
+      ["OS=='linux' and target_arch=='ia32'", {
+        "jabralibfolder": "libjabra/ubuntu/x32",
+        "jabralibfileglob": "libjabra.so.*",
+        "jabralibfile": "<!(find '<(_jabralibfolder)' -type f -name '<(_jabralibfileglob)' -printf '%f')"
+      }],
       ["OS=='linux' and target_arch=='x64'", {
         "jabralibfolder": "libjabra/ubuntu/x64",
         "jabralibfileglob": "libjabra.so.*",
