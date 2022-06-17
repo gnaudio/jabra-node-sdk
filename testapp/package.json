@@ -35,7 +35,7 @@
     "@gnaudio/jabra-node-sdk": "^3.2.2",
     "jquery": "3.5.0",
     "notyf": "3.6.0",
-    "electron": "8.2.4"
+    "electron": "15.5.5"
   },
   "devDependencies": {
     "@types/notyf": "3.0.0",
