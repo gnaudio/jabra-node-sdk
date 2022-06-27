@@ -3,7 +3,8 @@
  * and the internal sdk integration.
  */
 
-import { enumDeviceConnectionType, enumSettingCtrlType, enumSettingDataType, enumAPIReturnCode, enumBTPairedListType, enumRemoteMmiSequence, enumAutoWhiteBalance, enumPanDirection, enumTiltDirection, enumZoomDirection, enumProxyType } from './jabra-enums';
+import { enumNetworkInterface, enumNetworkInterfaceStatus } from '.';
+import { enumDeviceConnectionType, enumSettingCtrlType, enumSettingDataType, enumAPIReturnCode, enumBTPairedListType, enumRemoteMmiSequence, enumAutoWhiteBalance, enumPanDirection, enumTiltDirection, enumZoomDirection, enumProxyType, enumRegion } from './jabra-enums';
 
 /**
  * The type of error returned from rejected Jabra API promises.
@@ -149,7 +150,7 @@ export interface DeviceInfo {
     isInFirmwareUpdateMode: boolean;
     connectionType: enumDeviceConnectionType; // = deviceconnection in SDK.
     connectionId?: number; // Not currently exposed in js so marked as optional.
-    parentDeviceId?: number; // Not currently exposed in js so marked as optional.
+    parentDeviceId?: number; // Exists only for child devices
 }
 
 /** 
@@ -185,6 +186,11 @@ export declare const enum AudioFileFormatEnum {
 export interface ConfigInfo {
     configName: string,
     configId: string
+}
+
+export interface FirmwareVersionBundleType {
+    parent: string;
+    child: string;
 }
 
 export interface FirmwareInfoType {
@@ -226,6 +232,20 @@ export interface PairedListInfo  {
     pairedDevice: Array<{ deviceName: string, deviceBTAddr: string, isConnected: boolean }>;
 };
 
+export interface whichHeadsetNamesToRead {
+    primary?: boolean,
+    secondary1?: boolean,
+    secondary2?: boolean,
+    secondary3?: boolean
+}
+
+export interface dongleConnectedHeadsetName {
+    primary?: string,
+    secondary1?: string,
+    secondary2?: string,
+    secondary3?: string
+}
+
 export interface NamedAsset {
     elements: Array<{url: string, mime: string}>;
     metadata: Array<{name: string, value: string}>
@@ -252,12 +272,19 @@ export interface DevLogData {
     "TX Acoustic Logging Peak"?: string;
     "RX Acoustic Logging Level"?: string;
     "RX Acoustic Logging Peak"?: string;
+    "RX Acoustic Logging Max"?: string;
     "Speech_Analysis_TX"?: string;
     "Speech_Analysis_RX"?: string;
     "Boom Position Guidance OK"?: string;
     "Bad_Mic_detect Flag"?: string;
-    "ID?": string;
-  }
+    "ID"?: string;
+    "Room_exceeded"? : string;
+    "RX Audio Exposure Peak Al"? : string;
+    "RX Audio Exposure Level"? : string;
+    "RX Audio Exposure Peak"? : string;
+    "TX Acoustic Guidance Bgn Level"? : string;
+    "TX Acoustic Guidance Bgn Peak"? : string;
+}
 
 /**
  * Action output interface for Remote Mmi. 
@@ -333,6 +360,20 @@ export interface WhiteboardPosition {
 }
 
 /**
+ * This struct represent the sensor regions of a device where
+ * coordinates start at 0,0 at top left corner
+ */
+export interface SensorRegionType
+{
+    start0: number; /* Start x position of 1st sensor. (From user view sensors start from left to right) */
+    end0: number;   /* End x position of 1st sensor. (From user view sensors start from left to right) */
+    start1: number; /* Start x position of 2nd sensor. (From user view sensors start from left to right) */
+    end1: number;   /* End x position of 2nd sensor. (From user view sensors start from left to right) */
+    start2: number; /* Start x position of 3rd sensor. (From user view sensors start from left to right) */
+    end2: number;   /* End x position of 3rd sensor. (From user view sensors start from left to right) */
+}
+
+/**
  * This structure represents a device camera's limits for parameters such
  * as sharpness and saturation.
  */
@@ -381,12 +422,36 @@ export interface WhiteBalance {
 
 /**
  * Proxy settings for Xpress management configuration (for networked devices)
- * Leaving 'url' empty will disable proxy
+ * Leaving both 'url' and 'hostname' empty will disable proxy
  */
 export interface ProxySettings {
-    type: enumProxyType;
-    url: string;
-    port: number;
-    username: string;
-    password: string;
+    type?: enumProxyType;
+    url?: string;
+    hostname?: string;
+    port?: number;
+    username?: string;
+    password?: string;
+}
+
+/**
+ * Return value for getXpressManagementNetworkStatusAsync()
+ * After a failed Xpress configuration attempt, libcurl might return some useful error
+ * information, and this interface wraps that information.
+ * See https://curl.se/libcurl/c/libcurl-errors.html for description of CURLcode
+ */
+ export interface libcurlError {
+    code: number;
+    message: string;
+}
+
+/**
+ * Return value for getLanguagePackInformationAsync()
+ */
+export interface LanguagePackStats
+{
+    version: string;
+    currentRegion: enumRegion;
+    availableLanguages: string[];
+    configuredLanguage: string;
+    activeLanguage: string;
 }

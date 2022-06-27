@@ -26,4 +26,4 @@ Napi::Value napi_SearchNewDevices(const Napi::CallbackInfo& info);
 Napi::Value napi_ClearPairedDevice(const Napi::CallbackInfo& info);
 Napi::Value napi_GetSearchDeviceList(const Napi::CallbackInfo& info);
 
-
+Napi::Value napi_BTLinkQualityChangeEventEnabled(const Napi::CallbackInfo& info);

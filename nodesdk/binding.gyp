@@ -11,6 +11,11 @@
         "jabralibfile": "libjabra.dll",
         "jabraliblibrary": "libjabra.lib"
       }],
+      ["OS=='win' and target_arch=='arm64'", {
+        "jabralibfolder": "libjabra/windows/ARM64",
+        "jabralibfile": "libjabra.dll",
+        "jabraliblibrary": "libjabra.lib"
+      }],
       ["OS=='mac'", {
         "jabralibfolder": "libjabra/mac",
         "jabralibfile": "libjabra.dylib"
@@ -18,12 +23,14 @@
       ["OS=='linux' and target_arch=='ia32'", {
         "jabralibfolder": "libjabra/ubuntu/x32",
         "jabralibfileglob": "libjabra.so.*",
-        "jabralibfile": "<!(find '<(_jabralibfolder)' -type f -name '<(_jabralibfileglob)' -printf '%f')"
+        "jabralibfile": "<!(find '<(_jabralibfolder)' -type f -name '<(_jabralibfileglob)' -printf '%f')",
+        "jabralibsoname": "<!(/bin/bash -c '[[ <(_jabralibfile) =~ (libjabra.so.[0-9]+).* ]] ; echo ${BASH_REMATCH[1]}')"
       }],
       ["OS=='linux' and target_arch=='x64'", {
         "jabralibfolder": "libjabra/ubuntu/x64",
         "jabralibfileglob": "libjabra.so.*",
-        "jabralibfile": "<!(find '<(_jabralibfolder)' -type f -name '<(_jabralibfileglob)' -printf '%f')"
+        "jabralibfile": "<!(find '<(_jabralibfolder)' -type f -name '<(_jabralibfileglob)' -printf '%f')",
+        "jabralibsoname": "<!(/bin/bash -c '[[ <(_jabralibfile) =~ (libjabra.so.[0-9]+).* ]] ; echo ${BASH_REMATCH[1]}')"
       }],
       ["OS=='linux' and target_arch=='arm'", {
         "jabralibfolder": "TODO",
@@ -75,6 +82,16 @@
                     'files': ['<(module_root_dir)/<(jabralibfolder)/<(jabralibfile)']
                   }
               ]
+            }],
+            ['target_arch=="arm64"', {
+              'libraries': [ '<(jabralibfolder)/<(jabraliblibrary)' ],
+              "copies":
+              [
+                  {
+                    'destination': '<(PRODUCT_DIR)',
+                    'files': ['<(module_root_dir)/<(jabralibfolder)/<(jabralibfile)']
+                  }
+              ]
             }]
           ],
           'defines': [ '_HAS_EXCEPTIONS=1' ],
@@ -82,23 +99,35 @@
             'VCCLCompilerTool': { 'ExceptionHandling': 1 },
           },
         }],
-        ['OS=="linux"', {
-          'libraries': [ "../<(jabralibfolder)/<(jabralibfile)" ],
-          'ldflags': [
-            "-Wl,-rpath,'$$ORIGIN'"
-          ],
-          'cflags_cc': [
-            '-fexceptions',
-            '-Wno-unused-variable'
-          ],
-          "copies":
-          [
-            {
-              'destination': '<(PRODUCT_DIR)',
-              'files': ['<(module_root_dir)/<(jabralibfolder)/<(jabralibfile)']
-            }
-          ],
-        }],
+        [
+          'OS=="linux"',
+          {
+            'libraries': [ "../<(jabralibfolder)/<(jabralibfile)" ],
+            'ldflags': [
+              "-Wl,-rpath,'$$ORIGIN'"
+            ],
+            'cflags_cc': [
+              '-fexceptions',
+              '-Wno-unused-variable'
+            ],
+            "copies":
+            [
+              {
+                'destination': '<(PRODUCT_DIR)',
+                'files': ['<(module_root_dir)/<(jabralibfolder)/<(jabralibfile)']
+              }
+            ],
+            'actions':
+            [
+              {
+                'action_name': 'makelibsymlink',
+                'inputs': [ '<(PRODUCT_DIR)/<(jabralibfile)' ],
+                'outputs': [ '<(PRODUCT_DIR)/<(jabralibsoname)' ],
+                'action': [ 'ln', '-s', '<(PRODUCT_DIR)/<(jabralibfile)', '<(PRODUCT_DIR)/<(jabralibsoname)' ]
+              }
+            ]
+          }
+        ],
         ['OS=="mac"', {
          'libraries': [ '../<(jabralibfolder)/<(jabralibfile)' ],
          'xcode_settings': {

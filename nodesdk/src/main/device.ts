@@ -1,6 +1,10 @@
 import { SdkIntegration } from "./sdkintegration";
 import { AddonLogSeverity, DeviceTiming, DevLogData, AudioFileFormatEnum,
-  RemoteMmiActionOutput, WhiteboardPosition, PanTilt, PanTiltLimits, WhiteBalance, DateTime, VideoLimits, IPv4Status, ZoomRelative, PanTiltRelative, VideoDeviceStreamingStatus, ProxySettings } from "./core-types";
+  RemoteMmiActionOutput, WhiteboardPosition, PanTilt, PanTiltLimits,
+  WhiteBalance, DateTime, VideoLimits, IPv4Status, ZoomRelative,
+  PanTiltRelative, VideoDeviceStreamingStatus, ProxySettings,
+  libcurlError, whichHeadsetNamesToRead, dongleConnectedHeadsetName,
+  LanguagePackStats } from "./core-types";
 import { isNodeJs } from './util';
 import { _JabraNativeAddonLog } from './logger';
 
@@ -25,7 +29,7 @@ if (isNodeJs()) {
 
 import { DeviceInfo, RCCStatus, ConfigInfo, ConfigParamsCloud, DeviceCatalogueParams,
     FirmwareInfoType, SettingType, DeviceSettings, PairedListInfo, NamedAsset,
-    DectInfo } from './core-types';
+    DectInfo, FirmwareVersionBundleType, SensorRegionType } from './core-types';
 
 import { enumAPIReturnCode, enumDeviceErrorStatus, enumDeviceBtnType, enumDeviceConnectionType,
     enumSettingDataType, enumSettingCtrlType, enumSettingLoadMode, enumFirmwareEventStatus,
@@ -33,13 +37,14 @@ import { enumAPIReturnCode, enumDeviceErrorStatus, enumDeviceBtnType, enumDevice
     enumDeviceFeature, enumHidState, enumWizardMode, enumSecureConnectionMode,
     enumRemoteMmiType, enumRemoteMmiInput, enumRemoteMmiPriority, enumVideoMode,
     enumNotificationUsage, enumNotificationStyle, enumSecondaryStreamContent, enumPTZPreset,
-    enumColorControlPreset, enumVideoTransitionStyle, enumIntelligentZoomLatency, enumUSBState } from './jabra-enums';
-import * as _jabraEnums from './jabra-enums';
+    enumColorControlPreset, enumVideoTransitionStyle, enumIntelligentZoomLatency, enumUSBState,
+    enumBTLinkQuality, enumDECTHeadsetPairingState, enumNetworkInterface, enumNetworkInterfaceStatus,
+    enumLanguagePack, enumNetworkAuthMode, enumDeviceProperty, enumSubDevice} from './jabra-enums';
 
 import { MetaApi, ClassEntry, _getJabraApiMetaSync } from './meta';
 
 import * as util from 'util';
-import { throws } from "assert";
+import { DeviceConstants } from "./deviceconstants";
 
 export namespace DeviceTypeCallbacks {
     export type btnPress = (btnType: enumDeviceBtnType, value: boolean) => void;
@@ -55,10 +60,12 @@ export namespace DeviceTypeCallbacks {
     export type onUploadProgress = (status: enumUploadEventStatus, levelInPercent: number) => void;
     export type onDectInfoEvent = (dectInfo: DectInfo) => void;
     export type onCameraStatusEvent = (status: boolean) => void;
+    export type onBluetoothLinkQualityChangeEvent = (linkQuality: enumBTLinkQuality) => void;
+    export type onNetworkStatusChangedEvent = (PHY: enumNetworkInterface, status: enumNetworkInterfaceStatus) => void;
 }
 
-export type DeviceTypeEvents = 'btnPress' | 'busyLightChange' | 'downloadFirmwareProgress' | 'onBTParingListChange' | 'onGNPBtnEvent' | 'onDevLogEvent' | 'onDiagLogEvent' | 'onBatteryStatusUpdate' | 'onRemoteMmiEvent'| 'onxpressConnectionStatusEvent' | 'onUploadProgress' | 'onDectInfoEvent' | 'onCameraStatusEvent';
-export const DeviceEventsList : DeviceTypeEvents[] = ['btnPress', 'busyLightChange', 'downloadFirmwareProgress', 'onBTParingListChange', 'onGNPBtnEvent', 'onDevLogEvent', 'onDiagLogEvent', 'onBatteryStatusUpdate', 'onRemoteMmiEvent', 'onxpressConnectionStatusEvent', 'onUploadProgress', 'onDectInfoEvent', 'onCameraStatusEvent'];
+export type DeviceTypeEvents = 'btnPress' | 'busyLightChange' | 'downloadFirmwareProgress' | 'onBTParingListChange' | 'onGNPBtnEvent' | 'onDevLogEvent' | 'onDiagLogEvent' | 'onBatteryStatusUpdate' | 'onRemoteMmiEvent'| 'onxpressConnectionStatusEvent' | 'onUploadProgress' | 'onDectInfoEvent' | 'onCameraStatusEvent' | 'onBluetoothLinkQualityChangeEvent' | 'onNetworkStatusChangedEvent';
+export const DeviceEventsList : DeviceTypeEvents[] = ['btnPress', 'busyLightChange', 'downloadFirmwareProgress', 'onBTParingListChange', 'onGNPBtnEvent', 'onDevLogEvent', 'onDiagLogEvent', 'onBatteryStatusUpdate', 'onRemoteMmiEvent', 'onxpressConnectionStatusEvent', 'onUploadProgress', 'onDectInfoEvent', 'onCameraStatusEvent', 'onBluetoothLinkQualityChangeEvent', 'onNetworkStatusChangedEvent'];
 
 /** 
  * Represents a concrete Jabra device and the operations that can be done on it.   
@@ -93,6 +100,7 @@ export class DeviceType implements DeviceInfo, DeviceTiming, MetaApi {
         this.isInFirmwareUpdateMode = deviceInfo.isInFirmwareUpdateMode;
         this.attached_time_ms = attached_time_ms;
         this.detached_time_ms = undefined;
+        this.parentDeviceId = deviceInfo.parentDeviceId;
     }
 
     readonly ESN: string;
@@ -105,6 +113,7 @@ export class DeviceType implements DeviceInfo, DeviceTiming, MetaApi {
     readonly productID: number;
     readonly vendorID: number;
     readonly variant: string;
+    readonly parentDeviceId: number | undefined;
 
     /**
      * The time since EPOC that the device was attached.
@@ -349,10 +358,10 @@ export class DeviceType implements DeviceInfo, DeviceTiming, MetaApi {
      * Get asset with name.
      * @returns {Promise<NamedAsset, JabraError>} - Resolve NamedAsset `object` if successful otherwise Reject with `error`.
      */
-    getNamedAssetAsyngetNamec(assetName: string): Promise<NamedAsset> {
-        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getNamedAssetAsyngetNamec.name, "called with", this.deviceID, assetName); 
+    getNamedAssetAsync(assetName: string): Promise<NamedAsset> {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getNamedAssetAsync.name, "called with", this.deviceID, assetName); 
         return util.promisify(sdkIntegration.GetNamedAsset)(this.deviceID, assetName).then((result) => {
-            _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getNamedAssetAsyngetNamec.name, "returned with", result);
+            _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getNamedAssetAsync.name, "returned with", result);
             return result;
         });
     }
@@ -373,13 +382,37 @@ export class DeviceType implements DeviceInfo, DeviceTiming, MetaApi {
     /**
      * Get remote control battery status, if supported by device.
      * @returns {Promise<BatteryInfo, JabraError>} - Resolve batteryInfo `object` if successful otherwise Reject with `error`.
-    
      */
      getRemoteControlBatteryStatusAsync(): Promise<{ levelInPercent?: number, isCharging?: boolean, isBatteryLow?: boolean }> {
         _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getRemoteControlBatteryStatusAsync.name, "called with", this.deviceID); 
         return util.promisify(sdkIntegration.GetRemoteControlBatteryStatus)(this.deviceID).then((result) => {
             _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getRemoteControlBatteryStatusAsync.name, "returned with", result);
             return result;
+        });
+    }
+
+    /**
+     * Get remote control version
+     * @returns {Promise<string, JabraError>} - Resolve version `string` if successful otherwise Reject with `error`.
+     */
+     getRemoteControlFirmwareVersionAsync(): Promise<string> {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getRemoteControlFirmwareVersionAsync.name, "called with", this.deviceID); 
+        return util.promisify(sdkIntegration.GetRemoteControlFirmwareVersion)(this.deviceID).then((result) => {
+            _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getRemoteControlFirmwareVersionAsync.name, "returned with", result);
+            return result;
+        });
+    }
+
+    /**
+     * Get MAC address of specified interface
+     * @returns {Promise<Uint8Array, JabraError>} - Resolve MAC address as `Uint8Array` if successful otherwise Reject with `error`.
+     */
+     getMACAddressAsync(selectedInterface : enumNetworkInterface): Promise<Uint8Array> {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getMACAddressAsync.name, "called with", this.deviceID); 
+        return util.promisify(sdkIntegration.GetMACAddress)(this.deviceID, selectedInterface).then((result) => {
+            let MAC = new Uint8Array(result);
+            _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getMACAddressAsync.name, "returned with " + MAC[0] + MAC[1] + MAC[2] + MAC[3] + MAC[4] + MAC[5]);
+            return MAC;
         });
     }
 
@@ -414,7 +447,7 @@ export class DeviceType implements DeviceInfo, DeviceTiming, MetaApi {
      */
     preloadAttachedDeviceInfoAsync(zipFileName: string): Promise<void> {
         _JabraNativeAddonLog(AddonLogSeverity.verbose, this.preloadAttachedDeviceInfoAsync.name, "called with", this.deviceID); 
-        return util.promisify(sdkIntegration.PreloadAttachedDeviceInfo)(this.deviceID, zipFileName).then((result) => {
+        return util.promisify(sdkIntegration.PreloadAttachedDeviceInfo)(this.deviceID, zipFileName).then((_result) => {
             _JabraNativeAddonLog(AddonLogSeverity.verbose, this.preloadAttachedDeviceInfoAsync.name, "returned");
         });
     }
@@ -720,6 +753,18 @@ export class DeviceType implements DeviceInfo, DeviceTiming, MetaApi {
     }
 
     /**
+     *  Get firmware version bundle of the parent and child device set.
+     * @returns {Promise<FirmwareVersionBundle, JabraError>} - Resolve version `string` if successful otherwise Reject with `error`.
+     */
+     getFirmwareVersionBundleAsync(): Promise<FirmwareVersionBundleType> {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getFirmwareVersionBundleAsync.name, "called with", this.deviceID);
+        return util.promisify(sdkIntegration.GetFirmwareVersionBundle)(this.deviceID).then((result) => {
+            _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getFirmwareVersionBundleAsync.name, "returned with", result);
+            return result;
+        });
+    }
+
+    /**
      * Gets details of the latest firmware present in cloud.
      * @param {string} [authorization] - Authorization Id.
      * @returns {Promise<FirmwareInfo, JabraError>} - Resolve firminfo `object` if successful otherwise Reject with `error`.
@@ -798,7 +843,7 @@ export class DeviceType implements DeviceInfo, DeviceTiming, MetaApi {
 
     // bluetooth APIs
     /**
-     * Set the bluetooth device in pairing mode.
+     * Set the Bluetooth device in pairing mode.
      * @returns {Promise<void, JabraError>} - Resolve `void` if successful otherwise Reject with `error`.
      */
     setBTPairingAsync(): Promise<void> {
@@ -839,7 +884,7 @@ export class DeviceType implements DeviceInfo, DeviceTiming, MetaApi {
         });
     }
     /**
-     * Connect a new device.
+     * Connect a new Bluetooth device.
      * @param {string} deviceName - name of device to be connected.
      * @param {string} deviceBTAddr -  BTAddress of device to be connected.
      * @param {boolean} isConnected - current status of device to be connected.
@@ -852,7 +897,7 @@ export class DeviceType implements DeviceInfo, DeviceTiming, MetaApi {
         });
     }
     /**
-     * Connect a device which was already paired.
+     * Connect a Bluetooth device which was already paired.
      * @param {string} deviceName - name of device to be connected.
      * @param {string} deviceBTAddr -  BTAddress of device to be connected.
      * @param {boolean} isConnected - current status of device to be connected.
@@ -867,7 +912,7 @@ export class DeviceType implements DeviceInfo, DeviceTiming, MetaApi {
     }
 
     /**
-     * Disconnect  Bluetooth device from  Bluetooth adapter.
+     * Disconnect Bluetooth device from Bluetooth adapter.
      * @returns {Promise<void, JabraError>} - Resolve `void` if successful otherwise Reject with `error`.
      */
     disconnectBTDeviceAsync(): Promise<void> {
@@ -878,7 +923,7 @@ export class DeviceType implements DeviceInfo, DeviceTiming, MetaApi {
     }
 
     /**
-     * Disconnect a paired device.
+     * Disconnect a paired Bluetooth device.
      * @param {string} deviceName - name of device to be disconnected.
      * @param {string} deviceBTAddr -  BTAddress of device to be disconnected.
      * @param {boolean} isConnected - current status of device to be disconnected.
@@ -905,7 +950,7 @@ export class DeviceType implements DeviceInfo, DeviceTiming, MetaApi {
     }
 
     /**
-     * Get Auto pairing mode enable or disable.
+     * Get Bluetooth auto pairing mode.
      * @returns {Promise<boolean, JabraError>} - Resolve `boolean` if successful otherwise Reject with `error`.
      * - `true` if auto pairing mode is enabled, `false` otherwise.
      */
@@ -943,7 +988,7 @@ export class DeviceType implements DeviceInfo, DeviceTiming, MetaApi {
     }
 
     /**
-     * Clear list of paired BT devices from BT adapter.
+     * Clear list of paired Bluetooth devices from Bluetooth adapter.
      * @returns {Promise<void, JabraError>} - Resolve `void` if successful otherwise Reject with `error`.
      */
     clearPairingListAsync(): Promise<void> {
@@ -954,7 +999,7 @@ export class DeviceType implements DeviceInfo, DeviceTiming, MetaApi {
     }
 
     /**
-     * Get name of connected BT device with BT Adapter(Async).
+     * Get name of connected Bluetooth device for Bluetooth adapter.
      * @returns {Promise<string, JabraError>} - Resolve deviceName `string` if successful otherwise Reject with `error`.
      */
     getConnectedBTDeviceNameAsync(): Promise<string> {
@@ -966,7 +1011,7 @@ export class DeviceType implements DeviceInfo, DeviceTiming, MetaApi {
     }
 
     /**
-     * Gets the list of new devices which are available to pair & connect.
+     * Gets the list of new Bluetooth devices which are available to pair & connect.
      * @returns { Promise<Array<PairedDevice>, JabraError>} - Resolve pairList `array` if successful otherwise Reject with `error`.
      * - **Note**: `isConnected`, flag in Pairing List Object, will always be false as device does not give connection status for the found device.
      */
@@ -975,6 +1020,76 @@ export class DeviceType implements DeviceInfo, DeviceTiming, MetaApi {
 	    return util.promisify(sdkIntegration.GetSearchDeviceList)(this.deviceID).then((result) => {
             _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getSearchDeviceListAsync.name, "returned with", result);
             return result;
+        });
+    }
+
+    //DECT APIs
+    /**
+     * Reads the device name(s) of connected BT or DECT headsets.
+     * getAssetTag indicates whether to read user-configurable device asset tags (true) or product name (false).
+     * readFromHeadset indicates which connected devices should be included in the read.
+     * @returns {Promise<dongleConnectedHeadsetName, JabraError>} - Resolve `dongleConnectedHeadsetName` if all
+     * requested device names could be read otherwise Reject with `JabraError`.
+     */
+     getConnectedHeadsetNamesAsync(getAssetTag: boolean, readFromHeadset: whichHeadsetNamesToRead): Promise<dongleConnectedHeadsetName> {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getConnectedHeadsetNamesAsync.name, "called with", this.deviceID); 
+        return util.promisify(sdkIntegration.GetConnectedHeadsetNames)(this.deviceID, getAssetTag, readFromHeadset).then((result) => {
+            _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getConnectedHeadsetNamesAsync.name, "returned");
+            return result;
+        });
+    }
+
+    /**
+     * Start DECT dongle pairing mode (insecure)
+     * The 'onBatteryStatusUpdate' event from base/dongle indicates a successful pairing
+     * @returns {Promise<void, JabraError>} - Resolve `void` if successful otherwise Reject with `JabraError`.
+     */
+     triggerDECTPairingAsync(pairingState: enumDECTHeadsetPairingState): Promise<void> {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.triggerDECTPairingAsync.name, "called with", this.deviceID); 
+        return util.promisify(sdkIntegration.TriggerDECTPairing)(this.deviceID, pairingState).then(() => {
+            _JabraNativeAddonLog(AddonLogSeverity.verbose, this.triggerDECTPairingAsync.name, "returned");
+        });
+    }
+
+    /**
+     * Start DECT secure pairing between base and USB connected headset
+     * Before secure pairing is initiated, the devices need to be synchronized using getDECTPairingKeyAsync
+     * on the dongle to get a pairing key and then passing this key to the headset using setDECTPairingKeyAsync.
+     * Full secure pairing procedure:
+     * 1: triggerDECTPairingSecureAsync on base/dongle
+     * 2: getDECTPairingKeyAsync on base/dongle
+     * 3: setDECTPairingKeyAsync on headset
+     * 4: triggerDECTPairingSecureAsync on headset
+     * 5: Wait ~20s for 'onBatteryStatusUpdate' event from base/dongle which indicates a successful pairing
+     * @returns {Promise<void, JabraError>} - Resolve `void` if successful otherwise Reject with `JabraError`.
+     */
+     triggerDECTPairingSecureAsync(): Promise<void> {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.triggerDECTPairingSecureAsync.name, "called with", this.deviceID); 
+        return util.promisify(sdkIntegration.TriggerDECTSecurePairing)(this.deviceID).then(() => {
+            _JabraNativeAddonLog(AddonLogSeverity.verbose, this.triggerDECTPairingSecureAsync.name, "returned");
+        });
+    }
+
+    /**
+     * Read the secure pairing key from a DECT base/dongle.
+     * @returns {Promise<number, JabraError>} - Resolve `number` if successful otherwise Reject with `JabraError`.
+     */
+     getDECTPairingKeyAsync(): Promise<number> {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getDECTPairingKeyAsync.name, "called with", this.deviceID); 
+        return util.promisify(sdkIntegration.GetDECTPairingKey)(this.deviceID).then((pairingKey) => {
+            _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getDECTPairingKeyAsync.name, "returned");
+            return pairingKey;
+        });
+    }
+
+    /**
+     * Write the secure DECT pairing key to a USB connected headset.
+     * @returns {Promise<void, JabraError>} - Resolve `void` if successful otherwise Reject with `JabraError`.
+     */
+     setDECTPairingKeyAsync(pairingKey: number): Promise<void> {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.setDECTPairingKeyAsync.name, "called with", this.deviceID); 
+        return util.promisify(sdkIntegration.SetDECTPairingKey)(this.deviceID, pairingKey).then(() => {
+            _JabraNativeAddonLog(AddonLogSeverity.verbose, this.setDECTPairingKeyAsync.name, "returned");
         });
     }
 
@@ -1035,7 +1150,7 @@ export class DeviceType implements DeviceInfo, DeviceTiming, MetaApi {
      */
     uploadRingtoneAsync(filePath: string): Promise<void> {
         _JabraNativeAddonLog(AddonLogSeverity.verbose, this.uploadRingtoneAsync.name, "called with", this.deviceID, filePath);
-        return util.promisify(sdkIntegration.UploadRingtone)(this.deviceID, filePath).then((result) => {
+        return util.promisify(sdkIntegration.UploadRingtone)(this.deviceID, filePath).then((_result) => {
             _JabraNativeAddonLog(AddonLogSeverity.verbose, this.uploadRingtoneAsync.name, "returned");
         });
     }
@@ -1395,7 +1510,19 @@ export class DeviceType implements DeviceInfo, DeviceTiming, MetaApi {
         });
    }
 
-    /**
+   /**
+   * Get detailed information regarding specified language pack installed on device
+   * @returns {Promise<LanguagePackStats, JabraError>} - Resolve `LanguagePackStats` if successful otherwise Reject with `error`.
+   */
+    getLanguagePackInformationAsync(pack: enumLanguagePack): Promise<LanguagePackStats> {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getLanguagePackInformationAsync.name, "called with", this.deviceID); 
+        return util.promisify(sdkIntegration.GetLanguagePackInformation)(this.deviceID, pack).then((result) => {
+            _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getLanguagePackInformationAsync.name, "returned with", result);
+            return result;
+        });
+   }
+
+   /**
      * Checks if firmware lock is enabled. If the firmware lock is enabled
      * it is not possible to upgrade nor downgrade the firmware. In this situation
      * the firmware can only be changed to the same version e.g. if you want to
@@ -1548,21 +1675,39 @@ export class DeviceType implements DeviceInfo, DeviceTiming, MetaApi {
      * Configures networked device for stand-alone remote management
      * @param {string} url - URL for the Xpress backend server
      * If empty/undefined, management will be disabled
-     * @param {ProxySettings} proxySettings - Proxy configuration
-     * Leave 'url' empty/undefined to disable proxy
-     * @param {number} timeout - Time limit for entire operation in milliseconds
-     * Suggested value is 10000 ms or higher.
+     * @param {ProxySettings} proxySettings - (optional) Proxy configuration
+     * If undefined, proxy will be disabled
+     * @param {number} timeout - (optional) Total time limit for validation of new configuration
+     * If undefined, will use default timeout of 10'000 ms
      * @returns {Promise<void, JabraError>} - Resolves to `void` on success,
      *   rejects with `JabraError` if an error occurs.
      */
-    configureXpressManagementAsync(url: string, proxySettings: ProxySettings, timeout: number) : Promise<void> {
+    configureXpressManagementAsync(url?: string, proxySettings?: ProxySettings, timeout?: number) : Promise<void> {
       _JabraNativeAddonLog(AddonLogSeverity.verbose, this.configureXpressManagementAsync.name, "called with", this.deviceID);
-      return util.promisify(sdkIntegration.ConfigureXpressManagement)(this.deviceID, url, proxySettings, timeout).then(() => {
+      let _proxySettings: ProxySettings = (proxySettings) ? proxySettings : {};
+      let _timeout: number = (timeout) ? timeout : 10000;
+      let _url: string = (url) ? url : "";
+      
+      return util.promisify(sdkIntegration.ConfigureXpressManagement)(this.deviceID, _url, _proxySettings, _timeout).then(() => {
         _JabraNativeAddonLog(AddonLogSeverity.verbose, this.configureXpressManagementAsync.name, "returned");
       });
     }
-
+    
     /**
+     * Gets the error code/message from the last failed configuration attempt using
+     * configureXpressManagementAsync().
+     * @returns {Promise<libcurlError, JabraError>} - Resolves to `libcurlError` if an error code could be read (will be 0 if the last operation was successful),
+     *   otherwise rejects with `JabraError`.
+     */
+     getXpressManagementNetworkStatusAsync() : Promise<libcurlError> {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getXpressManagementNetworkStatusAsync.name, "called with", this.deviceID);
+        return util.promisify(sdkIntegration.GetXpressManagementNetworkStatus)(this.deviceID).then((error) => {
+          _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getXpressManagementNetworkStatusAsync.name, "returned");
+          return error;
+        });
+      }
+
+      /**
      * Sets the password for provisioning
      * @param {string} password - The password
      * @returns {Promise<void, JabraError>} - Resolves to `void` on success,
@@ -1576,16 +1721,59 @@ export class DeviceType implements DeviceInfo, DeviceTiming, MetaApi {
     }
   
     /**
-     * Get the password for provisioning
-     * @returns {Promise<string, JabraError>} - Resolves to password string on success,
-     *   rejects with `JabraError` if an error occurs.
-     */
+    * Get the password for provisioning
+    * @returns {Promise<string, JabraError>} - Resolves to password string on success,
+    *   rejects with `JabraError` if an error occurs.
+    */
     getPasswordProvisioningAsync() : Promise<string> {
-      _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getPasswordProvisioningAsync.name, "called with", this.deviceID);
-      return util.promisify(sdkIntegration.GetPasswordProvisioning)(this.deviceID).then((result) => {
-        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getPasswordProvisioningAsync.name, "returned with", result);
-        return result;
-      });
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getPasswordProvisioningAsync.name, "called with", this.deviceID);
+        return util.promisify(sdkIntegration.GetPasswordProvisioning)(this.deviceID).then((result) => {
+            _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getPasswordProvisioningAsync.name, "returned with", result);
+            return result;
+        });
+    }
+
+    /**
+    * Get the current IEEE 802.1x network authentication mode for a given interface
+    * @param {enumNetworkInterface} interf - The interface (Ethernet / WLAN)
+    * @returns {Promise<enumNetworkInterface, JabraError>} - Resolves auth mode on success,
+    *   rejects with `JabraError` if an error occurs.
+    */
+    getNetworkAuthenticationModeAsync(interf : enumNetworkInterface) : Promise<enumNetworkAuthMode> {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getNetworkAuthenticationModeAsync.name, "called with", this.deviceID);
+        return util.promisify(sdkIntegration.GetNetworkAuthenticationMode)(this.deviceID, interf).then((result) => {
+            _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getNetworkAuthenticationModeAsync.name, "returned with", result);
+            return result;
+        });
+    }
+
+    /**
+    * Set the current IEEE 802.1x network authentication mode for a given interface
+    * @param {enumNetworkInterface} interf - The interface (Ethernet / WLAN)
+    * @param {enumNetworkAuthMode} mode - The authentication mode
+    * @returns {Promise<void, JabraError>} - Resolves void on success,
+    *   rejects with `JabraError` if an error occurs.
+    */
+    setNetworkAuthenticationModeAsync(interf : enumNetworkInterface, mode : enumNetworkAuthMode) : Promise<void> {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.setNetworkAuthenticationModeAsync.name, "called with", this.deviceID);
+        return util.promisify(sdkIntegration.SetNetworkAuthenticationMode)(this.deviceID, interf, mode).then(() => {
+            _JabraNativeAddonLog(AddonLogSeverity.verbose, this.setNetworkAuthenticationModeAsync.name, "returned");
+        });
+    }
+
+    /**
+    * Set the current IEEE 802.1x network authentication identity (username/password) for a given interface
+    * @param {enumNetworkInterface} interf - The interface (Ethernet / WLAN)
+    * @param {string} username - The username / identity
+    * @param {string} password - The password
+    * @returns {Promise<void, JabraError>} - Resolves void on success,
+    *   rejects with `JabraError` if an error occurs.
+    */
+    setNetworkAuthenticationIdentityAsync(interf : enumNetworkInterface, username : string, password : string) : Promise<void> {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.setNetworkAuthenticationIdentityAsync.name, "called with", this.deviceID);
+        return util.promisify(sdkIntegration.SetNetworkAuthenticationIdentity)(this.deviceID, interf, username, password).then(() => {
+            _JabraNativeAddonLog(AddonLogSeverity.verbose, this.setNetworkAuthenticationIdentityAsync.name, "returned");
+        });
     }
 
     /**
@@ -1706,6 +1894,19 @@ export class DeviceType implements DeviceInfo, DeviceTiming, MetaApi {
         _JabraNativeAddonLog(AddonLogSeverity.verbose, this.setZoomRelativeActionAsync.name, "called with", this.deviceID);
         return util.promisify(sdkIntegration.SetZoomRelativeAction)(this.deviceID, action).then(() => {
           _JabraNativeAddonLog(AddonLogSeverity.verbose, this.setZoomRelativeActionAsync.name, "returned");
+        });
+    }
+
+    /**
+     * Returns the sensor regions positions from the sensors on the device
+     * @returns {Promise<SensorRegionType, JabraError>} - Resolves to the current
+     *    sensor regions values on success, else rejects with `JabraError`
+     */
+    getSensorRegionsAsync() : Promise<SensorRegionType> {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getSensorRegionsAsync.name, "called with", this.deviceID);
+        return util.promisify(sdkIntegration.GetSensorRegions)(this.deviceID).then((result) => {
+          _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getSensorRegionsAsync.name, "returned");
+          return result;
         });
     }
 
@@ -2257,7 +2458,7 @@ export class DeviceType implements DeviceInfo, DeviceTiming, MetaApi {
      * Returns the status of the Ethernet connection.
      * @returns {Promise<IPv4Status, JabraError>} - Resolves to `IPv4Status` on success,
      *    rejects with `JabraError` on error.
-     */
+    */
     getEthernetIPv4StatusAsync() : Promise<IPv4Status> {
         _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getEthernetIPv4StatusAsync.name, "called with", this.deviceID);
         return util.promisify(sdkIntegration.GetEthernetIPv4Status)(this.deviceID).then((ethernetStatus) => {
@@ -2267,10 +2468,10 @@ export class DeviceType implements DeviceInfo, DeviceTiming, MetaApi {
     }
 
     /**
-     * Returns the status of the WLAN connection.
-     * @returns {Promise<IPv4Status, JabraError>} - Resolves to `IPv4Status` on success,
-     *    rejects with `JabraError` on error.
-     */
+    * Returns the status of the WLAN connection.
+    * @returns {Promise<IPv4Status, JabraError>} - Resolves to `IPv4Status` on success,
+    *    rejects with `JabraError` on error.
+    */
     getWLANIPv4StatusAsync() : Promise<IPv4Status> {
         _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getWLANIPv4StatusAsync.name, "called with", this.deviceID);
         return util.promisify(sdkIntegration.GetWLANIPv4Status)(this.deviceID).then((ethernetStatus) => {
@@ -2280,11 +2481,11 @@ export class DeviceType implements DeviceInfo, DeviceTiming, MetaApi {
     }
 
     /**
-     * Returns the state and speed of the device's USB connection.
-     * @returns {Promise<enumUSBState, JabraError>} - Resolves to `enumUSBState` on success,
-     *    rejects with `JabraError` on error.
-     */
-     getUSBStateAsync() : Promise<enumUSBState> {
+    * Returns the state and speed of the device's USB connection.
+    * @returns {Promise<enumUSBState, JabraError>} - Resolves to `enumUSBState` on success,
+    *    rejects with `JabraError` on error.
+    */
+    getUSBStateAsync() : Promise<enumUSBState> {
         _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getUSBStateAsync.name, "called with", this.deviceID);
         return util.promisify(sdkIntegration.GetUSBState)(this.deviceID).then((usbState) => {
           _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getUSBStateAsync.name, "returned");
@@ -2293,6 +2494,61 @@ export class DeviceType implements DeviceInfo, DeviceTiming, MetaApi {
     }
 
     /**
+    * Returns a specific property from a sub device if it exists.
+    * @returns {Promise<string, JabraError>} - Resolves to `string` on success,
+    *    rejects with `JabraError` on error.
+    */
+    getSubDevicePropertyAsync(subDevice: enumSubDevice, property: enumDeviceProperty) : Promise<string> {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getSubDevicePropertyAsync.name, "called with", this.deviceID);
+        return util.promisify(sdkIntegration.GetSubDeviceProperty)(this.deviceID, subDevice, property).then((result : string) => {
+          _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getSubDevicePropertyAsync.name, "returned");
+          return result;
+        });
+    }
+
+    /**
+    * Returns the user defined device name if supported.
+    * @returns {Promise<string, JabraError>} - Resolves to `string` on success,
+    *    rejects with `JabraError` on error.
+    */
+    getUserDefinedDeviceNameAsync() : Promise<string> {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getUserDefinedDeviceNameAsync.name, "called with", this.deviceID);
+        return util.promisify(sdkIntegration.GetUserDefinedDeviceName)(this.deviceID).then((result : string) => {
+          _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getUserDefinedDeviceNameAsync.name, "returned");
+          return result;
+        });
+    }
+
+    /**
+    * Enables or disables Bluetooth Link Quality Change Events (onBluetoothLinkQualityChangeEvent).
+    * @returns {Promise<void, JabraError>} - Resolves to `void` on success,
+    *    rejects with `JabraError` on error.
+    */
+    setBTLinkQualityChangeEventsEnabledAsync(enable: boolean) : Promise<void> {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.setBTLinkQualityChangeEventsEnabledAsync.name, "called with", this.deviceID);
+        return util.promisify(sdkIntegration.BTLinkQualityChangeEventEnabled)(this.deviceID, enable).then(() => {
+          _JabraNativeAddonLog(AddonLogSeverity.verbose, this.setBTLinkQualityChangeEventsEnabledAsync.name, "returned");
+        });
+    }
+
+    /**
+    * Get DeviceConstants object to be used for acquiring device constants.
+    * @returns {Promise<DeviceConstants, Error>} - Resolve `DeviceConstants` if successful
+    * otherwise Reject with `Error`. 
+    */
+    getConstantsAsync(key: string): Promise<DeviceConstants> {
+        _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getConstantsAsync.name, "called with", this.deviceID, key); 
+        return new Promise<DeviceConstants>((resolve, reject) => {
+            let c : DeviceConstants = new DeviceConstants(this.deviceID, key);
+            _JabraNativeAddonLog(AddonLogSeverity.verbose, this.getConstantsAsync.name, "returned", c.toString());
+            if (c.isValid())
+                return resolve(c);
+            else 
+                return reject(new Error("Unable to get valid DeviceConstants object"));
+        });
+    }
+    
+   /**
    * Get meta information about methods, properties etc. that can be used 
    * for reflective usage of this class.
    */
@@ -2399,6 +2655,20 @@ export class DeviceType implements DeviceInfo, DeviceTiming, MetaApi {
    */
    on(event: 'onCameraStatusEvent', listener: DeviceTypeCallbacks.onCameraStatusEvent): this;
 
+   /**
+   * Add event handler for onBluetoothLinkQualityChangeEvent device events.
+   *
+   * *Please make sure your callback arguments matches the event type or you will get a misleading typescript error. See also {@link https://github.com/microsoft/TypeScript/issues/30843 30843}*
+   */
+    on(event: 'onBluetoothLinkQualityChangeEvent', listener: DeviceTypeCallbacks.onBluetoothLinkQualityChangeEvent): this;
+
+    /**
+   * Add event handler for onNetworkStatusChangedEvent device events.
+   *
+   * *Please make sure your callback arguments matches the event type or you will get a misleading typescript error. See also {@link https://github.com/microsoft/TypeScript/issues/30843 30843}*
+   */
+    on(event: 'onNetworkStatusChangedEvent', listener: DeviceTypeCallbacks.onNetworkStatusChangedEvent): this;
+
     /**
      * Add event handler for one of the different device events.
      * 
@@ -2407,7 +2677,8 @@ export class DeviceType implements DeviceInfo, DeviceTiming, MetaApi {
    on(event: DeviceTypeEvents,
       listener: DeviceTypeCallbacks.btnPress | DeviceTypeCallbacks.busyLightChange | DeviceTypeCallbacks.downloadFirmwareProgress | DeviceTypeCallbacks.onBTParingListChange |
                 DeviceTypeCallbacks.onGNPBtnEvent | DeviceTypeCallbacks.onDevLogEvent | DeviceTypeCallbacks.onDiagLogEvent | DeviceTypeCallbacks.onBatteryStatusUpdate | DeviceTypeCallbacks.onRemoteMmiEvent |
-                DeviceTypeCallbacks.onxpressConnectionStatusEvent | DeviceTypeCallbacks.onUploadProgress | DeviceTypeCallbacks.onDectInfoEvent | DeviceTypeCallbacks.onCameraStatusEvent): this {
+                DeviceTypeCallbacks.onxpressConnectionStatusEvent | DeviceTypeCallbacks.onUploadProgress | DeviceTypeCallbacks.onDectInfoEvent | DeviceTypeCallbacks.onCameraStatusEvent |
+                DeviceTypeCallbacks.onNetworkStatusChangedEvent | DeviceTypeCallbacks.onBluetoothLinkQualityChangeEvent): this {
 
       _JabraNativeAddonLog(AddonLogSeverity.verbose, this.on.name, "called with", this.deviceID, event, "<listener>"); 
 
@@ -2508,6 +2779,20 @@ export class DeviceType implements DeviceInfo, DeviceTiming, MetaApi {
     off(event: 'onCameraStatusEvent', listener: DeviceTypeCallbacks.onCameraStatusEvent): this;
 
     /**
+    * Remove event handler for previosly setup onNetworkStatusChangedEvent device events.
+    *
+    * *Please make sure your callback arguments matches the event type or you will get a misleading typescript error. See also {@link https://github.com/microsoft/TypeScript/issues/30843 30843}*
+    */
+    off(event: 'onNetworkStatusChangedEvent', listener: DeviceTypeCallbacks.onNetworkStatusChangedEvent): this;
+
+    /**
+    * Remove event handler for previosly setup onBluetoothLinkQualityChangeEvent device events.
+    *
+    * *Please make sure your callback arguments matches the event type or you will get a misleading typescript error. See also {@link https://github.com/microsoft/TypeScript/issues/30843 30843}*
+    */
+    off(event: 'onBluetoothLinkQualityChangeEvent', listener: DeviceTypeCallbacks.onBluetoothLinkQualityChangeEvent): this;
+
+    /**
     * Remove previosly setup event handler for device events.
     * 
     * *Please make sure your callback arguments matches the event type or you will get a misleading typescript error. See also {@link https://github.com/microsoft/TypeScript/issues/30843 30843}*
@@ -2515,7 +2800,8 @@ export class DeviceType implements DeviceInfo, DeviceTiming, MetaApi {
     off(event: DeviceTypeEvents,
         listener: DeviceTypeCallbacks.btnPress | DeviceTypeCallbacks.busyLightChange | DeviceTypeCallbacks.downloadFirmwareProgress | DeviceTypeCallbacks.onBTParingListChange |
         DeviceTypeCallbacks.onGNPBtnEvent | DeviceTypeCallbacks.onDevLogEvent | DeviceTypeCallbacks.onDiagLogEvent | DeviceTypeCallbacks.onBatteryStatusUpdate | DeviceTypeCallbacks.onRemoteMmiEvent |
-        DeviceTypeCallbacks.onxpressConnectionStatusEvent | DeviceTypeCallbacks.onUploadProgress | DeviceTypeCallbacks.onDectInfoEvent | DeviceTypeCallbacks.onCameraStatusEvent): this {
+        DeviceTypeCallbacks.onxpressConnectionStatusEvent | DeviceTypeCallbacks.onUploadProgress | DeviceTypeCallbacks.onDectInfoEvent | DeviceTypeCallbacks.onCameraStatusEvent |
+        DeviceTypeCallbacks.onNetworkStatusChangedEvent | DeviceTypeCallbacks.onBluetoothLinkQualityChangeEvent): this {
 
       _JabraNativeAddonLog(AddonLogSeverity.verbose, this.off.name, "called with", this.deviceID, event, "<listener>"); 
 

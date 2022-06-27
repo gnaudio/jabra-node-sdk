@@ -485,7 +485,7 @@ function commandEffect(apiFuncName: string, argDescriptions: any[], result: Prom
           }
         }
 
-        addError("Api exectution error", error);
+        addError("Api execution error", error);
 
         return undefined;
       });

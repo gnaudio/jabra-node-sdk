@@ -5,11 +5,15 @@ type IpcRenderer = import('electron').IpcRenderer;
 import { ClassEntry, JabraType, DeviceInfo, 
          enumDeviceBtnType, enumFirmwareEventType, enumFirmwareEventStatus, PairedListInfo, enumUploadEventStatus,
          JabraTypeEvents, DeviceTypeEvents, JabraEventsList, DeviceEventsList, DeviceType, MetaApi, MethodEntry, 
-         AddonLogSeverity, NativeAddonLogConfig, DeviceTiming, enumRemoteMmiType, enumRemoteMmiInput, DectInfo } from '@gnaudio/jabra-node-sdk';
+         AddonLogSeverity, NativeAddonLogConfig, DeviceTiming, enumRemoteMmiType, enumRemoteMmiInput, DectInfo,
+         enumBTLinkQuality, enumNetworkInterface, enumNetworkInterfaceStatus } from '@gnaudio/jabra-node-sdk';
+
 import { getExecuteDeviceTypeApiMethodEventName, getDeviceTypeApiCallabackEventName, getJabraTypeApiCallabackEventName, 
          getExecuteJabraTypeApiMethodEventName, getExecuteJabraTypeApiMethodResponseEventName, 
          getExecuteDeviceTypeApiMethodResponseEventName, createApiClientInitEventName,
-         jabraApiClientReadyEventName, jabraLogEventName, ApiClientInitEventData, createApiClientInitResponseEventName } from '../common/ipc';
+         jabraApiClientReadyEventName, jabraLogEventName, ApiClientInitEventData,
+         createApiClientInitResponseEventName } from '../common/ipc';
+
 import { nameof, isBrowser, serializeError } from '../common/util';
 
 /**
@@ -651,6 +655,26 @@ function createRemoteDeviceType(deviceInfo: DeviceInfo & DeviceTiming, deviceTyp
         emitEvent('onDectInfoEvent', dectInfo);
     });
   
+    ipcRenderer.on(getDeviceTypeApiCallabackEventName('onCameraStatusEvent', deviceInfo.deviceID), (event, status: boolean) => {
+        emitEvent('onCameraStatusEvent', status);
+    });
+
+    ipcRenderer.on(getDeviceTypeApiCallabackEventName('onNetworkStatusChangedEvent', deviceInfo.deviceID), (event, PHY : enumNetworkInterface, status: enumNetworkInterfaceStatus) => {
+        emitEvent('onNetworkStatusChangedEvent', PHY, status);
+    });
+
+    ipcRenderer.on(getDeviceTypeApiCallabackEventName('onBluetoothLinkQualityChangeEvent', deviceInfo.deviceID), (event, linkQuality: enumBTLinkQuality) => {
+        emitEvent('onBluetoothLinkQualityChangeEvent', linkQuality);
+    });
+
+    ipcRenderer.on(getDeviceTypeApiCallabackEventName('onDiagLogEvent', deviceInfo.deviceID), (event) => {
+        emitEvent('onDiagLogEvent');
+    });
+
+    ipcRenderer.on(getDeviceTypeApiCallabackEventName('onxpressConnectionStatusEvent', deviceInfo.deviceID), (event, status: boolean) => {
+        emitEvent('onxpressConnectionStatusEvent', status);
+    });
+
     /*  
     The above can most likely be replaced by looping over the DeviceEventsList like below. 
     Would require testing all event types to make sure no edgecases are overlooked. 

@@ -402,7 +402,7 @@ const deviceOperations :Array<{description: string, operation: (app :DeviceType)
     description: 'Device data APIs',
     operation: async device => {
       try {
-        const result = await device.getNamedAssetAsyngetNamec("HERO_IMAGE");
+        const result = await device.getNamedAssetAsync("HERO_IMAGE");
         console.log("getNamedAssetAsync returns " + JSON.stringify(result));
       } catch (err) {
         console.error("Failed getNamedAssetAsync with error: " + err);

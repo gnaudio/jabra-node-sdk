@@ -178,7 +178,7 @@ namespace util {
         const Napi::Env env = info.Env();
 
         if (info.Length() != expectedArgumentTypes.size()) {
-            const std::string errMsg = "Wrong number of arguments to " + std::string(functionName) + " (got #" + std::to_string(info.Length()) + ",  expected #" + std::to_string( expectedArgumentTypes.size()) + ")";
+            const std::string errMsg = "Wrong number of arguments to " + std::string(functionName) + " (got " + std::to_string(info.Length()) + ", expected " + std::to_string( expectedArgumentTypes.size()) + ")";
             LOG_ERROR_(LOGINSTANCE) << errMsg;
             Napi::TypeError::New(env, errMsg).ThrowAsJavaScriptException();
             return false;
@@ -188,7 +188,7 @@ namespace util {
         int j = 0;
         for (std::initializer_list<FormalParameterType>::iterator it=expectedArgumentTypes.begin(); it!=expectedArgumentTypes.end(); ++it) {
             if (!verifyValueType(info[j], *it)) {
-                const std::string errMsg = "Wrong type of argument to " + std::string(functionName) + " #" +  std::to_string(j) + ". Got value of unexpected " + toString(*it) + " type)";
+                const std::string errMsg = "Wrong type of argument to " + std::string(functionName) + " (#" +  std::to_string(j) + "): got value of unexpected " + toString(*it) + " type)";
                 LOG_ERROR_(LOGINSTANCE) << errMsg;
                 Napi::TypeError::New(env, errMsg).ThrowAsJavaScriptException();
                 return false;

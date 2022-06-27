@@ -24,11 +24,13 @@ Jabra Node.js SDK
 
 Latest **STABLE** release is  [distributed on npmjs.com](https://www.npmjs.com/package/@gnaudio/jabra-node-sdk/) (see [changelog](https://github.com/gnaudio/jabra-node-sdk/blob/master/CHANGELOG.md) for changes and notable defects).
 
+Although this package also contains a library for Windows ARM64, this should be considered as Beta for the moment since it has not received full testing.
+
 In addition, **BETA** versions may be available on npmjs with a version name ending with "-beta.X" specifier. For such BETA versions,the following applies:
 
     > Disclaimer for Alpha and Beta Software Release
 
-    > Please note that this is a copyrighted Jabra Product ((c) 2017 GN Audio A/S) (the “Product”) which is still undergoing final testing before its official release. The Product and all content found on it are provided on an “as is” and “as available” basis. Jabra does not provide any warranties, neither express nor implied, as to the suitability or usability of the Product or any of its content.
+    > Please note that this is a copyrighted Jabra Product ((c) 2022 GN Audio A/S) (the “Product”) which is still undergoing final testing before its official release. The Product and all content found on it are provided on an “as is” and “as available” basis. Jabra does not provide any warranties, neither express nor implied, as to the suitability or usability of the Product or any of its content.
 
     > Jabra disclaims liability for any loss, whether direct, indirect, special or consequential, suffered by any person as a result of their use of the Product or the software embedded, and for any claim arising from any injury or damage, including but not limited to, any personal or bodily injury or tangible property damage, arising from or resulting in any way from any alleged defects in the material, workmanship, or performance of the Product, and Company shall indemnify Jabra in respect of any such claims. All usage of the Product is at users’ own risk and the user will be solely responsible for any resulting from such activities.
 
@@ -40,14 +42,14 @@ In addition, **BETA** versions may be available on npmjs with a version name end
 
 ## Pre-requisite
 
-1. Node.js v8.x or later.
-2. **On MacOS:** `xcode` & `python 2.7`. By default, Python is installed on macOS but make sure correct version(2.7.x) is installed. Install Xcode from App store or download it from [here](https://developer.apple.com/xcode/download/).
-3. **On Windows:** `Visual C++ Build Tools` & `Python 2.7`. You can install all of these by following any of the below mentioned steps.
+1. Node.js v10.x through v16.x. Currently, Node.js is not officially supported for Windows ARM64 so in order to use the native ARM64 library on this platform, Node.js should be installed from one of the unofficial builds, e.g. [here](https://unofficial-builds.nodejs.org/download/release/v16.9.1/).
+2. **On MacOS:** `xcode` & `python 3.7`. By default, Python is installed on macOS but make sure correct version(3.7+) is installed. Install Xcode from App store or download it from [here](https://developer.apple.com/xcode/download/).
+3. **On Windows:** `Visual C++ Build Tools` & `Python 3.7`. You can install all of these by following any of the below mentioned steps.
 
-    3.1. **During Node.js installation** By ticking the checkbox when prompted during Node.js installation for `Tools for Native modules`, this installs both `Visual C++ Build Tools` & `Python 2.7`. **Note** This is prompted only for Windows platform. For other platforms like Linux or MAC, C++ compilation tools has to be installed separately as mentioned in other steps.
+    3.1. **During Node.js installation** By ticking the checkbox when prompted during Node.js installation for `Tools for Native modules`, this installs both `Visual C++ Build Tools` & `Python 3.7`. **Note** This is prompted only for Windows platform. For other platforms like Linux or MAC, C++ compilation tools has to be installed separately as mentioned in other steps.
 
-    3.2. Both `Visual C++ Build Tools` & `Python 2.7` can also be installed using command `npm install --global --production --add-python-to-path windows-build-tools`. To know more about this tool, see [this link.](https://github.com/felixrieseberg/windows-build-tools). **Note** For executing this command through `Windows Command Prompt` or `Windows PowerShell`, they should be ran in Administrator mode.
-4. **On Linux:** `build-essential` package for C++ compilation & `Python 2.7`.
+    3.2. Both `Visual C++ Build Tools` & `Python 3.7` can also be installed using command `npm install --global --production --add-python-to-path windows-build-tools`. To know more about this tool, see [this link.](https://github.com/felixrieseberg/windows-build-tools). **Note** For executing this command through `Windows Command Prompt` or `Windows PowerShell`, they should be ran in Administrator mode.
+4. **On Linux:** `build-essential` package for C++ compilation & `Python 3.7`.
 
     4.1. **Udev rules:** To be able to communicate with Jabra devices with non-root privileges it is required to create a udev rule for Jabra devices. Place the udev rule in `/etc/udev/rules.d`, and follow naming guidelines for udev files.
 

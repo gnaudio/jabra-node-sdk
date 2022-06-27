@@ -4,11 +4,20 @@
  * supplied for maximum type safety internally for this module.
  */
 
+import { BaseType } from 'typescript';
 import { ConfigParamsCloud, GenericConfigParams, enumHidState, AudioFileFormatEnum, DeviceSettings, DeviceInfo, PairedListInfo,
-         NamedAsset, AddonLogSeverity, JabraError, RemoteMmiActionOutput, DectInfo, WhiteboardPosition, ZoomLimits, PanTilt, DateTime, VideoLimitsStepSize, PanTiltRelative, ZoomRelative, IPv4Status } from './core-types';
+         NamedAsset, AddonLogSeverity, JabraError, RemoteMmiActionOutput, DectInfo, WhiteboardPosition, ZoomLimits, PanTilt,
+         DateTime, VideoLimitsStepSize, PanTiltRelative, ZoomRelative, IPv4Status, FirmwareVersionBundleType, ProxySettings, libcurlError,
+         SensorRegionType, dongleConnectedHeadsetName, whichHeadsetNamesToRead, libcurlError, LanguagePackStats } from './core-types';
+import { DeviceConstants } from './deviceconstants';
 import { enumDeviceBtnType, enumFirmwareEventType, enumFirmwareEventStatus,
          enumUploadEventStatus, enumBTPairedListType, enumRemoteMmiType,
-         enumRemoteMmiInput, enumRemoteMmiPriority, enumRemoteMmiSequence, enumColorControlPreset, enumPTZPreset, enumAutoWhiteBalance, enumZoomDirection, enumSecondaryStreamContent, enumVideoTransitionStyle, enumWizardMode, enumUSBState} from './jabra-enums';
+         enumRemoteMmiInput, enumRemoteMmiPriority, enumRemoteMmiSequence,
+         enumColorControlPreset, enumPTZPreset, enumAutoWhiteBalance,
+         enumZoomDirection, enumSecondaryStreamContent, enumVideoTransitionStyle,
+         enumWizardMode, enumUSBState, enumBTLinkQuality, enumDECTHeadsetPairingState,
+         enumNetworkInterface, enumNetworkInterfaceStatus, enumLanguagePack, enumNetworkAuthMode,
+         enumSubDevice, enumDeviceProperty} from './jabra-enums';
 
 /** 
  * Declares all natively implemented n-api functions that call into the Jabra C SDK.
@@ -46,6 +55,8 @@ export declare interface SdkIntegration {
                onGNPBtnEventCallback: (deviceId: number, btnEvents: Array<{ buttonTypeKey: number, buttonTypeValue: string, buttonEventType: Array<{ key: number, value: string }> }>) => void,
                dectInfoCallback: (deviceId: number, dectInfo: DectInfo) => void,
                cameraStatusCallback: (deviceId: number, status: boolean) => void,
+               bluetoothLinkQualityChangeCallback: (deviceId: number, linkQuality: enumBTLinkQuality) => void,
+               networkStatusChangeCallback: (deviceId: number, PHY: enumNetworkInterface, status: enumNetworkInterfaceStatus) => void,
                configParams: ConfigParamsCloud & GenericConfigParams) : void;
 
     /**
@@ -105,6 +116,8 @@ export declare interface SdkIntegration {
 
     GetLatestFirmwareInformation(deviceId: number, string: authorizationId, callback: (error: JabraError, result: FirmwareInfoType) => void): void;
     GetFirmwareVersion(deviceId: number, callback: (error: JabraError, result: string) => void): void;
+    GetFirmwareVersionBundle(deviceId: number, callback: (error: JabraError, result: FirmwareVersionBundleType) => void): void;
+
     IsFirmwareLockEnabled(deviceId: number, callback: (error: JabraError, result: boolean) => void): void;
     EnableFirmwareLock(deviceId: number, enable: boolean, callback: (error: JabraError, result: void) => void): void;
     GetLock(deviceId: number, callback: (error: JabraError, result: void) => void): void;
@@ -144,7 +157,8 @@ export declare interface SdkIntegration {
     GetBatteryStatus(deviceId: number, callback: (error: JabraError, result: BatteryStatusType) => void): void;
     IsBatteryStatusSupported(deviceId: number, callback: (error: JabraError, result: boolean) => void): void;
     GetRemoteControlBatteryStatus(deviceId: number, callback: (error: JabraError, result: BatteryStatusType) => void): void;
-    
+    GetRemoteControlFirmwareVersion(deviceId: number, callback: (error: JabraError, result: string) => void): void;
+        
     UploadRingtone(deviceId: number, filename: string, callback: (error: JabraError, result: void) => void): void;
     UploadWavRingtone(deviceId: number, filename: string, callback: (error: JabraError, result: void) => void): void;
 
@@ -180,6 +194,12 @@ export declare interface SdkIntegration {
     StopBTPairing(deviceId: number, callback: (error: JabraError, result: void) => void): void;
     SetBTPairing(deviceId: number, callback: (error: JabraError, result: void) => void): void;
        
+    GetConnectedHeadsetNames(deviceId: number, getAssetTag: boolean, readFromHeadset: whichHeadsetNamesToRead, callback: (error: JabraError, result: dongleConnectedHeadsetName) => void): void;
+    TriggerDECTPairing(deviceId: number, pairingState: enumDECTHeadsetPairingState, callback: (error: JabraError, result: void) => void): void;
+    TriggerDECTSecurePairing(deviceId: number, callback: (error: JabraError, result: void) => void): void;
+    GetDECTPairingKey(deviceId: number, callback: (error: JabraError, result: number) => void): void;
+    SetDECTPairingKey(deviceId: number, pairingKey: number, callback: (error: JabraError, result: void) => void): void;
+
     GetSupportedButtonEvents(deviceId: number, callback: (error: JabraError, result: Array<{ buttonTypeKey: number, buttonTypeValue: string, buttonEventType: Array<{ key: number, value: string }> }>) => void): void;
     
     IsMuteSupported(deviceId: number, callback: (error: JabraError, result: boolean) => void): void;
@@ -218,7 +238,11 @@ export declare interface SdkIntegration {
     GetDatetime(deviceId: number, callback: (error: JabraError, result: DateTime) => void): void;
     GetEqualizerParameters(deviceId: number, maxNBands:number, callback: (error: JabraError, result: Array<{ max_gain: number, centerFrequency: number, currentGain: number }>) => void): void;
     GetSupportedFeatures(deviceId: number, callback: (error: JabraError, result: Array<enumDeviceFeature>) => void): void;
-
+    
+    GetLanguagePackInformation(deviceId: number, pack: enumLanguagePack, callback: (error: JabraError, result: LanguagePackStats) => void): void;
+    GetSubDeviceProperty(deviceId: number, subDeviceID: enumSubDevice, deviceProperty: enumDeviceProperty, callback: (error: JabraError, result: string) => void): void;
+    GetUserDefinedDeviceName(deviceId: number, callback: (error: JabraError, result: string) => void): void;
+    
     GetButtonFocus(deviceId: number, btnEvents: Array<{ buttonTypeKey: number, buttonTypeValue: string, buttonEventType: Array<{ key: number, value: string }> }>, callback: (error: JabraError, result: void) => void): void;
     ReleaseButtonFocus(deviceId: number, btnEvents: Array<{ buttonTypeKey: number, buttonTypeValue: string, buttonEventType: Array<{ key: number, value: string }> }>, callback: (error: JabraError, result: void) => void): void;
 
@@ -235,6 +259,10 @@ export declare interface SdkIntegration {
     SetPasswordProvisioning(deviceId: number, password: string, callback: (error: JabraError, result: void) => void): void;
     GetPasswordProvisioning(deviceId: number, callback: (error: JabraError, result: string) => void): void;
     ConfigureXpressManagement(deviceId: number, url: string, proxy: ProxySettings, timeout: number, callback: (error: JabraError, result: void) => void): void;
+    GetXpressManagementNetworkStatus(deviceId: number, callback: (error: JabraError, result: libcurlError) => void): void;
+    SetNetworkAuthenticationMode(deviceId: number, interf : enumNetworkInterface, mode : enumNetworkAuthMode, callback: (error: JabraError, result: void) => void): void;
+    GetNetworkAuthenticationMode(deviceId: number, interf : enumNetworkInterface, callback: (error: JabraError, result: enumNetworkAuthMode) => void): void;
+    SetNetworkAuthenticationIdentity(deviceId: number, interf : enumNetworkInterface, username : string, password : string, callback: (error: JabraError, result: void) => void): void;
     
     GetDiagnosticLogFile(deviceId: number, filename: string, callback: (error: JabraError, result: void) => void): void;
     TriggerDiagnosticLogGeneration(deviceId: number, callback: (error: JabraError, result: void) => void): void;
@@ -251,6 +279,8 @@ export declare interface SdkIntegration {
     GetZoomLimits(deviceId: number, callback: (error: JabraError, result: VideoLimits2) => void): void;
     SetZoomRelativeAction(deviceId: number, action: ZoomRelative, callback: (error: JabraError, result: void) => void): void;
     
+    GetSensorRegions(deviceId: number, callback: (error: JabraError, result: SensorRegionType) => void): void;
+
     GetPanTilt(deviceId: number, callback: (error: JabraError, result: PanTilt) => void): void;
     SetPanTilt(deviceId: number, panTilt: PanTilt, callback: (error: JabraError, result: void) => void): void;
     GetPanTiltLimits(deviceId: number, callback: (error: JabraError, result: PanTiltLimits) => void): void;
@@ -311,4 +341,14 @@ export declare interface SdkIntegration {
     GetEthernetIPv4Status(deviceId: number, callback: (error: JabraError, result: IPv4Status) => void): void;
     GetWLANIPv4Status(deviceId: number, callback: (error: JabraError, result: IPv4Status) => void): void;
     GetUSBState(deviceId: number, callback: (error: JabraError, result: enumUSBState) => void): void;
+    GetMACAddress(deviceId: number, selectedInterface : enumNetworkInterface, callback: (error: JabraError, result: Array<number>) => void): void;
+    
+    BTLinkQualityChangeEventEnabled(deviceId: number, enable: boolean, callback: (error: JabraError, result: void) => void): void;
+
+    GetConstSync(deviceId: number, key: string): number | undefined;
+    GetConstStringSync(deviceId: number, refKey: number): string | undefined;
+    GetConstBooleanSync(deviceId: number, refKey: number): boolean | undefined;
+    GetConstIntegerSync(deviceId: number, refKey: number): number | undefined;
+    GetConstFieldSync(deviceId: number, refKey: number, id : string): number | undefined;
+    GetConstListSync(deviceId: number, refKey: number, idx : number): number | undefined;
   }

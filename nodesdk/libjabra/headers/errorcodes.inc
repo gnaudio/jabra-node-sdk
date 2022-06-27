@@ -21,5 +21,4 @@ DEFINE_CODE(Device_ReadFail,"Unable to read settings from the device")
 DEFINE_CODE(Device_NotReady, "The device is not ready")
 DEFINE_CODE(FilePartiallyCompatible, "Partial Settings loaded")
 DEFINE_CODE(SdkTooOldForFwUpdateError, "The Jabra SDK is too old to update the selected firmware")
-
-
+DEFINE_CODE(UpdateIsNotReady, "The resource is not yet ready to be updated")

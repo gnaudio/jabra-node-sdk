@@ -3,6 +3,9 @@
 #include <chrono>
 #include <string.h>
 #include "bt.h"
+#include "app.h"
+#include "device.h"
+#include "deviceconstants.h"
 
 // -----------------------------------------------------------
 
@@ -32,6 +35,8 @@ class StateJabraInitialize {
   ThreadSafeCallback *gNPButtonEventCallBack;
   ThreadSafeCallback *dectInfoCallback;
   ThreadSafeCallback *cameraStatusCallback;
+  ThreadSafeCallback *bluetoothLinkQualityChangeCallback;
+  ThreadSafeCallback *networkStatusChangeCallback;
 
   std::string proxy;
   std::string baseUrl_capabilities;
@@ -67,6 +72,8 @@ class StateJabraInitialize {
                            gNPButtonEventCallBack(nullptr),
                            dectInfoCallback(nullptr),
                            cameraStatusCallback(nullptr),
+                           bluetoothLinkQualityChangeCallback(nullptr),
+                           networkStatusChangeCallback(nullptr),
                            initializationStartedState(false) {}
 
   void set(const Napi::Env& _env,
@@ -87,6 +94,8 @@ class StateJabraInitialize {
            ThreadSafeCallback* _gNPButtonEventCallBack,
            ThreadSafeCallback* _dectInfoCallback,
            ThreadSafeCallback* _cameraStatusCallback,
+           ThreadSafeCallback* _bluetoothLinkQualityChangeCallback,
+           ThreadSafeCallback* _networkStatusChangeCallback,
            const std::string& _proxy,
            const std::string& _baseUrl_capabilities,
            const std::string& _baseUrl_fw,
@@ -112,6 +121,8 @@ class StateJabraInitialize {
       gNPButtonEventCallBack = _gNPButtonEventCallBack;
       dectInfoCallback = _dectInfoCallback;
       cameraStatusCallback = _cameraStatusCallback;
+      bluetoothLinkQualityChangeCallback = _bluetoothLinkQualityChangeCallback;
+      networkStatusChangeCallback = _networkStatusChangeCallback;
 
       proxy = _proxy;
       baseUrl_capabilities = _baseUrl_capabilities;
@@ -196,6 +207,14 @@ class StateJabraInitialize {
     return cameraStatusCallback;
   }
 
+  ThreadSafeCallback * getBluetoothLinkQualityChangeCallback() {
+    return bluetoothLinkQualityChangeCallback;
+  }
+
+  ThreadSafeCallback * getnetworkStatusChangeCallback() {
+    return networkStatusChangeCallback;
+  }
+
   std::string& getProxy() {
     return proxy;
   }
@@ -236,6 +255,8 @@ class StateJabraInitialize {
     releaseCallback(gNPButtonEventCallBack);
     releaseCallback(dectInfoCallback);
     releaseCallback(cameraStatusCallback);
+    releaseCallback(bluetoothLinkQualityChangeCallback);
+    releaseCallback(networkStatusChangeCallback);
  
     // Re-allow init again.
     initializationStartedState = false;
@@ -254,6 +275,31 @@ static std::uint64_t getTimeSinceEpoc() {
  * the Jabra SDK c-type callbacks could be extended with a arbitary context parameter.
  */
 static StateJabraInitialize state_Jabra_Initialize;
+
+LinkQualityStatusListener& internalCallbackManager::getLinkQualityCallback()
+{
+  static LinkQualityStatusListener BTLinkQualityChangeEventCallback = [](unsigned short deviceID, LinkQuality status)
+  {
+    try {
+      LOG_VERBOSE_(LOGINSTANCE) << "BTLinkQualityChangeEventCallback got LinkQuality = " << status;
+
+      auto callback = state_Jabra_Initialize.getBluetoothLinkQualityChangeCallback();
+      if (callback) {
+        callback->call([deviceID, status](Napi::Env env, std::vector<napi_value>& args) {
+          args = { Napi::Number::New(env, deviceID), Napi::Number::New(env, status)};
+        });
+      }
+      LOG_VERBOSE_(LOGINSTANCE) << "BTLinkQualityChangeEventCallback handling finished";
+    } catch (const std::exception &e) {
+      const std::string errorMsg = "BTLinkQualityChangeEventCallback failed: " + std::string(e.what());
+      LOG_FATAL_(LOGINSTANCE) << errorMsg;
+    } catch (...) {
+      const std::string errorMsg = "BTLinkQualityChangeEventCallback failed failed with unknown exception";
+      LOG_FATAL_(LOGINSTANCE) << errorMsg;
+    }
+  };
+  return BTLinkQualityChangeEventCallback;
+}    
 
 /**
  * Implements a combination of Jabra_Initialize, Jabra_SetAppID and all Jabra_RegisterXXX 
@@ -287,7 +333,7 @@ Napi::Value napi_Initialize(const Napi::CallbackInfo& info) {
       util::FUNCTION, util::FUNCTION, util::FUNCTION,
       util::FUNCTION, util::FUNCTION, util::FUNCTION,
       util::FUNCTION, util::FUNCTION, util::FUNCTION,
-      util::FUNCTION, util::OBJECT })) {
+      util::FUNCTION, util::FUNCTION, util::FUNCTION, util::OBJECT })) {
 
     int argNr = 0;
 
@@ -308,6 +354,8 @@ Napi::Value napi_Initialize(const Napi::CallbackInfo& info) {
     auto gNPButtonEventCallBack = new ThreadSafeCallback(info[argNr++].As<Napi::Function>());
     auto dectInfoCallback = new ThreadSafeCallback(info[argNr++].As<Napi::Function>());
     auto cameraStatusCallback = new ThreadSafeCallback(info[argNr++].As<Napi::Function>());
+    auto bluetoothLinkQualityCallback = new ThreadSafeCallback(info[argNr++].As<Napi::Function>());
+    auto networkStatusChangeCallback = new ThreadSafeCallback(info[argNr++].As<Napi::Function>());
 
     Napi::Object configParams = info[argNr++].As<Napi::Object>();
     
@@ -336,6 +384,8 @@ Napi::Value napi_Initialize(const Napi::CallbackInfo& info) {
                                gNPButtonEventCallBack,
                                dectInfoCallback,
                                cameraStatusCallback,
+                               bluetoothLinkQualityCallback,
+                               networkStatusChangeCallback,
                                proxy,
                                baseUrl_capabilities,
                                baseUrl_fw,
@@ -400,8 +450,8 @@ Napi::Value napi_Initialize(const Napi::CallbackInfo& info) {
                       result.Set(Napi::String::New(env, "vendorID"), (Napi::Number::New(env, deviceInfo.vendorID)));
                       result.Set(Napi::String::New(env, "deviceName"), (Napi::String::New(env, deviceInfo.deviceName)));
 
-                      result.Set(Napi::String::New(env, "usbDevicePath"), (Napi::String::New(env, deviceInfo.deviceName)));
-                      result.Set(Napi::String::New(env, "parentInstanceId"), (Napi::String::New(env, deviceInfo.deviceName)));
+                      result.Set(Napi::String::New(env, "usbDevicePath"), (Napi::String::New(env, deviceInfo.usbDevicePath)));
+                      result.Set(Napi::String::New(env, "parentInstanceId"), (Napi::String::New(env, deviceInfo.parentInstanceId)));
 
                       result.Set(Napi::String::New(env, "errorStatus"), (Napi::Number::New(env, deviceInfo.errStatus)));
                       result.Set(Napi::String::New(env, "isDongleDevice"), (Napi::Boolean::New(env, deviceInfo.isDongle)));
@@ -411,8 +461,9 @@ Napi::Value napi_Initialize(const Napi::CallbackInfo& info) {
 
                       result.Set(Napi::String::New(env, "isInFirmwareUpdateMode"), (Napi::Boolean::New(env, deviceInfo.isInFirmwareUpdateMode)));
                       result.Set(Napi::String::New(env, "connectionType"), (Napi::Number::New(env, deviceInfo.deviceconnection)));
-                      result.Set(Napi::String::New(env, "connectionId"), (Napi::Number::New(env, deviceInfo.connectionId)));
-                      result.Set(Napi::String::New(env, "parentDeviceId"), (Napi::Number::New(env, deviceInfo.parentDeviceId)));
+                      //result.Set(Napi::String::New(env, "connectionId"), (Napi::Number::New(env, deviceInfo.connectionId))); // connectionId not set by native lib
+                      if (deviceInfo.parentDeviceId != 65535) // 65535 (-1) means there is no parent
+                        result.Set(Napi::String::New(env, "parentDeviceId"), (Napi::Number::New(env, deviceInfo.parentDeviceId)));
 
                       args = { result, Napi::Number::New(env, eventTime) };
                   });
@@ -432,6 +483,7 @@ Napi::Value napi_Initialize(const Napi::CallbackInfo& info) {
 
                 auto eventTime = getTimeSinceEpoc();
 
+                freeConstants(deviceID); // Free any Jabra_Constants that might have been created
                 auto deAttachedCallback = state_Jabra_Initialize.getDeAttachedCallback();
                 if (deAttachedCallback) {
                   deAttachedCallback->call([deviceID, eventTime](Napi::Env env, std::vector<napi_value>& args) {
@@ -686,7 +738,7 @@ Napi::Value napi_Initialize(const Napi::CallbackInfo& info) {
                 const std::string errorMsg = "BatteryStatusUpdate callback failed failed with unknown exception";
                 LOG_FATAL_(LOGINSTANCE) << errorMsg;
               }
-            });  
+            });
            
             Jabra_RegisterRemoteMmiCallback([] (unsigned short deviceID, RemoteMmiType type, RemoteMmiInput action){
               try {
@@ -698,14 +750,14 @@ Napi::Value napi_Initialize(const Napi::CallbackInfo& info) {
                   remoteMmiCallback->call([deviceID, type, action](Napi::Env env, std::vector<napi_value>& args) {
                     args = { Napi::Number::New(env, deviceID), Napi::Number::New(env, type), Napi::Number::New(env, action)};
                   });
-                }                
+                }
               } catch (const std::exception &e) {
                 const std::string errorMsg = "RegisterRemoteMmiCallback callback failed: " + std::string(e.what());
                 LOG_FATAL_(LOGINSTANCE) << errorMsg;
               } catch (...) {
                 const std::string errorMsg = "RegisterRemoteMmiCallback callback failed failed with unknown exception";
                 LOG_FATAL_(LOGINSTANCE) << errorMsg;
-              }             
+              }
             });
             
             Jabra_RegisterXpressConnectionStatusCallback([] (unsigned short deviceID, bool status) {
@@ -726,8 +778,8 @@ Napi::Value napi_Initialize(const Napi::CallbackInfo& info) {
               } catch (...) {
                 const std::string errorMsg = "RegisterXpressConnectionStatusCallback callback failed failed with unknown exception";
                 LOG_FATAL_(LOGINSTANCE) << errorMsg;
-              }                 
-            });            
+              }
+            });
 
             Jabra_RegisterUploadProgress([] (unsigned short deviceID, Jabra_UploadEventStatus status, unsigned short percentage) {
               try {
@@ -816,7 +868,7 @@ Napi::Value napi_Initialize(const Napi::CallbackInfo& info) {
 
             Jabra_RegisterCameraStatusCallback([] (unsigned short deviceID, bool status) {
               try {
-                LOG_VERBOSE_(LOGINSTANCE) << "Jabra_RegisterCameraStatusCallback callback got " << status; 
+                LOG_VERBOSE_(LOGINSTANCE) << "Jabra_RegisterCameraStatusCallback callback got " << status;
 
                 auto cameraStatusCallback = state_Jabra_Initialize.getCameraStatusCallback();
 
@@ -832,8 +884,29 @@ Napi::Value napi_Initialize(const Napi::CallbackInfo& info) {
               } catch (...) {
                 const std::string errorMsg = "cameraStatusCallback callback failed failed with unknown exception";
                 LOG_FATAL_(LOGINSTANCE) << errorMsg;
-              }                 
-            });            
+              }
+            });
+
+            Jabra_RegisterNetworkStatusChangedCallback([] (unsigned short deviceID, NetworkInterface PHY, NetworkInterfaceStatus status) {
+              try {
+                LOG_VERBOSE_(LOGINSTANCE) << "Jabra_RegisterNetworkStatusChangedCallback callback got " << status;
+
+                auto networkStatusCallback = state_Jabra_Initialize.getnetworkStatusChangeCallback();
+
+                if (networkStatusCallback) {
+                  networkStatusCallback->call([deviceID, PHY, status](Napi::Env env, std::vector<napi_value>& args) {
+                    args = { Napi::Number::New(env, deviceID), Napi::Number::New(env, PHY), Napi::Number::New(env, status)};
+                  });
+                }
+                LOG_VERBOSE_(LOGINSTANCE) << "Jabra_RegisterNetworkStatusChangedCallback callback handling finished";
+              } catch (const std::exception &e) {
+                const std::string errorMsg = "networkStatusCallback callback failed: " + std::string(e.what());
+                LOG_FATAL_(LOGINSTANCE) << errorMsg;
+              } catch (...) {
+                const std::string errorMsg = "networkStatusCallback callback failed failed with unknown exception";
+                LOG_FATAL_(LOGINSTANCE) << errorMsg;
+              }
+            });
 
             // Finally, notify caller that init succeded:
             auto initCallback = state_Jabra_Initialize.getInitializedCallback();
@@ -871,6 +944,7 @@ Napi::Value napi_Initialize(const Napi::CallbackInfo& info) {
 Napi::Value napi_UnInitialize(const Napi::CallbackInfo& info) {
   return util::JSyncWrapper<Napi::Value>(__func__, info, [](const char * const functionName, const Napi::CallbackInfo& info) -> Napi::Value {
     Napi::Env env = info.Env();
+    freeConstants();
     bool retv = Jabra_Uninitialize();
     if (retv) {
       // Properly need to be called from main thread - so not sure this can be async if we should want this ?

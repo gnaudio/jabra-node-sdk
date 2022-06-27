@@ -3,11 +3,71 @@ All notable changes to this project will be documented in this file
 
 ### General
 
-Latest version 3.4.0 is a production release for all supported platforms: Windows, Mac and Linux.
+Latest version 3.6.2 is a production release for all supported platforms: Windows (x86, x64, ARM64), Mac (Intel, M1) and Linux (x64).
 
 This release includes miscellaneous bugfixes, feature wrappers, update to the underlying C-library and general improvements that results in faster operation and much improved stability.
 
 --------------------------------
+
+### v3.6.2 (2022-06-23)
+- Upgraded embedded native libraries to version 1.12.2.0 which comes with these fixes:
+  - Windows: Resolved potential memory leak through device attach/detach
+  - Linux: Child devices would sometimes not appear or have incorrect properties
+- Fixed issue where getFirmwareVersionBundleAsync() would sometimes return garbled characters.
+
+### v3.6.1 (2022-05-09)
+- Upgraded embedded native libraries to version 1.12.1.0 which comes with these changes:
+  - Additional device features
+  - mac SDK will again produce a log file as default
+  - SDK will no longer show conference mode DECT headsets, only the primary ones
+  - Updated embedded curl library in Windows DLL
+  - Windows DLL now links against the DLL CRT (previously Static CRT) which should be available on Windows 10 and Windows 11.
+    If not present, this can be installed manually by downloading Microsoft Visual C++ 2017 Redistributable (v140).
+
+### v3.6.0 (2022-03-21)
+- Upgraded embedded native libraries to version 1.12.0.0 which fixes these issues:
+  - Unsubscribing from an event on a device would also disable the event for other connected SDK clients
+  - Memory leak when handling ZIP files
+  - Factory reset would sometimes report as failed on Engage 65/75 when operation did not complete within timeout period
+- Added API functions:
+  - getSubDevicePropertyAsync
+  - getUserDefinedDeviceNameAsync
+  - getConnectedHeadsetNamesAsync
+  - getLanguagePackInformationAsync  
+  - getRemoteControlFirmwareVersionAsync
+  - getNetworkAuthenticationModeAsync
+  - setNetworkAuthenticationModeAsync
+  - setNetworkAuthenticationIdentityAsync
+  - getMACAddressAsync
+  - getConstantsAsync
+- Also added:
+  - Event onNetworkStatusChangedEvent
+  - Device feature DECTOTAFWUSupported
+  - DECT in enumDeviceConnectionType (reported for headsets connected to Link 400)
+  - DeviceType now contains a parentDeviceId property which identifies which dongle a headset is connected through
+  - Native lib for Apple M1
+  - Support for Jabra Link 400 (DECT dongle)
+
+### v3.5.1 (2021-12-27)
+- Upgraded embedded native libraries to version 1.11.0.1 which fixes this issue:
+  - For some devices, particularly older ones, the SDK would be unable to download resources which meant
+    that many operations would fail.
+
+### v3.5.0 (2021-10-19)
+- Upgraded embedded native libraries to version 1.11.0.0 with these bug fixes, among other minor ones:
+  - SDK will now download 1280x1280px product images into Resources folder
+  - Fix crash on Mac while doing certain long operations such as Jabra_GetDiagnosticLogFile()
+  - Jabra_ConfigureXpressManagement will now revert previous settings when validation failed
+- Added API methods:
+  - getXpressManagementNetworkStatusAsync()
+  - getSensorRegionsAsync()
+  - triggerDECTPairingAsync
+  - triggerDECTPairingSecureAsync()
+  - getDECTPairingKeyAsync()
+  - setDECTPairingKeyAsync()
+  - setBTLinkQualityChangeEventsEnabledAsync() (triggers event 'onBluetoothLinkQualityChangeEvent')
+  - getFirmwareVersionBundleAsync()
+- Added Windows ARM64 support
 
 ### v3.4.0 (2021-07-15)
 - Upgraded embedded native libraries to version 1.10.1.0 with these bug fixes, among other minor ones:

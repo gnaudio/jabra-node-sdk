@@ -1,0 +1,38 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "npm",
+			"script": "build",
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"problemMatcher": [],
+			"label": "npm: build",
+			"detail": "npm run build:dev"
+		},
+		{
+			"type": "npm",
+			"script": "build:release",
+			"group": "build",
+			"problemMatcher": [],
+			"label": "npm: build:release",
+			"detail": "node-gyp rebuild && npm run tsc && npm run generatemeta"
+		},
+		{
+			"type": "npm",
+			"script": "install",
+			"problemMatcher": [],
+			"label": "npm: install",
+			"detail": "install dependencies from package"
+		},
+		{
+			"type": "npm",
+			"script": "prepare",
+			"problemMatcher": [],
+			"label": "npm: prepare",
+			"detail": "npm run tsc && npm run doc && node dist/script/generatemeta.js"
+		}
+	]
+}

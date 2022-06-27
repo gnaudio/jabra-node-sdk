@@ -52,6 +52,14 @@ createApiClient(window.electron.ipcRenderer).then((client) => {
                 device.on("onDectInfoEvent", (dectInfo) => {
                     console.log("DectInfo:" , dectInfo);
                 });
+                
+                device.on("onCameraStatusEvent", (status) => {
+                    console.log("cameraStatus:" , status);
+                });
+
+                device.on("onBluetoothLinkQualityChangeEvent", (linkQuality) => {
+                    console.log("bluetoothLinkQuality:" , linkQuality);
+                });
             });
         
             client.on('detach', (device) => {

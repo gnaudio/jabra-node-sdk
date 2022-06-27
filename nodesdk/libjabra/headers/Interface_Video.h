@@ -219,6 +219,15 @@ LIBRARY_API Jabra_ReturnCode Jabra_SetIntelligentZoomLatency(unsigned short devi
  */
 LIBRARY_API Jabra_ReturnCode Jabra_GetIntelligentZoomLatency(unsigned short deviceID, int* latency);
 
+/**
+ * @brief       Switches to the next intelligent zoom mode
+ * @param[in]   deviceID        ID for the specific device
+ * @return Return_Ok            Call was successful
+ * @return Not_Supported        Video functionality is not supported on this device
+ * @return Device_Unknown       deviceID is unknown
+ */
+LIBRARY_API Jabra_ReturnCode Jabra_NextIntelligentZoomMode(unsigned short deviceID);
+
 typedef enum _SecondaryStreamContent
 {
     Disabled = 0,
@@ -649,6 +658,47 @@ LIBRARY_API Jabra_ReturnCode Jabra_SetRoomCapacityNotificationEnabled(unsigned s
 LIBRARY_API Jabra_ReturnCode Jabra_GetRoomCapacityNotificationEnabled(unsigned short deviceID, bool* enable);
 
 /**
+ * @brief       For a video device, gets the current people count.
+ * @param[in]   deviceID ID for the specific device.
+ * @param[out]  people the number of people currently detected
+ * @return Return_Ok            Operation was successful
+ * @return Device_Unknown       deviceID is unknown
+ * @return Not_Supported        Functionality is not supported on this device
+ * @return Device_ReadFails     Failed while reading from device
+ * @sa @wrap{Jabra_GetPeopleCount}
+ */
+LIBRARY_API Jabra_ReturnCode Jabra_GetPeopleCount(unsigned short deviceID, int16_t* people);
+
+/**
+ * @brief       For a video device, gets the current mode for people count and people count notifications.
+ * @param[in]   deviceID   ID for the specific device.
+ * @param[out]  enabled    pointer to a bool that will be set to whether People Count is enabled
+ * @param[out]  interval_s pointer to a value that will be set to the interval between people count events, of 0 if no events are emitted
+ * @return Return_Ok            Operation was successful
+ * @return Device_Unknown       deviceID is unknown
+ * @return Not_Supported        Functionality is not supported on this device
+ * @return Device_ReadFails     Failed while reading from device
+ * @return Return_ParameterFail A NULL pointer was passed
+ * @see    Jabra_SetPeopleCountSettings
+ * @sa @wrap{Jabra_GetPeopleCountSettings}
+ */
+LIBRARY_API Jabra_ReturnCode Jabra_GetPeopleCountSettings(unsigned short deviceID, bool* enabled, int16_t* interval_s);
+
+/**
+ * @brief       For a video device, sets mode for people count and people count notifications.
+ * @param[in]   deviceID     ID for the specific device.
+ * @param[in]   enabled      whether people count should be enabled
+ * @param[in]   interval_s   0 means no events (get only), >0 means seconds between events, ignored if disabled
+ * @return Return_Ok            Operation was successful
+ * @return Device_Unknown       deviceID is unknown
+ * @return Not_Supported        Functionality is not supported on this device
+ * @return Device_WriteFail     Failed while writing to device
+ * @see    Jabra_GetPeopleCountSettings
+ * @sa @wrap{Jabra_SetPeopleCountSettings}
+ */
+LIBRARY_API Jabra_ReturnCode Jabra_SetPeopleCountSettings(unsigned short deviceID, bool enabled, int16_t interval_s);
+
+/**
  * @brief       For a video device, sets the notification style.
  * @param[in]   deviceID ID for the specific device.
  * @param[in]   style Choice how the user will receive notifications
@@ -871,6 +921,42 @@ LIBRARY_API Jabra_ReturnCode Jabra_ResetImageQualityControls(unsigned short devi
  * @return Device_WriteFail     Failed while writing to device
 */
 LIBRARY_API Jabra_ReturnCode Jabra_ResetPanTiltZoom(unsigned short deviceID);
+
+
+
+/**
+ * This struct represent the sensor regions of a device
+ * Coordinates start at 0,0 at top left corner
+ */
+typedef struct _SensorRegions
+{
+    /** @brief Start x position of 1st sensor. (From user view sensors start from left to right) */
+    uint16_t start0;
+    /** @brief End x position of 1st sensor. (From user view sensors start from left to right) */
+    uint16_t end0;
+    /** @brief Start x position of 2nd sensor. (From user view sensors start from left to right) */
+    uint16_t start1;
+    /** @brief End x position of 2nd sensor. (From user view sensors start from left to right) */
+    uint16_t end1;
+    /** @brief Start x position of 3rd sensor. (From user view sensors start from left to right) */
+    uint16_t start2;
+    /** @brief End x position of 3rd sensor. (From user view sensors start from left to right) */
+    uint16_t end2;
+
+} Jabra_SensorRegions;
+
+/**
+ * @brief For a video device, gets the sensor regions
+ * @param[in]   deviceID        ID for the specific device
+ * @param[out]  regions         The sensor regions for the device.
+ * @return Return_Ok            Call was successful
+ * @return Device_Unknown       deviceID is unknown
+ * @return Not_Supported        Functionality is not supported on this device
+ * @return Return_ParameterFail A NULL pointer was passed
+ * @return Device_ReadFails     Failed while reading from device
+ * @sa @wrap{Jabra_GetSensorRegions}
+ */
+LIBRARY_API Jabra_ReturnCode Jabra_GetSensorRegions(unsigned short deviceID, Jabra_SensorRegions* regions);
 
 /**
  * @brief Type definition of function pointer to use for

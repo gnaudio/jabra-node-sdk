@@ -1,4 +1,5 @@
 #include "bt.h"
+#include "app.h"
 #include <stdlib.h>
 
 // Utility that coverts a hex string to a hex array for BT.
@@ -321,4 +322,18 @@ Napi::Value napi_GetSearchDeviceList(const Napi::CallbackInfo& info) {
       }
     }
   );
+}
+
+Napi::Value napi_BTLinkQualityChangeEventEnabled(const Napi::CallbackInfo& info) {
+  const char * const functionName = __func__;
+  return util::SimpleDeviceAsyncBoolSetter(functionName, info, [functionName](unsigned short deviceId, bool enable)
+  {
+    LinkQualityStatusListener callback = nullptr;
+    std::cout << "napi_BTLinkQualityChangeEventEnabled" << std::endl;
+    if (enable) callback = internalCallbackManager::getLinkQualityCallback();
+    const Jabra_ReturnCode result = Jabra_SetLinkQualityStatusListener(deviceId, callback);
+    if (result != Return_Ok) {
+      throw util::JabraReturnCodeException(functionName, result);
+    }
+  });
 }

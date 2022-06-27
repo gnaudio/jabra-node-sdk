@@ -27,6 +27,8 @@
 /*                     EXPORTED TYPES and DEFINITIONS                       */
 /****************************************************************************/
 
+#define FIRMWARE_VERSION_MAX_LENGTH ((unsigned int)50)
+
 /** This struct represents firmware version info of a firmware from
  * cloud. */
 typedef struct _FirmwareInfo
@@ -112,7 +114,8 @@ typedef enum _Regions
     UK_APAC = 4,
     Korean = 5,
     EA_Oceania = 6,
-    Global = 7
+    Global = 7,
+    Japan = 8
 } Regions;
 
 /** This struct represents a single language with an integer id and a wide character string. */
@@ -129,6 +132,105 @@ typedef struct _LanguageList
     Language* languages;
 } LanguageList;
 
+/** This struct bundles firmware versions of a parent and child device set */
+typedef struct _FirmwareVersionBundle
+{
+    char parent[FIRMWARE_VERSION_MAX_LENGTH];
+    char child[FIRMWARE_VERSION_MAX_LENGTH];
+} FirmwareVersionBundle;
+
+typedef enum _Jabra_LanguageInfoType {
+    /** Specify the language pack of the device. */
+    LanguagePackInfo = 2001,
+    /** Specify the tune pack of the base. */
+    TunePackInfo = 2002,
+} Jabra_LanguagePackType;
+
+/* Language IDs as defined in
+*  https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-lcid/a9eac961-e77d-41a6-90a5-ce1a8b0cdb9c
+*/
+typedef enum _LanguageID {
+    LangID_en_US = 1033, // English(US)
+    LangID_cs_CZ = 1029, // Czech
+    LangID_da_DK = 1030, // Danish
+    LangID_de_DE = 1031, // German(Germany)
+    LangID_et_EE = 1061, // Estonian
+    LangID_es_ES = 3082, // Spanish(Spain)
+    LangID_fr_FR = 1036, // French(France)
+    LangID_it_IT = 1040, // Italian(Italy)
+    LangID_lv_LV = 1062, // Latvian
+    LangID_lt_LT = 1063, // Lithuanian
+    LangID_hu_HU = 1038, // Hungarian
+    LangID_nl_NL = 1043, // Dutch(Netherlands)
+    LangID_nb_NO = 1044, // Norwegian, Bokmål
+    LangID_ko_KR = 1042, // Korean
+    LangID_pt_PT = 2070, // Portuguese(Portugal)
+    LangID_pl_PL = 1045, // Polish
+    LangID_fi_FI = 1035, // Finnish
+    LangID_sv_SE = 1053, // Swedish
+    LangID_tr_TR = 1055, // Turkish
+    LangID_ru_RU = 1049, // Russian
+    LangID_zh_Hans = 4,  // Chinese(Simplified)
+    LangID_zh_Hant = 31748, // Chinese(Traditional)
+    LangID_ja_JP = 1041  // Japanese
+} LanguageID;
+
+/**
+ * @brief Returns a string representation of the specified language ID
+ * @param[in] langID          Language ID
+ * @return Pointer to string containing the language specifier
+ * If NULL, Language ID was invalid.
+ * @note As memory is allocated through SDK, memory needs to be freed by
+ * calling #Jabra_FreeString on the returned pointer.
+ * @sa Jabra_FreeString
+ * @sa @wrap{Jabra_GetDetailedDeviceLanguageInformation}
+ */
+LIBRARY_API char* Jabra_LanguageIDtoString(LanguageID langID);
+
+typedef struct _LanguagePackStats
+{
+    char* version;                  // Pointer to zero-terminated string containing the pack version.
+    Regions currentRegion;
+    int numAvailableLanguages;
+    LanguageID* availableLanguages; // Pointer to array of numAvailableLanguages elements
+    LanguageID configuredLanguage;
+    LanguageID activeLanguage;
+} LanguagePackStats;
+
+/**
+ * @brief Get detailed information regarding language packs installed on device.
+ * @param[in] deviceID      ID for a specific parent device
+ * @param[in] type          Type of language pack to request information about
+ * @return Pointer to struct containing requested information
+ * If NULL, device does not contain the requested language pack.
+ * @note As memory is allocated through SDK, memory needs to be freed by
+ * calling #Jabra_FreeLanguagePackStats on the returned pointer.
+ * @sa @wrap{Jabra_GetDetailedDeviceLanguageInformation}
+ */
+LIBRARY_API LanguagePackStats* Jabra_GetDetailedDeviceLanguageInformation(unsigned short deviceID, Jabra_LanguagePackType type);
+/**
+ * @brief Free memory allocated by Jabra_GetDetailedDeviceLanguageInformation
+ * @param[in] languagePackStats         Pointer to struct that should be freed
+ * @sa @wrap{Jabra_GetDetailedDeviceLanguageInformation}
+ */
+LIBRARY_API void Jabra_FreeLanguagePackStats(LanguagePackStats* languagePackStats);
+
+/**
+  * @brief Get firmware version of the parent and child device.
+  * @param[in] deviceID                  ID for a specific parent device
+  * @param[out] firmwareVersionParent    Pointer to a location where the parent firmware version
+  * is written. Must be allocated by the caller
+  * @param[out] firmwareVersionChild     Pointer to a location where the child firmware version
+  * is written. Must be allocated by the caller
+  * @param[in] count                     Maximum number of characters to copy to firmwareVersionParent and firmwareVersionChild
+  * @return Return_Ok                    Call was successful
+  * @return Device_Unknown               deviceID is unknown
+  * @return Not_Supported                Functionality is not supported on this device
+  * @return Return_ParameterFail         A NULL pointer was passed
+  * @sa @wrap{Jabra_GetFirmwareVersionBundle}
+  */
+LIBRARY_API Jabra_ReturnCode Jabra_GetFirmwareVersionBundle(unsigned short deviceID, char* const firmwareVersionParent, char* const firmwareVersionChild, int count);
+
 /**
  * @brief Get firmware version of the device.
  * @param[in] deviceID          ID for a specific device
@@ -142,6 +244,20 @@ typedef struct _LanguageList
  * @sa @wrap{Jabra_GetFirmwareVersion}
  */
 LIBRARY_API Jabra_ReturnCode Jabra_GetFirmwareVersion(unsigned short deviceID, char* const firmwareVersion, int count);
+
+/**
+ * @brief Get firmware version from the remote control of a device.
+ * @param[in] deviceID          ID for a specific device
+ * @param[out] firmwareVersion  Pointer to a location where the firmware version
+ * is written. Must be allocated by the caller
+ * @param[in] count             Maximum number of characters to copy to firmwareVersion, including NULL-terminator
+ * @return Return_Ok            Call was successful
+ * @return Device_Unknown       deviceID is unknown
+ * @return Not_Supported        Functionality is not supported on this device
+ * @return Return_ParameterFail A NULL pointer was passed or count<2
+ * @sa @wrap{Jabra_GetRemoteControlFirmwareVersion}
+ */
+LIBRARY_API Jabra_ReturnCode Jabra_GetRemoteControlFirmwareVersion(unsigned short deviceID, char* const firmwareVersion, int count);
 
 /**
  * @brief Checks if firmware lock is enabled. If the firmware lock is enabled

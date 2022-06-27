@@ -74,14 +74,15 @@ typedef struct _ProxySettings
 {
     enum _ProxyType      // See curl documentation for explanation of proxy types,
     {                    // e.g. https://everything.curl.dev/libcurl/proxies
-        PROXY_HTTP = 0,  // Invalid - not possible to use HTTP proxy since backend is HTTPS only
+        PROXY_HTTP = 0,
         PROXY_HTTPS,
         PROXY_SOCKS4,
         PROXY_SOCKS4A,
         PROXY_SOCKS5,
         PROXY_SOCKS5H
     } Type;
-    char* URL;           // Pointer to NULL-terminated string containing proxy address
+    char* URL;           // Pointer to NULL-terminated string containing RFC 3986+ proxy address
+    char* Hostname;      // Pointer to NULL-terminated string containing proxy hostname
     unsigned short Port; // Port number
     char* Username;      // Pointer to NULL-terminated string containing the login username for the proxy
     char* Password;      // Pointer to NULL-terminated string containing the login password for the proxy
@@ -89,7 +90,9 @@ typedef struct _ProxySettings
 
 /**
  * @brief     Configures Xpress management related settings on a network-capable device.
- *            Will enable Ethernet interface if required.
+ *            Will enable Ethernet interface if no network interfaces are available.
+ *            In case of NetworkRequest_Fail or Return_Timeout return codes, the
+ *            proxy configuration and Xpress URL will revert to the previous values.
  * @param[in] deviceID          ID for a specific device
  * @param[in] xpressurl         Pointer to NULL-terminated string containing the URL for the Xpress management backend.
  *                              Protocol is always assumed to be HTTPS no matter the prefix of the URL.
@@ -109,10 +112,26 @@ typedef struct _ProxySettings
  * @return Return_ParameterFail A parameter was missing or incorrect
  * @return Not_Supported        Functionality is not supported on this device
  * @return Device_WriteFail     Failed while writing to device
- * @return NetworkRequest_Fail  URL was unreachable
+ * @return NetworkRequest_Fail  URL was unreachable - see Jabra_GetXpressManagementNetworkStatus
  * @return Return_Timeout       URL validation did not complete before timeout (when timeout>0)
+ * @see Jabra_GetXpressManagementNetworkStatus
  */
 LIBRARY_API Jabra_ReturnCode Jabra_ConfigureXpressManagement(unsigned short deviceID, const char* xpressurl, const ProxySettings* proxy, unsigned int timeout);
+
+/**
+ * @brief     Gets the resulting libcurl errorcode and message from the last call to
+ *            Jabra_ConfigureXpressManagement() if it returned NetworkRequest_Fail.
+ * @param[in]  deviceID         ID for a specific device
+ * @param[out] errorcode        Pointer to int that will receive libcurl error code. If NULL, no error code will be returned.
+ * @param[out] message          Pointer to buffer that will receive libcurl error message. If NULL, no error message will be returned.
+ * @param[in]  buffersize       Size of buffer pointed to by 'message' (including NULL terminator). Ignored if errormessage==NULL.
+ * @return false                Last call to Jabra_ConfigureXpressManagement() did not produce an errorcode/message.
+ * @return true                 An error code/message is available. In case of errorcode==0 it means the last request was successful
+ *                              and the message will be empty.
+ *                              If 'errorcode' or 'message' pointers are non-NULL, they will receive the information.
+ * @see Jabra_ConfigureXpressManagement
+ */
+LIBRARY_API bool Jabra_GetXpressManagementNetworkStatus(unsigned short deviceID, unsigned short* errorcode, char* message, int buffersize);
 
 /**
  * @brief     Set Xpress server URL. Will block until URL has been validated or timeout reached.
@@ -182,10 +201,30 @@ LIBRARY_API Jabra_ReturnCode Jabra_GetPasswordProvisioning(unsigned short device
 LIBRARY_API Jabra_ReturnCode Jabra_NotifyXpressConnectionStatus(unsigned short deviceID, bool isConnected);
 
 /**
+ * @brief       Notify the app connected to an Xpress capable device whether device is being remotely managed.
+ * @param[in]   deviceID    ID for a specific device
+ * @param[in]   isConnected true=connection to the backend is established, false=is not established
+ * @param[in]   errorcode   libcurl error code
+ * @param[in]   errorstring error message in case of error. Can be NULL if no message.
+ * @return Return_Ok            Call was successful. Unsupported devices will silently
+ * ignore this, so Return_Ok does not imply that the feature is supported.
+ * @return Device_Unknown       deviceID is unknown
+ * @return Device_WriteFail     Failed while writing to device
+ */
+LIBRARY_API Jabra_ReturnCode Jabra_NotifyXpressConnectionStatusExtended(unsigned short deviceID, bool isConnected, unsigned short errorcode, const char* errorstring);
+
+/**
  * @brief Registration for Xpress connection status change callback.
+ * Parameters are identical to those of Jabra_NotifyXpressConnectionStatus*
  * @param[in] xpressConnectionStatus Callback method to be called when the Xpress connection status is changed
  */
 LIBRARY_API void Jabra_RegisterXpressConnectionStatusCallback(void(*xpressConnectionStatus)(unsigned short, bool));
+/**
+ * @brief Registration for Xpress connection status change callback.
+ * Parameters are identical to those of Jabra_NotifyXpressConnectionStatus*
+ * @param[in] xpressConnectionExtendedStatus Callback method to be called when the Xpress connection status is changed
+ */
+LIBRARY_API void Jabra_RegisterXpressConnectionStatusExtendedCallback(void(*xpressConnectionExtendedStatus)(unsigned short, bool, unsigned short, char*));
 
 /**
  * @brief Gets the status of the Ethernet connection; Enable, DHCP, Connected states and IP + subnet mask.
@@ -214,6 +253,46 @@ LIBRARY_API Jabra_ReturnCode Jabra_GetEthernetIPv4Status(const unsigned short de
  * @return Device_ReadFails     Failed while reading from device
 */
 LIBRARY_API Jabra_ReturnCode Jabra_GetWLANIPv4Status(const unsigned short deviceID, IPv4Status* wlanStatus);
+
+typedef enum _NetworkInterface {
+    Interface_Ethernet = 0,
+    Interface_WLAN = 1,
+    Interface_Bluetooth = 2
+} NetworkInterface;
+
+typedef enum _NetworkInterfaceStatus {
+    NETWORK_LINK_DOWN = 0,
+    NETWORK_LINK_UP = 1,
+    NETWORK_IPADDRESS_SET = 2,
+    NETWORK_IPADDRESS_REMOVED = 3
+} NetworkInterfaceStatus;
+
+/**
+ * @brief Registration for network interface status change callback.
+ * @param[in] networkStatus Pointer to callback method to be called when the status of a network interface changes.
+ *                          Set to NULL to remove callback.
+ * Parameters of callback are:
+ * deviceID         ID for a specific device
+ * ifc              Interface where the change happened
+ * status           New status
+ */
+LIBRARY_API void Jabra_RegisterNetworkStatusChangedCallback(void(*networkStatus)(unsigned short, NetworkInterface, NetworkInterfaceStatus));
+
+/**
+ * @brief Gets the MAC address of an interface.
+ *
+ * @param[in]  deviceID         ID for a specific device
+ * @param[in]  netIF            Selected interface
+ * @param[out] MACaddr          Pointer to a buffer that will receive the MAC address.
+ *                              The size of the buffer needs to be at least 6 bytes as this is the amount of data that will be written.
+ *
+ * @return Return_Ok            Call was successful
+ * @return Device_Unknown       deviceID is unknown
+ * @return Not_Supported        Functionality is not supported on this device
+ * @return Return_ParameterFail A NULL pointer was passed
+ * @return Device_ReadFails     Failed while reading from device
+*/
+LIBRARY_API Jabra_ReturnCode Jabra_GetMACAddress(const unsigned short deviceID, NetworkInterface netIF, uint8_t* MACaddr);
 
 /**
  * @brief Gets the diagnostic log file and writes it to a file on local file system
@@ -253,5 +332,53 @@ LIBRARY_API Jabra_ReturnCode Jabra_TriggerDiagnosticLogGeneration(const unsigned
  * @see Jabra_GetDiagnosticLogFile
  */
 LIBRARY_API void Jabra_RegisterDiagnosticLogCallback(DiagnosticLogReadyEventHandler const callback);
+
+typedef enum _NetworkAuthMode
+{
+    AUTH_NONE = 0,
+    AUTH_MSCHAPv2 = 1,
+    AUTH_CERT = 2
+} NetworkAuthMode;
+
+/**
+ * @brief Configure IEEE 802.1X network authentication mode for network interface.
+ * @param[in] deviceID          ID for a specific device
+ * @param[in] interf            Interface to be configured (Ethernet or WLAN)
+ * @param[in] auth              Authentication mode
+ * @return Return_Ok            Call was successful
+ * @return Device_Unknown       deviceID is unknown
+ * @return Not_Supported        Functionality is not supported on this device
+ * @return Device_WriteFail     Failed while writing to device
+ */
+LIBRARY_API Jabra_ReturnCode Jabra_SetNetworkAuthenticationMode(const unsigned short deviceID, NetworkInterface interf, NetworkAuthMode auth);
+
+/**
+ * @brief Get current IEEE 802.1X network authentication mode for network interface.
+ * @param[in] deviceID          ID for a specific device
+ * @param[in] interf            Interface to be queried (Ethernet or WLAN)
+ * @param[out] auth             Pointer to NetworkAuthMode that will receive current auth mode
+ * @return Return_Ok            Call was successful
+ * @return Device_Unknown       deviceID is unknown
+ * @return Not_Supported        Functionality is not supported on this device
+ * @return Return_ParameterFail A NULL pointer was passed
+ * @return Device_ReadFails     Failed while reading from device
+ */
+LIBRARY_API Jabra_ReturnCode Jabra_GetNetworkAuthenticationMode(const unsigned short deviceID, NetworkInterface interf, NetworkAuthMode* auth);
+
+/**
+ * @brief Configure IEEE 802.1X identity for a network interface.
+ * @param[in] deviceID          ID for a specific device
+ * @param[in] interf            Interface to be configured (Ethernet or WLAN)
+ * @param[in] username          Pointer to NULL-terminated string containing the user name or NULL pointer to clear value
+ *                              Maximum length 55 characters
+ * @param[in] password          Pointer to NULL-terminated string containing the password or NULL pointer to clear value
+ *                              Maximum length 55 characters
+ * @return Return_Ok            Call was successful
+ * @return Device_Unknown       deviceID is unknown
+ * @return Not_Supported        Functionality is not supported on this device
+ * @return Return_ParameterFail Username or password too long
+ * @return Device_WriteFail     Failed while writing to device
+ */
+LIBRARY_API Jabra_ReturnCode Jabra_SetNetworkAuthenticationIdentity(const unsigned short deviceID, NetworkInterface interf, const char* username, const char* password);
 
 #endif /* INTERFACE_NETWORK_H */

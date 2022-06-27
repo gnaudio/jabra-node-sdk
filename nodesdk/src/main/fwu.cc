@@ -86,7 +86,7 @@ Napi::Value napi_GetFirmwareFilePath(const Napi::CallbackInfo& info) {
         }
         throw util::JabraException(functionName, "Jabra_GetFirmwareFilePath yielded no result");
       },
-      [](const Napi::Env& env, const std::string& filePath) { 
+      [](const Napi::Env& env, const std::string filePath) { 
         Napi::String napiResult = Napi::String::New(env, filePath.c_str());
         return napiResult;
       }))->Queue();
@@ -125,8 +125,54 @@ Napi::Value napi_GetFirmwareVersion(const Napi::CallbackInfo& info) {
         return std::string(); // Dummy return - avoid compiler warnings.
       }
     }, 
-    [](const Napi::Env& env, const std::string& cppResult) {  return Napi::String::New(env, cppResult); }
+    [](const Napi::Env& env, const std::string cppResult) {  return Napi::String::New(env, cppResult); }
   );
+}
+
+Napi::Value napi_GetFirmwareVersionBundle(const Napi::CallbackInfo& info) {
+    const char * const functionName = __func__;
+
+    return util::SimpleDeviceAsyncFunction<Napi::Object, FirmwareVersionBundle>(
+        functionName, info,
+        [functionName](unsigned short deviceId) {
+            FirmwareVersionBundle versionBundle{};
+            Jabra_ReturnCode retCode = Jabra_GetFirmwareVersionBundle(deviceId, versionBundle.parent, versionBundle.child, FIRMWARE_VERSION_MAX_LENGTH);
+
+            if (retCode != Jabra_ReturnCode::Return_Ok) {
+                util::JabraReturnCodeException::LogAndThrow(functionName,
+                    retCode);
+            }
+
+            return versionBundle;
+        },
+        [](const Napi::Env& env, const FirmwareVersionBundle versionBundle) {
+            auto firmwareBundle = Napi::Object::New(env);
+
+            firmwareBundle.Set("parent", Napi::String::New(env, versionBundle.parent));
+            firmwareBundle.Set("child", Napi::String::New(env, versionBundle.child));
+
+            return firmwareBundle;
+        }
+    );
+}
+
+Napi::Value napi_GetRemoteControlFirmwareVersion(const Napi::CallbackInfo& info) {
+    const char * const functionName = __func__;
+
+    return util::SimpleDeviceAsyncFunction<Napi::String, std::string>(
+        functionName, info,
+        [functionName](unsigned short deviceId) {
+            char version[100]{};
+            Jabra_ReturnCode retCode = Jabra_GetRemoteControlFirmwareVersion(deviceId, &version[0], sizeof(version));
+
+            if (retCode != Jabra_ReturnCode::Return_Ok) {
+                util::JabraReturnCodeException::LogAndThrow(functionName, retCode);
+            }
+
+            return std::string(version);
+        },
+        [](const Napi::Env& env, const std::string fwVersion) { return Napi::String::New(env, fwVersion); }
+    );
 }
 
 Napi::Value napi_GetLatestFirmwareInformation(const Napi::CallbackInfo& info) {  

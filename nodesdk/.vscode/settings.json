@@ -89,7 +89,16 @@
         "regex": "cpp",
         "compare": "cpp",
         "concepts": "cpp",
-        "coroutine": "cpp"
+        "coroutine": "cpp",
+        "bit": "cpp",
+        "charconv": "cpp",
+        "clocale": "cpp",
+        "format": "cpp",
+        "forward_list": "cpp",
+        "optional": "cpp",
+        "stop_token": "cpp",
+        "xlocbuf": "cpp",
+        "xlocmes": "cpp"
     },
     "typescript.tsdk": "node_modules\\typescript\\lib",
     "files.exclude": {
@@ -99,5 +108,6 @@
         "titleBar.activeBackground": "#536382",
     },
     "editor.trimAutoWhitespace": false,
-    "files.trimTrailingWhitespace": false
+    "files.trimTrailingWhitespace": false,
+    "compile-hero.disable-compile-files-on-did-save-code": true
 }

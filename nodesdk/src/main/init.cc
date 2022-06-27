@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "device.h"
+#include "dect.h"
 #include "enablers.h"
 #include "settings.h"
 #include "battery.h"
@@ -8,6 +9,7 @@
 #include "bt.h"
 #include "app.h"
 #include "callControl.h"
+#include "deviceconstants.h"
 
 
 /**
@@ -34,8 +36,14 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
 
   // Device:
   EXPORTS_SET(GetFirmwareVersion)
+  EXPORTS_SET(GetFirmwareVersionBundle)
   EXPORTS_SET(GetLatestFirmwareInformation)
   EXPORTS_SET(IsCertifiedForSkypeForBusiness)
+  EXPORTS_SET(GetRemoteControlFirmwareVersion)
+  
+  EXPORTS_SET(GetLanguagePackInformation)
+  EXPORTS_SET(GetSubDeviceProperty)
+  EXPORTS_SET(GetUserDefinedDeviceName)
 
   EXPORTS_SET(GetDeviceImagePath)
   EXPORTS_SET(GetDeviceImageThumbnailPath)
@@ -121,6 +129,7 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
   EXPORTS_SET(GetDatetime)
   EXPORTS_SET(GetEthernetIPv4Status);
   EXPORTS_SET(GetWLANIPv4Status);
+  EXPORTS_SET(GetMACAddress);
   
   // Remote MMI
   EXPORTS_SET(GetRemoteMmiFocus)
@@ -153,7 +162,16 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
 
   EXPORTS_SET(SetBTPairing)
   EXPORTS_SET(StopBTPairing)
+  
+  EXPORTS_SET(BTLinkQualityChangeEventEnabled)
 
+  // DECT
+  EXPORTS_SET(GetConnectedHeadsetNames)
+  EXPORTS_SET(TriggerDECTPairing)
+  EXPORTS_SET(TriggerDECTSecurePairing)
+  EXPORTS_SET(GetDECTPairingKey)
+  EXPORTS_SET(SetDECTPairingKey)
+  
   // Callbacks:
   EXPORTS_SET(IsDevLogEnabled);
   EXPORTS_SET(EnableDevLog);
@@ -174,10 +192,14 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
   EXPORTS_SET(SetXpressUrl);
   EXPORTS_SET(GetXpressUrl);
   EXPORTS_SET(ConfigureXpressManagement);
+  EXPORTS_SET(GetXpressManagementNetworkStatus);
   EXPORTS_SET(GetDiagnosticLogFile);
   EXPORTS_SET(TriggerDiagnosticLogGeneration);
   EXPORTS_SET(SetPasswordProvisioning);
   EXPORTS_SET(GetPasswordProvisioning);
+  EXPORTS_SET(SetNetworkAuthenticationMode);
+  EXPORTS_SET(GetNetworkAuthenticationMode);
+  EXPORTS_SET(SetNetworkAuthenticationIdentity);
 
   // Video related controls
   EXPORTS_SET(GetIntelligentZoomLatency)
@@ -191,6 +213,7 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
   EXPORTS_SET(GetZoom);
   EXPORTS_SET(SetZoom);
   EXPORTS_SET(GetZoomLimits);
+  EXPORTS_SET(GetSensorRegions);
   EXPORTS_SET(GetPanTilt);
   EXPORTS_SET(SetPanTilt);
   EXPORTS_SET(GetPanTiltLimits);
@@ -240,6 +263,14 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
   EXPORTS_SET(SetWhiteboardOnMainStream);
   EXPORTS_SET(GetUSBState);
     
+  // Constants
+  EXPORTS_SET(GetConstSync);
+  EXPORTS_SET(GetConstStringSync);
+  EXPORTS_SET(GetConstBooleanSync);
+  EXPORTS_SET(GetConstIntegerSync);
+  EXPORTS_SET(GetConstFieldSync);
+  EXPORTS_SET(GetConstListSync);
+
   try {
     configureLogging();
   } catch (const std::exception &e) {

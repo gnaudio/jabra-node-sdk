@@ -74,6 +74,11 @@ Napi::Value napi_GetXpressUrl(const Napi::CallbackInfo& info);
 Napi::Value napi_SetPasswordProvisioning(const Napi::CallbackInfo& info);
 Napi::Value napi_GetPasswordProvisioning(const Napi::CallbackInfo& info);
 Napi::Value napi_ConfigureXpressManagement(const Napi::CallbackInfo& info);
+Napi::Value napi_GetXpressManagementNetworkStatus(const Napi::CallbackInfo& info);
+Napi::Value napi_SetNetworkAuthenticationMode(const Napi::CallbackInfo& info);
+Napi::Value napi_GetNetworkAuthenticationMode(const Napi::CallbackInfo& info);
+Napi::Value napi_SetNetworkAuthenticationIdentity(const Napi::CallbackInfo& info);
+
 
 Napi::Value napi_TriggerDiagnosticLogGeneration(const Napi::CallbackInfo& info);
 Napi::Value napi_GetDiagnosticLogFile(const Napi::CallbackInfo& info);
@@ -85,6 +90,8 @@ Napi::Value napi_GetZoom(const Napi::CallbackInfo& info);
 Napi::Value napi_SetZoom(const Napi::CallbackInfo& info);
 Napi::Value napi_GetZoomLimits(const Napi::CallbackInfo& info);
 Napi::Value napi_SetZoomRelativeAction(const Napi::CallbackInfo& info);
+
+Napi::Value napi_GetSensorRegions(const Napi::CallbackInfo& info);
 
 Napi::Value napi_GetPanTilt(const Napi::CallbackInfo& info);
 Napi::Value napi_SetPanTilt(const Napi::CallbackInfo& info);
@@ -151,3 +158,8 @@ Napi::Value napi_GetSecondVideoStream(const Napi::CallbackInfo& info);
 Napi::Value napi_GetEthernetIPv4Status(const Napi::CallbackInfo& info);
 Napi::Value napi_GetWLANIPv4Status(const Napi::CallbackInfo& info);
 Napi::Value napi_GetUSBState(const Napi::CallbackInfo& info);
+Napi::Value napi_GetMACAddress(const Napi::CallbackInfo& info);
+
+Napi::Value napi_GetLanguagePackInformation(const Napi::CallbackInfo& info);
+Napi::Value napi_GetSubDeviceProperty(const Napi::CallbackInfo& info);
+Napi::Value napi_GetUserDefinedDeviceName(const Napi::CallbackInfo& info);

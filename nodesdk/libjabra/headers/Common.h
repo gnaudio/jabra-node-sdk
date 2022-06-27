@@ -79,7 +79,8 @@ typedef enum _ErrorStatus
 typedef enum _DeviceConnectionType
 {
     USB = 0,
-    BT
+    BT,
+    DECT
 } DeviceConnectionType;
 
 /** @brief Device description struct, identifies attached devices. */
@@ -103,7 +104,7 @@ typedef struct _DeviceInfo
     char* serialNumber;
     bool isInFirmwareUpdateMode;
     DeviceConnectionType deviceconnection;
-    unsigned long connectionId;
+    unsigned long connectionId; // Not currently used
     unsigned short parentDeviceId;
 } Jabra_DeviceInfo;
 
@@ -261,7 +262,18 @@ typedef enum _DeviceFeature
     PictureInPicture = 1037,
     DateTimeIsUTC = 1038,       // Time in device is UTC
     RemoteControl = 1039,       // Device has physical remote control
-    UserConfigurableHDR = 1040  // User is allowed to change brightness, contrast etc. while HDR is enabled
+    UserConfigurableHDR = 1040, // User is allowed to change brightness, contrast etc. while HDR is enabled
+    DECTBasicPairing = 1041,    // Regular pairing without any key exchange
+    DECTSecurePairing = 1042,   // Device supports secure pairing using key exchange over USB
+    DECTOTAFWUSupported = 1043, // Device supports DECT OTA firmware updating
+    XpressURL = 1044,           // Device can be configured with an Xpress URL for stand-alone management
+    PasswordProvisioning = 1045,// Device can store a password for settings protection
+    Ethernet = 1046,            // Ethernet connectivity
+    WLAN = 1047,                // WLAN connectivity
+    EthernetAuthenticationCertificate = 1048, // Certificate-based Ethernet authentication
+    EthernetAuthenticationMSCHAPv2 = 1049,    // User/pass-based Ethernet authentication (MS-CHAPv2)
+    WLANAuthenticationCertificate = 1050,     // Certificate-based WLAN authentication
+    WLANAuthenticationMSCHAPv2 = 1051         // User/pass-based WLAN authentication (MS-CHAPv2)
 } DeviceFeature;
 
 /** @brief This struct represents the product registration info. */
@@ -298,7 +310,7 @@ typedef enum _SystemComponentID
 
 typedef struct _MapEntry_Int_String
 {
-    int key;
+    int key;            // Refers to SystemComponentID
     char* value;
 } MapEntry_Int_String;
 
@@ -552,6 +564,9 @@ typedef struct
     /** If not NULL: called when data for a connected device is (partially or
      * fully) updated. */
     void (*onDeviceDataUpdated)(unsigned short deviceID);
+    /** Only update device data if data is older than this (seconds)
+     * Default: 24 hours (24 * 60 * 60). */
+    unsigned minimumAgeBeforeUpdate;
 } DeviceCatalogue_params;
 
 /** For use with ConfigParams.cloudConfig_params */
@@ -599,7 +614,6 @@ typedef struct _Config_params
     /** For internal Jabra use. */
     void* reserved2;
 } Config_params;
-
 
 /** The connection status of the audio jack connector on the device (not supported by all devices) */
 typedef struct _JackStatus
@@ -896,7 +910,7 @@ LIBRARY_API Jabra_ReturnCode Jabra_GetHwAndConfigVersion(unsigned short deviceID
  * @sa @wrap{Jabra_GetMultiESN}
  * @ingroup g-dev-info
  */
-LIBRARY_API Map_Int_String* Jabra_GetMultiESN( unsigned short deviceID);
+LIBRARY_API Map_Int_String* Jabra_GetMultiESN(unsigned short deviceID);
 
 /**
  * @brief Release memory allocated by functions returning a Map_Int_String*
@@ -929,6 +943,17 @@ LIBRARY_API Jabra_ReturnCode Jabra_GetCurrentLanguageCode(unsigned short deviceI
  * @sa @wrap{Jabra_GetDeviceImagePath}
  */
 LIBRARY_API char* Jabra_GetDeviceImagePath(unsigned short deviceID);
+
+/**
+ * @brief Gets the device hires (1280x1280 px) image path.
+ * @param[in] deviceID          ID for a specific device.
+ * @return The path of the device image. Will return NULL if file does not exist.
+ * @note As memory is allocated through SDK, needs to be freed by calling
+ * #Jabra_FreeString.
+ * @ingroup g-dev-info
+ * @sa @wrap{Jabra_GetDeviceHiresImagePath}
+ */
+LIBRARY_API char* Jabra_GetDeviceHiresImagePath(unsigned short deviceID);
 
 /**
  * @brief Gets the device image thumbnail path.
@@ -1754,6 +1779,7 @@ LIBRARY_API bool Jabra_IsUploadRingtoneSupported(unsigned short deviceID);
  * @return Return_ParameterFail fileName is NULL or audio file has wrong type
  * @return FileWrite_Fail       Could not write file
  * @return Upload_AlreadyInProgress Upload is currently ongoing
+ * @return Not_Supported        Device does not support ringtone uploads
  * @see Jabra_IsUploadRingtoneSupported
  * @see Jabra_UploadWavRingtone
  * @see Jabra_GetAudioFileParametersForUpload
@@ -1771,6 +1797,7 @@ LIBRARY_API Jabra_ReturnCode Jabra_UploadRingtone(unsigned short deviceID, const
  * @return Device_Unknown       deviceID is unknown
  * @return Return_ParameterFail fileName is NULL or audio file has wrong type
  * @return Upload_AlreadyInProgress Upload is currently ongoing
+ * @return Not_Supported        Device does not support ringtone uploads
  * @see Jabra_IsUploadRingtoneSupported
  * @see Jabra_UploadRingtone
  * @see Jabra_GetAudioFileParametersForUpload
@@ -1833,6 +1860,7 @@ LIBRARY_API bool Jabra_IsUploadImageSupported(unsigned short deviceID);
  * @return FileWrite_Fail       Could not write file
  * @return Upload_AlreadyInProgress Upload is currently ongoing
  * @return File_Not_Accessible  Unable to access source file
+ * @return Not_Supported        Device does not support image uploads
  * @see Jabra_IsUploadImageSupported
  * @see Jabra_RegisterUploadProgress
  * @ingroup g-ringtone
@@ -2296,6 +2324,101 @@ LIBRARY_API void Jabra_RegisterDectInfoHandler(void(*DectInfoFunc)(unsigned shor
 LIBRARY_API void Jabra_FreeDectInfoStr(Jabra_DectInfo *dectInfo);
 
 /**
+ * @brief Headset selection for DECT pairing
+ */
+typedef enum _DectHeadset { PRIMARY_HS, SECONDARY_HS } DectHeadset;
+
+/**
+ * @brief Start DECT pairing
+ * Start insecure pairing mode, equivalent to pushing the pair button on the DECT base.
+ * When using this method, the headset will connect to any base in pairing mode. It is
+ * recommended to use the secure version Jabra_DectPairSecure.
+ * @param deviceID              ID for the specific device
+ * @param[in] headset           Role of paired headset (primary/secondary)
+ * @return Return_Ok            Call was successful
+ * @return Device_Unknown       deviceID is unknown
+ * @return Device_WriteFail     Failed while writing to device
+ * @see Jabra_DectPairSecure
+ * @ingroup g-pairing
+ */
+LIBRARY_API Jabra_ReturnCode Jabra_DectPair(unsigned short deviceID, DectHeadset headset);
+
+/**
+ * @brief Start DECT secure pairing using USB connected headset
+ * Prior to starting the secure pairing, it is required to call Jabra_GetDectPairKey on the
+ * dongle to get a pairing key and then use Jabra_SetDectPairKey to set the pairing key in
+ * the USB connected headset.
+ * @param deviceID              ID for the specific device
+ * @return Return_Ok            Call was successful
+ * @return Device_Unknown       deviceID is unknown
+ * @return Device_WriteFail     Failed while writing to device
+ * @see Jabra_GetDectPairKey
+ * @see Jabra_SetDectPairKey
+ * @ingroup g-pairing
+ */
+LIBRARY_API Jabra_ReturnCode Jabra_DectPairSecure(unsigned short deviceID);
+
+/**
+ * @brief Read the secure pairing key from a DECT base/dongle.
+ * @param deviceID              ID for the specific device
+ * @param[out] acCode           Pairing key
+ * @return Return_Ok            Call was successful
+ * @return Device_Unknown       deviceID is unknown
+ * @return Device_ReadFails     Failed while reading from device
+ * @return Return_ParameterFail A NULL pointer was passed
+ * @see Jabra_DectPairSecure
+ * @see Jabra_SetDectPairKey
+ * @ingroup g-pairing
+ */
+LIBRARY_API Jabra_ReturnCode Jabra_GetDectPairKey(unsigned short deviceID, uint32_t* acCode);
+
+/**
+ * @brief Write the secure DECT pairing key to a USB connected headset.
+ * @param deviceID              ID for the specific device
+ * @param[in] acCode            Pairing key
+ * @return Return_Ok            Call was successful
+ * @return Device_Unknown       deviceID is unknown
+ * @return Device_WriteFail     Failed while writing to device
+ * @see Jabra_DectPairSecure
+ * @see Jabra_GetDectPairKey
+ * @ingroup g-pairing
+ */
+LIBRARY_API Jabra_ReturnCode Jabra_SetDectPairKey(unsigned short deviceID, uint32_t  acCode);
+
+/**
+ * @brief Reads the device name(s) of connected BT or DECT headsets. If a requested name returns NULL, it means it was not possible to read from that device.
+ * @param deviceID              ID for the specific device
+ * @param[in]  deviceMask       Bitmask indicating which paired headsets to read: bit 0=primary (DECT/BT), bit 1=1st sec. (DECT), bit 2=2nd sec. (DECT), bit 3=3rd sec. (DECT)
+ * @param[in]  getAssetTag      If true, reads user-configurable device asset tag. If false, reads product name.
+ * @param[out] priName          Pointer to name of primary DECT or BT headset
+ * @param[out] sec1Name         Pointer to name of 1st secondary headset
+ * @param[out] sec2Name         Pointer to name of 2nd secondary headset
+ * @param[out] sec3Name         Pointer to name of 3rd secondary headset
+ * @note As memory is allocated through SDK, any returned non-NULL pointer needs to be freed by calling
+ * #Jabra_FreeString. This also applies for return codes other than Return_Ok.
+ * @return Return_Ok            Call was successful - all requested names were read
+ * @return Device_Unknown       deviceID is unknown
+ * @return Device_ReadFails     Failed while reading from device
+ * @return Return_ParameterFail No names were requested or a NULL pointer was passed for a requested value
+ * @return Not_Supported        Unable to read requested names - one or more names may still be returned, so check returned pointers
+ */
+LIBRARY_API Jabra_ReturnCode Jabra_GetConnectedHeadsetNames(unsigned short deviceID, unsigned int deviceMask, bool getAssetTag, char** priName, char** sec1Name, char** sec2Name, char** sec3Name);
+
+/**
+ * @brief Gets the user-defined device name.
+ * @param deviceID ID for the specific device
+ * @param[out] deviceName Pointer to device name if it exists in device, otherwise unchanged
+ * @note As memory is allocated through SDK, any returned non-NULL pointer needs to be freed by calling
+ * #Jabra_FreeString.
+ * @return Return_Ok            Call was successful
+ * @return Device_Unknown       deviceID is unknown
+ * @return Return_ParameterFail A NULL pointer was passed
+ * @return Device_ReadFails     Failed while reading from device
+ * @return Not_Supported        Unable to read requested name
+ */
+LIBRARY_API Jabra_ReturnCode Jabra_GetUserDefinedDeviceName(unsigned short deviceID, char** deviceName);
+
+/**
  * @brief To get a list of panic codes from the device.
  * @note It is primarily for mobile/consumer products.
  * @param deviceID ID for the specific device
@@ -2315,6 +2438,57 @@ LIBRARY_API Jabra_ReturnCode Jabra_GetPanicCodes(unsigned short deviceID, Jabra_
  * @return Device_WriteFail     Failed while writing to device
  */
 LIBRARY_API Jabra_ReturnCode Jabra_ClearPanicCodes(unsigned short deviceID);
+
+typedef enum _SubDeviceID
+{
+    SUBDEVICE_BASE = 0,             // Primary base or controller, e.g. Link 380 dongle
+    SUBDEVICE_BASE_2,               // 2nd base or controller
+    SUBDEVICE_DESKSTAND,            // Basic desk stand
+    SUBDEVICE_CRADLE,               // Headset cradle, e.g. Engage 65 base
+    SUBDEVICE_PRIMARY_HEADSET,      // BT or DECT headset connected through base/dongle
+    SUBDEVICE_SECONDARY_HEADSET,    // 1st DECT conference headset
+    SUBDEVICE_SECONDARY_2_HEADSET,  // 2nd DECT conference headset
+    SUBDEVICE_SECONDARY_3_HEADSET,  // 3rd DECT conference headset
+    SUBDEVICE_DOCKED_HEADSET,       // Headset when docked in cradle
+    SUBDEVICE_USB_HEADSET,          // Also applies to BT headsets when using a cabled connection
+    SUBDEVICE_HUB,
+    SUBDEVICE_BLE_DEVICE,           // First BLE device
+    SUBDEVICE_BLE_2_DEVICE          // Second BLE device, e.g. PanaCast 50 remote control
+} SubDeviceID;
+
+typedef enum _DeviceProperty
+{
+    DEVPROPERTY_NAME_DEVICE = 0,        // Device name
+    DEVPROPERTY_NAME_USB,               // USB device name, may be different from device name
+    DEVPROPERTY_NAME_BLUETOOTH,         // BT device name, may be different from device name
+    DEVPROPERTY_NAME_CONNECTED_HEADSET, // Name of headset connected to this device
+    DEVPROPERTY_ASSET_TAG,              // User-defined device name
+    DEVPROPERTY_PID,                    // Product ID (returned in decimal representation)
+    DEVPROPERTY_PID_DFU,                // Product ID when in device firmware update mode
+    DEVPROPERTY_FWVERSION,              // Firmware version
+    DEVPROPERTY_ESN                     // Serial number
+} DeviceProperty;
+
+/**
+ * @brief Gets a specific property from the device or a sub device (i.e. a connected headset)
+ * @note It is primarily usable for reading the properties of individual sub devices when they are only
+ * presented as compound devices in the SDK, for example DECT cradles+headsets which will appear as a
+ * single device.
+ * It can also be used for reading properties of the PanaCast 50 remote control.
+ * Specifiying SUBDEVICE_PRIMARY_HEADSET will provice the same results when used directly
+ * with a BT dongle or the connected headset device.
+ * @param[in] deviceID ID for the specific device
+ * @param[in] subdevice The sub device to access
+ * @param[in] property The property to read
+ * @param[out] value Pointer to property if it exists, NULL otherwise
+ * @note As memory is allocated through SDK, any returned non-NULL pointer needs to be freed by calling
+ * #Jabra_FreeString.
+ * @return Return_Ok            Call was successful
+ * @return Device_Unknown       deviceID is unknown
+ * @return Return_ParameterFail A NULL pointer was passed
+ * @return Not_Supported        Unable to read requested value
+ */
+LIBRARY_API Jabra_ReturnCode Jabra_GetSubDeviceProperty(unsigned short deviceID, SubDeviceID subdevice, DeviceProperty property, char** value);
 
 #include "Interface_AmbienceModes.h"
 #include "Interface_Bluetooth.h"

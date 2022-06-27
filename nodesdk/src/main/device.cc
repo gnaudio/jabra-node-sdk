@@ -1,4 +1,5 @@
 #include "device.h"
+#include "app.h"
 #include "napiutil.h"
 #include <string.h>
 #include <ctime>
@@ -1092,7 +1093,7 @@ Napi::Value napi_GetSupportedFeatures(const Napi::CallbackInfo& info) {
 
         return jElements;        
       },
-      [](const FeatureListCountPair& flcPair) {
+      [](FeatureListCountPair flcPair) {
         if (flcPair.featureList != nullptr) {
           Jabra_FreeSupportedFeatures(flcPair.featureList);
         }
@@ -1125,7 +1126,7 @@ Napi::Value napi_GetEqualizerParameters(const Napi::CallbackInfo& info) {
           util::JabraReturnCodeException::LogAndThrow(functionName, retv);
         }
         return pair;
-      }, [](const Napi::Env& env, const EqualizerBandsListCountPair& pair) {
+      }, [](const Napi::Env& env, EqualizerBandsListCountPair pair) {
         Napi::Array result = Napi::Array::New(env);
 
         for (unsigned int i=0; i<pair.bandsCount; ++i) {
@@ -1345,26 +1346,29 @@ Napi::Value napi_ConfigureXpressManagement(const Napi::CallbackInfo& info) {
         Napi::Function javascriptResultCallback = info[4].As<Napi::Function>();
 
         const std::string proxyurl = util::getObjStringOrDefault(proxy, "url", "");
+        const std::string proxyhostname = util::getObjStringOrDefault(proxy, "hostname", "");
         const std::string proxyusername = util::getObjStringOrDefault(proxy, "username", "");
         const std::string proxypassword = util::getObjStringOrDefault(proxy, "password", "");
         const unsigned short proxyport = (unsigned short)util::getObjInt32OrDefault(proxy, "port", 0);
-        const auto proxytype = util::getObjEnumValueOrDefault<ProxySettings::_ProxyType>(proxy, "type", ProxySettings::PROXY_HTTPS);
+        const auto proxytype = util::getObjEnumValueOrDefault<ProxySettings::_ProxyType>(proxy, "type", ProxySettings::PROXY_HTTP);
         
         (new util::JAsyncWorker<void, void>(
             functionName,
             javascriptResultCallback,
             [functionName, deviceId, xpressurl, timeout,
-            proxyurl, proxyusername, proxypassword, proxytype, proxyport](){
+            proxyurl, proxyhostname, proxyusername, proxypassword, proxytype, proxyport](){
                 ProxySettings prxsettings{}, *prx = NULL;
-                if (!proxyurl.empty())
+                if (!proxyurl.empty() || !proxyhostname.empty())
                 {
-                  char _url[1000]{}, _username[1000]{}, _password[1000]{};
+                  char _url[1000]{}, _hostname[1000]{}, _username[1000]{}, _password[1000]{};
                   strncpy(_url, proxyurl.c_str(), sizeof(_url)-1);
+                  strncpy(_hostname, proxyhostname.c_str(), sizeof(_url)-1);
                   strncpy(_username, proxyusername.c_str(), sizeof(_url)-1);
                   strncpy(_password, proxypassword.c_str(), sizeof(_url)-1);
-                  prxsettings.URL = _url;
-                  prxsettings.Username = _username;
-                  prxsettings.Password = _password;
+                  prxsettings.URL = proxyurl.empty() ? NULL : _url;
+                  prxsettings.Hostname = proxyhostname.empty() ? NULL : _hostname;
+                  prxsettings.Username = proxyusername.empty() ? NULL : _username;
+                  prxsettings.Password = proxypassword.empty() ? NULL : _password;
                   prxsettings.Type = proxytype;
                   prxsettings.Port = proxyport;
                   prx = &prxsettings;
@@ -1377,6 +1381,27 @@ Napi::Value napi_ConfigureXpressManagement(const Napi::CallbackInfo& info) {
         ))->Queue();
   }
   return env.Undefined();
+}
+
+Napi::Value napi_GetXpressManagementNetworkStatus(const Napi::CallbackInfo& info) {
+  const char * const functionName = __func__;
+  return util::SimpleDeviceAsyncFunction<Napi::Object, std::pair<unsigned short, std::string>>(functionName, info,
+      [functionName](unsigned short deviceId) {
+          std::pair<unsigned short, std::string> error{};
+          char str[200];
+          str[0]='\0';
+          bool retVal = Jabra_GetXpressManagementNetworkStatus(deviceId, &error.first, str, int(sizeof(str)));
+          if (retVal == false) {
+              util::JabraReturnCodeException::LogAndThrow(functionName, Jabra_ReturnCode::No_Information);
+          }
+          error.second = str;
+          return error;
+      }, [](const Napi::Env& env, const std::pair<unsigned short, std::string>& cppResult) {
+          auto libcurlError = Napi::Object::New(env);
+          libcurlError.Set("code", Napi::Number::New(env, cppResult.first));
+          libcurlError.Set("message", Napi::String::New(env, cppResult.second));
+          return libcurlError;
+      });
 }
 
 Napi::Value napi_PreloadAttachedDeviceInfo(const Napi::CallbackInfo& info) {
@@ -1634,7 +1659,7 @@ Napi::Value napi_GetWhiteboardPosition(const Napi::CallbackInfo& info) {
 
             return whiteboardPosition;
         },
-        [](const Napi::Env& env, const Jabra_WhiteboardPosition& whiteboard) {
+        [](const Napi::Env& env, Jabra_WhiteboardPosition whiteboard) {
             Napi::Object jsWhiteboard = Napi::Object::New(env);
 
             jsWhiteboard.Set("lowerLeftCorner", makePoint2D(env,
@@ -1804,6 +1829,37 @@ Napi::Value napi_SetZoomRelativeAction(const Napi::CallbackInfo& info) {
     ))->Queue();
 
     return env.Undefined();
+}
+
+Napi::Value napi_GetSensorRegions(const Napi::CallbackInfo& info) {
+    const char * const functionName = __func__;
+
+    return util::SimpleDeviceAsyncFunction<Napi::Object, Jabra_SensorRegions>(
+        functionName, info,
+        [functionName](unsigned short deviceId) {
+            Jabra_SensorRegions regions;
+            Jabra_ReturnCode retCode = Jabra_GetSensorRegions(deviceId, &regions);
+
+            if (retCode != Jabra_ReturnCode::Return_Ok) {
+                util::JabraReturnCodeException::LogAndThrow(functionName,
+                    retCode);
+            }
+
+            return regions;
+        },
+        [](const Napi::Env& env, const Jabra_SensorRegions& cRegions) {
+            auto jsRegions = Napi::Object::New(env);
+
+            jsRegions.Set("start0", Napi::Number::New(env, cRegions.start0));
+            jsRegions.Set("end0", Napi::Number::New(env, cRegions.end0));
+            jsRegions.Set("start1", Napi::Number::New(env, cRegions.start1));
+            jsRegions.Set("end1", Napi::Number::New(env, cRegions.end1));
+            jsRegions.Set("start2", Napi::Number::New(env, cRegions.start2));
+            jsRegions.Set("end2", Napi::Number::New(env, cRegions.end2));
+
+            return jsRegions;
+        }
+    );
 }
 
 Napi::Value napi_GetContrastLimits(const Napi::CallbackInfo& info) {
@@ -2804,4 +2860,230 @@ Napi::Value napi_GetUSBState(const Napi::CallbackInfo& info) {
         },
         Napi::Number::New
     );
+}
+
+Napi::Value napi_GetMACAddress(const Napi::CallbackInfo& info) {
+  const char * const functionName = __func__;
+  Napi::Env env = info.Env();
+
+  if (util::verifyArguments(functionName, info, {util::NUMBER, util::NUMBER, util::FUNCTION})) {
+    const unsigned short deviceId = (unsigned short)(info[0].As<Napi::Number>().Int32Value());
+	  const NetworkInterface selectedInterface = (NetworkInterface)(info[1].As<Napi::Number>().Int32Value());
+    Napi::Function javascriptResultCallback = info[2].As<Napi::Function>();
+
+    (new util::JAsyncWorker<std::vector<uint8_t>, Napi::Array>(
+      functionName, javascriptResultCallback,
+      [functionName, deviceId, selectedInterface](){
+
+        Jabra_ReturnCode retv;
+        std::vector<uint8_t> MACaddress(6, 0);
+        if ((retv = Jabra_GetMACAddress(deviceId, selectedInterface, &MACaddress[0])) != Return_Ok) {
+          util::JabraReturnCodeException::LogAndThrow(functionName, retv);
+        }
+        return MACaddress;
+      }, [](const Napi::Env& env, std::vector<uint8_t> MAC) {
+        Napi::Array result = Napi::Array::New(env);
+        int i = 0;
+        for (auto& element : MAC)
+        {
+          Napi::Number jElement = Napi::Number::New(env, element);
+          result.Set(i++, jElement);
+        }
+        return result;
+      }
+    ))->Queue();
+  }
+
+  return env.Undefined();
+}
+
+Napi::Value napi_GetNetworkAuthenticationMode(const Napi::CallbackInfo& info) {
+  const char * const functionName = __func__;
+  Napi::Env env = info.Env();
+
+  if (util::verifyArguments(functionName, info, {util::NUMBER, util::NUMBER, util::FUNCTION})) {
+    const unsigned short deviceId = (unsigned short)(info[0].As<Napi::Number>().Int32Value());
+	  const NetworkInterface selectedInterface = (NetworkInterface)(info[1].As<Napi::Number>().Int32Value());
+    Napi::Function javascriptResultCallback = info[2].As<Napi::Function>();
+
+    (new util::JAsyncWorker<NetworkAuthMode, Napi::Number>(
+      functionName, javascriptResultCallback,
+      [functionName, deviceId, selectedInterface](){
+
+        Jabra_ReturnCode retv;
+        NetworkAuthMode authMode;
+        if ((retv = Jabra_GetNetworkAuthenticationMode(deviceId, selectedInterface, &authMode)) != Return_Ok) {
+          util::JabraReturnCodeException::LogAndThrow(functionName, retv);
+        }
+        return authMode;
+      }, [](const Napi::Env& env, NetworkAuthMode authMode) {
+        return Napi::Number::New(env, authMode);
+      }
+    ))->Queue();
+  }
+
+  return env.Undefined();
+}
+
+Napi::Value napi_SetNetworkAuthenticationMode(const Napi::CallbackInfo& info) {
+  const char * const functionName = __func__;
+  Napi::Env env = info.Env();
+
+  if (util::verifyArguments(functionName, info, {util::NUMBER, util::NUMBER, util::NUMBER, util::FUNCTION})) {
+    const unsigned short deviceId = (unsigned short)(info[0].As<Napi::Number>().Int32Value());
+	  const NetworkInterface selectedInterface = (NetworkInterface)(info[1].As<Napi::Number>().Int32Value());
+	  const NetworkAuthMode authMode = (NetworkAuthMode)(info[2].As<Napi::Number>().Int32Value());
+    Napi::Function javascriptResultCallback = info[3].As<Napi::Function>();
+
+    (new util::JAsyncWorker<void, void>(
+      functionName, 
+      javascriptResultCallback,
+      [functionName, deviceId, selectedInterface, authMode](){ 
+        Jabra_ReturnCode retv;                       
+        if ((retv = Jabra_SetNetworkAuthenticationMode(deviceId, selectedInterface, authMode)) != Return_Ok) {
+          util::JabraReturnCodeException::LogAndThrow(functionName, retv);
+        }
+      }
+    ))->Queue();
+  }
+
+  return env.Undefined();
+}
+
+Napi::Value napi_SetNetworkAuthenticationIdentity(const Napi::CallbackInfo& info) {
+  const char * const functionName = __func__;
+  Napi::Env env = info.Env();
+
+  if (util::verifyArguments(functionName, info, {util::NUMBER, util::NUMBER, util::STRING, util::STRING, util::FUNCTION})) {
+    const unsigned short deviceId = (unsigned short)(info[0].As<Napi::Number>().Int32Value());
+	  const NetworkInterface selectedInterface = (NetworkInterface)(info[1].As<Napi::Number>().Int32Value());
+	  const std::string username = (info[2].As<Napi::String>());
+	  const std::string password = (info[3].As<Napi::String>());
+    Napi::Function javascriptResultCallback = info[4].As<Napi::Function>();
+
+    (new util::JAsyncWorker<void, void>(
+      functionName, 
+      javascriptResultCallback,
+      [functionName, deviceId, selectedInterface, username, password](){ 
+        Jabra_ReturnCode retv;                       
+        if ((retv = Jabra_SetNetworkAuthenticationIdentity(deviceId, selectedInterface, username.c_str(), password.c_str())) != Return_Ok) {
+          util::JabraReturnCodeException::LogAndThrow(functionName, retv);
+        }
+      }
+    ))->Queue();
+  }
+
+  return env.Undefined();
+}
+
+std::string LanguageIDToString(LanguageID langID) {
+  std::string retStr;
+  auto str = Jabra_LanguageIDtoString(langID);
+  if (str) {
+    retStr = str;
+    Jabra_FreeString(str);
+  }
+  return retStr;
+}
+
+Napi::Value napi_GetLanguagePackInformation(const Napi::CallbackInfo& info) {
+  const char * const functionName = __func__;
+  Napi::Env env = info.Env();
+
+  if (util::verifyArguments(functionName, info, {util::NUMBER, util::NUMBER, util::FUNCTION})) {
+    const unsigned short deviceId = (unsigned short)(info[0].As<Napi::Number>().Int32Value());
+	  const Jabra_LanguagePackType selectedLanguagePack = (Jabra_LanguagePackType)(info[1].As<Napi::Number>().Int32Value());
+    Napi::Function javascriptResultCallback = info[2].As<Napi::Function>();
+
+    (new util::JAsyncWorker<LanguagePackStats*, Napi::Object>(
+      functionName, javascriptResultCallback,
+      [functionName, deviceId, selectedLanguagePack](){
+
+        LanguagePackStats* retv = nullptr;
+        if (!(retv = Jabra_GetDetailedDeviceLanguageInformation(deviceId, selectedLanguagePack))) {
+          util::JabraReturnCodeException::LogAndThrow(functionName, Jabra_ReturnCode::Not_Supported);
+        }
+        return retv;
+      }, [](const Napi::Env& env, LanguagePackStats* packStats) {
+        Napi::Object result = Napi::Object::New(env);
+       
+        result.Set("version", Napi::String::New(env, packStats->version));
+        result.Set("activeLanguage", Napi::String::New(env, LanguageIDToString(packStats->activeLanguage)));
+        result.Set("configuredLanguage", Napi::String::New(env, LanguageIDToString(packStats->configuredLanguage)));
+        result.Set("currentRegion", Napi::Number::New(env, uint32_t(packStats->currentRegion)));
+
+        Napi::Array availableLanguages = Napi::Array::New(env);
+        for (int i = 0 ; i < packStats->numAvailableLanguages ; ++i) {
+          availableLanguages.Set(i, LanguageIDToString(packStats->availableLanguages[i]));
+        }
+        result.Set("availableLanguages", availableLanguages);
+        Jabra_FreeLanguagePackStats(packStats);
+        return result;
+      }
+    ))->Queue();
+  }
+
+  return env.Undefined();
+}
+
+Napi::Value napi_GetSubDeviceProperty(const Napi::CallbackInfo& info) {
+  const char * const functionName = __func__;
+  Napi::Env env = info.Env();
+
+  if (util::verifyArguments(functionName, info, {util::NUMBER, util::NUMBER, util::NUMBER, util::FUNCTION})) {
+    const unsigned short deviceId = (unsigned short)(info[0].As<Napi::Number>().Int32Value());
+	  const SubDeviceID subdevice = (SubDeviceID)(info[1].As<Napi::Number>().Int32Value());
+	  const DeviceProperty property = (DeviceProperty)(info[2].As<Napi::Number>().Int32Value());
+    Napi::Function javascriptResultCallback = info[3].As<Napi::Function>();
+
+    (new util::JAsyncWorker<std::string, Napi::String>(
+      functionName, javascriptResultCallback,
+      [functionName, deviceId, subdevice, property]
+      {
+        char* value = nullptr;
+        Jabra_ReturnCode retv = Jabra_GetSubDeviceProperty(deviceId, subdevice, property, &value);                       
+        if (retv) util::JabraReturnCodeException::LogAndThrow(functionName, retv);
+        if (!value) return std::string("");
+        std::string strVal(value);
+        Jabra_FreeString(value);
+        return strVal;
+      },
+      [](const Napi::Env& env, std::string cppResult)
+      {
+            return Napi::String::New(env, cppResult);
+      }
+    ))->Queue();
+  }
+
+  return env.Undefined();
+}
+
+Napi::Value napi_GetUserDefinedDeviceName(const Napi::CallbackInfo& info) {
+  const char * const functionName = __func__;
+  Napi::Env env = info.Env();
+
+  if (util::verifyArguments(functionName, info, {util::NUMBER, util::FUNCTION})) {
+    const unsigned short deviceId = (unsigned short)(info[0].As<Napi::Number>().Int32Value());
+    Napi::Function javascriptResultCallback = info[1].As<Napi::Function>();
+
+    (new util::JAsyncWorker<std::string, Napi::String>(
+      functionName, javascriptResultCallback,
+      [functionName, deviceId]
+      {
+        char* value = nullptr;
+        Jabra_ReturnCode retv = Jabra_GetUserDefinedDeviceName(deviceId, &value);
+        if (retv) util::JabraReturnCodeException::LogAndThrow(functionName, retv);
+        if (!value) return std::string("");
+        std::string strVal(value);
+        Jabra_FreeString(value);
+        return strVal;
+      },
+      [](const Napi::Env& env, std::string cppResult)
+      {
+            return Napi::String::New(env, cppResult);
+      }
+    ))->Queue();
+  }
+
+  return env.Undefined();
 }

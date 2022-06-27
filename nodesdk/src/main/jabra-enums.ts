@@ -107,13 +107,15 @@ export enum enumDeviceBtnType {
 }
 
 /**
- * This enum is used to represent how device is connected to system via USB or Bluetooth.<br>
+ * This enum is used to represent how device is connected to system.<br>
  * `USB` - device that connect through USB.<br>
- * `Bluetooth` - device that connect through dongle.
+ * `Bluetooth` - device that connect through BT dongle.
+ * `DECT` - device that connect through DECT dongle/base.
  */
 export enum enumDeviceConnectionType {
   USB = 0,
-  BT = 1
+  BT = 1,
+  DECT = 2
 }
 
 /**
@@ -243,9 +245,20 @@ export enum enumDeviceFeature {
   GoogleBisto = 1035,
   VirtualDirector = 1036,
   PictureInPicture = 1037,
-  DateTimeIsUTC = 1038,
-  RemoteControl = 1039,
-  UserConfigurableHDR = 1040,
+  DateTimeIsUTC = 1038,       // Time in device is UTC
+  RemoteControl = 1039,       // Device has physical remote control
+  UserConfigurableHDR = 1040, // User is allowed to change brightness, contrast etc. while HDR is enabled
+  DECTBasicPairing = 1041,    // Regular pairing without any key exchange
+  DECTSecurePairing = 1042,   // Device supports secure pairing using key exchange over USB
+  DECTOTAFWUSupported = 1043, // Device supports DECT OTA firmware updating
+  XpressURL = 1044,           // Device can be configured with an Xpress URL for stand-alone management
+  PasswordProvisioning = 1045,// Device can store a password for settings protection
+  Ethernet = 1046,            // Ethernet connectivity
+  WLAN = 1047,                // WLAN connectivity
+  EthernetAuthenticationCertificate = 1048, // Certificate-based Ethernet authentication
+  EthernetAuthenticationMSCHAPv2 = 1049,    // User/pass-based Ethernet authentication (MS-CHAPv2)
+  WLANAuthenticationCertificate = 1050,     // Certificate-based WLAN authentication
+  WLANAuthenticationMSCHAPv2 = 1051         // User/pass-based WLAN authentication (MS-CHAPv2)
 }
 
 /**
@@ -462,4 +475,95 @@ export enum enumProxyType {
   USB_2_0_HighSpeed     = 2, // USB 2.0
   USB_3_0_SuperSpeed    = 3, // USB 3.0
   USB_3_2_Gen2          = 4  // USB 3.2 Gen2
+};
+
+/**
+ * Bluetooth Link Quality
+ */
+ export enum enumBTLinkQuality {
+  Off = 0,
+  Low = 1,
+  High= 2
+};
+
+/**
+ * DECT headset pairing state
+ */
+ export enum enumDECTHeadsetPairingState {
+  PRIMARY = 0,
+  SECONDARY = 1
+};
+
+/**
+ * Network interface types
+ */
+export enum enumNetworkInterface {
+  ETHERNET = 0,
+  WLAN = 1,
+  BLUETOOTH = 2
+};
+
+export enum enumNetworkInterfaceStatus {
+  LINK_DOWN = 0,
+  LINK_UP = 1,
+  IPADDRESS_SET = 2,
+  IPADDRESS_REMOVED = 3
+};
+
+export enum enumNetworkAuthMode
+{
+  NONE = 0,
+  MSCHAPv2 = 1,
+  CERT = 2
+};
+
+export enum enumLanguagePack {
+  LanguagePackInfo = 2001, /** Specify the language pack of the device. */
+  TunePackInfo = 2002,     /** Specify the tune pack of the base. */
+};
+
+/**
+ * A given firmware will always target one of these regions.
+ * Each regional FW will contain a selection of language packs that are specific to that region.
+ */
+export enum enumRegion
+{
+    EMEA_AU_NZ = 1,
+    North_America = 2,
+    North_America_Japan = 3,
+    UK_APAC = 4,
+    Korea = 5,
+    EA_Oceania = 6,
+    Global = 7,
+    Japan = 8
+};
+
+export enum enumSubDevice
+{
+  BASE = 0,             // Primary base or controller, e.g. Link 380 dongle
+  BASE_2,               // 2nd base or controller
+  DESKSTAND,            // Basic desk stand
+  CRADLE,               // Headset cradle, e.g. Engage 65 base
+  PRIMARY_HEADSET,      // BT or DECT headset connected through base/dongle
+  SECONDARY_HEADSET,    // 1st DECT conference headset
+  SECONDARY_2_HEADSET,  // 2nd DECT conference headset
+  SECONDARY_3_HEADSET,  // 3rd DECT conference headset
+  DOCKED_HEADSET,       // Headset when docked in cradle
+  USB_HEADSET,          // Also applies to BT headsets when using a cabled connection
+  HUB,
+  BLE_DEVICE,           // First BLE device
+  BLE_2_DEVICE          // Second BLE device, e.g. PanaCast 50 remote control
+};
+
+export enum enumDeviceProperty
+{
+  NAME_DEVICE = 0,        // Device name
+  NAME_USB,               // USB device name, may be different from device name
+  NAME_BLUETOOTH,         // BT device name, may be different from device name
+  NAME_CONNECTED_HEADSET, // Name of headset connected to this device
+  ASSET_TAG,              // User-defined device name
+  PID,                    // Product ID (returned in decimal representation)
+  PID_DFU,                // Product ID when in device firmware update mode
+  FWVERSION,              // Firmware version
+  ESN                     // Serial number
 };

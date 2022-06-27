@@ -44,19 +44,19 @@
     "yauzl": "^2.10.0"
   },
   "peerDependencies": {
-    "@gnaudio/jabra-node-sdk": "^3.2.2",
+    "@gnaudio/jabra-node-sdk": "file:../nodesdk",
     "electron": ">=2.0.0"
   },
   "devDependencies": {
-    "@gnaudio/jabra-node-sdk": "^3.2.2",
+    "@gnaudio/jabra-node-sdk": "file:../nodesdk",
     "@types/jest": "25.2.1",
     "browserify": "16.5.1",
-    "copyfiles": "2.2.0",
+    "copyfiles": "^2.4.1",
     "cross-env": "7.0.2",
-    "electron": "^12.0.1",
+    "electron": "^12.2.3",
     "jest": "25.2.7",
     "rimraf": "3.0.2",
-    "spectron": "11.1.0",
+    "spectron": "^13.0.0",
     "ts-jest": "25.3.1",
     "tsify": "4.0.1",
     "typescript": "3.8.3"

@@ -34,8 +34,6 @@ function createAndLoadWindow(): Promise<BrowserWindow> {
       sandbox: true,
       // Allow Ipc to/from sandbox
       contextIsolation: false,
-      // No need for remoting for this app.
-      enableRemoteModule: false,
       // No insecure code.
       webSecurity: true,
       // Preload script

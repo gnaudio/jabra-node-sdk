@@ -360,5 +360,26 @@ LIBRARY_API Jabra_ReturnCode Jabra_ClearPairedDevice(unsigned short deviceID, Ja
  */
 LIBRARY_API void Jabra_RegisterPairingListCallback(void(*PairingList)(unsigned short deviceID, Jabra_PairingList* lst));
 
+typedef enum _LinkQuality
+{
+    LINKQUALITY_OFF = 0,
+    LINKQUALITY_LOW = 1,
+    LINKQUALITY_HIGH = 2
+} LinkQuality;
+
+/** Listener for Link Quality events */
+typedef void (*LinkQualityStatusListener)(unsigned short deviceID, const LinkQuality status);
+
+/**
+ * @brief Subscribe/unsubscribe to Link quality change events. Not available on all devices.
+ * @param[in] deviceID      ID for specific device
+ * @param[in] listener      The callback for LinkQuality events. Set to NULL to unsubscribe. Callback will occur on a separate thread.
+ * @return Return_Ok        Call was successful
+ * @return Device_Unknown   deviceID is unknown
+ * @return Not_Supported    Link quality change events not supported by device
+ * @ingroup g-events
+ * @ingroup g-dev-status
+ */
+LIBRARY_API Jabra_ReturnCode Jabra_SetLinkQualityStatusListener(unsigned short deviceID, LinkQualityStatusListener listener);
 
 #endif /* INTERFACE_BLUETOOTH_H */
