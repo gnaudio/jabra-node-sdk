@@ -34,7 +34,7 @@
     "@gnaudio/jabra-electron-renderer-helper": "file:../electronrendererhelper",
     "@gnaudio/jabra-node-sdk": "file:../nodesdk",
     "@types/node": "^17.0.8",
-    "electron": "^13.6.9",
+    "electron": "^18.3.7",
     "jquery": "3.5.0",
     "notyf": "3.6.0"
   },
